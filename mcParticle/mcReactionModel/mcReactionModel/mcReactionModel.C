@@ -63,7 +63,7 @@ Foam::autoPtr<Foam::mcReactionModel> Foam::mcReactionModel::New
     {
         FatalErrorIn
         (
-            "mcReactionModel::New(const fvMesh&, const dictionary&)"
+            "mcReactionModel::New(const objectRegistry&, const dictionary&)"
         )   << "Unknown mcReactionModel type " << reactionType << endl << endl
             << "Valid mcReactionModel types are :" << endl
             << mcReactionModelConstructorTablePtr_->sortedToc()

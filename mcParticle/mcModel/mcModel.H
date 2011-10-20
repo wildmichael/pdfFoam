@@ -22,7 +22,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::mcMixingModel
+    Foam::mcModel
 
 Description
     Abstract base class for Monte Carlo sub-models
