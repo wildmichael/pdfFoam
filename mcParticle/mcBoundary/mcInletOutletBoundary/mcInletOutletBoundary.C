@@ -252,7 +252,7 @@ void Foam::mcInletOutletBoundary::correct
         scalarField phi(PhicPdf.size());
         forAll(PhicPdf, PhiI)
         {
-            phi[PhiI] = (*PhicPdf[PhiI])[cellI];
+            phi[PhiI] = (*PhicPdf[PhiI])[faceI];
         }
 
         for (label i=0; i<N; ++i)
