@@ -46,25 +46,31 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
 
         stepFraction_ += trackToFace(endPosition(), td)*(1.0 - stepFraction_);  
 
+        Info << "Finished trackToFace" << endl;
+
         if (onBoundary() && td.keepParticle)
         {
             if (isA<processorPolyPatch>(pbMesh[patch(face())]))
               {
                 td.switchProcessor = true;
               }
-            //else if (isA<wallPolyPatch>(pbMesh[patch(face())]))
-            // {
-                // Info << "Hitting wall patch..." << endl;
-                //const wallPolyPatch & wpp = static_cast<const wallPolyPatch&> (pbMesh[patch(face())]);
-                //hitWallPatch(wpp, td);
-            // }
+            
+            if (isA<wallPolyPatch>(pbMesh[patch(face())]))
+               {
+                 Info << "Hitting wall patch..." << endl;
+                 stepFraction_ = 1.0;
+                 //                 const wallPolyPatch & wpp = static_cast<const wallPolyPatch&> (pbMesh[patch(face())]);
+                 //                 hitWallPatch(wpp, td);
+             }
         }
     }
+    
 
     return td.keepParticle;
 }
 
 
+// Pre-action before hitting patches
 bool Foam::mcParticle::hitPatch
 (
  const polyPatch& patch,
@@ -72,20 +78,6 @@ bool Foam::mcParticle::hitPatch
  const label Lb
 )
 {
-  bool skipPatchHitAction = false;
-  
-  if(
-     isA<wallPolyPatch>(patch) ||
-     isA<processorPolyPatch>(patch)
-     )
-    {
-      Info << "Known patch type" << endl;
-    }
-  else
-    {
-      Info << "Unknown patch type" << endl;
-    }
-    
   return skipPatchHitAction;
 }
 
@@ -125,25 +117,28 @@ void Foam::mcParticle::hitWallPatch
     mcParticle::trackData& td
 )
 {
+  Info << "Calling hit wall patch" << endl;
   vector nw = wpp.faceAreas()[wpp.whichFace(face())];
   nw /= mag(nw);  // Wall normal (outward)
   
-  vector UParticle = Updf_ + u_;
+  vector UPTmp = Updf_ + u_;
   
-  scalar Un = UParticle & nw; // Normal component
-  vector Ut = UParticle - Un*nw; // Tangential component
+  scalar Un = UPTmp & nw; // Normal component
+  vector Ut = UPTmp - Un*nw; // Tangential component
   
   if (Un > 0)
     {
       // Elastic coefficient: 1 = perfectly elastic; 0 = perfect plastic.
-      UParticle -= (1.0 + td.mcpc().e())*Un*nw; 
+      UPTmp -= (1.0 + td.mcpc().e())*Un*nw; 
     }
 
   // Tangential friction coefficient: 
   // 1 = totally friction (stop); 0 = smooth (no loss)
-  UParticle -= td.mcpc().mu()*Ut;
+  UPTmp -= td.mcpc().mu()*Ut;
   
-  u_ = UParticle - Updf_;  // Updf is not changed.
+  u_ = UPTmp - Updf_;  // Updf is not changed.
+  Info << "After hitting wall, Uparticle = " << UParticle() << endl;
+  Info << "stepFraction: " << stepFraction() << endl;
 }
 
 
@@ -177,9 +172,9 @@ void Foam::mcParticle::hitPatch
 void Foam::mcParticle::transformProperties (const tensor& T)
 {
     Particle<mcParticle>::transformProperties(T);
-    vector UParticle = Updf_ + u_;
-    UParticle = transform(T, UParticle);
-    u_ = UParticle - Updf_;
+    vector UPTmp = Updf_ + u_;
+    UPTmp = transform(T, UPTmp);
+    u_ = UPTmp - Updf_;
 }
 
 

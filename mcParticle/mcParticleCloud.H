@@ -115,6 +115,7 @@ public:
 
   //- Report Info
   void info() const;
+  void allParticlesInfo() const;
 };
 
 

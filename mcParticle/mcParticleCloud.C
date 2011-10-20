@@ -96,6 +96,7 @@ void Foam::mcParticleCloud::evolve()
     updateEndPositions();
 
     Cloud<mcParticle>::move(td);
+    allParticlesInfo();
 }
 
 
@@ -111,11 +112,11 @@ void Foam::mcParticleCloud::initReleaseParticles()
       vector position = mesh_.C()[celli];
       vector Updf = Ufv_[celli];
 
-      if (celli < 800) continue;
+      if (celli !=  400) continue;
       // Initially put $nci particle per cell
       for(int i = 0; i < nci_; i++)
         {
-          vector u = vector(-Updf.x()+1, 0, 0);
+          vector u = vector(2, 1 , 0);
           
           mcParticle* ptr = new mcParticle(*this,  position, celli, m, Updf, u, dtCloud_);
           
@@ -149,5 +150,21 @@ void Foam::mcParticleCloud::info() const
 }
 
 
+void Foam::mcParticleCloud::allParticlesInfo() const
+{
+  Info << "Calling allParticlesInfo" << endl;
+  for(mcParticleCloud::const_iterator pIter=begin(); 
+      pIter != end();
+      ++pIter
+      )
+    {
+      const mcParticle & p = pIter();
+      Info << "Particle # " << p.origId() << "; "
+           << "X = " << p.position() << "; "
+           << "u = " << p.u()
+           << endl;
+      
+    }
+}
 
 // ************************************************************************* //
