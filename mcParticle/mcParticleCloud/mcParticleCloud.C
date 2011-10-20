@@ -758,30 +758,46 @@ void Foam::mcParticleCloud::eliminateParticles(label celli)
 {
     label ncur = round(PaNIC_[celli]);
     label nx =  ncur - Npc_; // no. particle to eliminate
-    // Pool of partiles to operate on is 2*nx,
-    // but liminted by available particles in this cell.
-    label nPool = min(2*nx+4, ncur);
+
+    // sum of inverse masses
+    scalar invM = 0.;
+    forAll(cellParticleAddr_[celli], particleI)
+    {
+        mcParticle& p = *cellParticleAddr_[celli][particleI];
+        invM += 1./p.m();
+    }
 
     label nKilled = 0;
+    // size of the pool we eliminated particles from
+    label nPool = 0;
     scalar massKilled = 0.0;
-    for (label particleI=0; particleI < nPool; particleI++)
+    // lower bound after which elimination is stopped
+    const scalar Nmin = round(cloneAt_ * Npc_);
+    forAll(cellParticleAddr_[celli], particleI)
     {
-        mcParticle& p = * cellParticleAddr_[celli][particleI];
-        if (random().scalar01() > 0.5)
+        nPool = particleI;
+        mcParticle& p = *cellParticleAddr_[celli][particleI];
+        // elimination probability
+        scalar Pelim = nx / (p.m() * invM);
+        if (random().scalar01() < Pelim)
         {
+            ++nKilled;
             massKilled += p.m();
             deleteParticle(p);
-            cellParticleAddr_[celli][particleI] = 0;
-            nKilled++;
+            cellParticleAddr_[celli][particleI] = NULL;
         }
-        if (nKilled >= nx) break;
+        // emergency stop
+        if ((ncur - nKilled) < Nmin)
+        {
+            break;
+        }
     }
+    ++nPool;
     PaNIC_[celli] -= nKilled;
 
-    scalar massCompensate = massKilled / (ncur - nKilled);
-
     // Compensate for the deleted mass
-    for (label particleI=0; particleI < ncur; particleI++)
+    scalar massCompensate = massKilled / (nPool - nKilled);
+    for (label particleI=0; particleI < nPool; particleI++)
     {
         mcParticle* pPtr =  cellParticleAddr_[celli][particleI];
         if (pPtr)
@@ -791,10 +807,9 @@ void Foam::mcParticleCloud::eliminateParticles(label celli)
     }
     if (debug)
     {
-        Info<< "Eliminated " << nKilled
+        Info<< "Eliminated " << nKilled << " of " << ncur
             << " particles in cell " << celli << endl;
     }
-
 }
 
 
