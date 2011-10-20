@@ -91,6 +91,9 @@ class mcParticle
        //- separation (only for ghost cells)
        vector shift_;
 
+       //- particle Courant number
+       scalar Co_;
+
        // ==== PUT ALL label AND OTHER 4-BYTE TYPES AFTER THIS === //
 
        //- Whether this particle is a ghost
@@ -206,6 +209,12 @@ public:
             //- Return total particle velocity;
             inline const vector& UParticle() const;
 
+            //- Return total particle velocity;
+            inline vector& UParticle();
+
+            //- Return velocity with which the particle is being tracked
+            inline const vector& Utracking() const;
+
             //- Fluid velocity @ particle location
             inline const vector& UFap() const;
 
@@ -241,6 +250,9 @@ public:
 
             //- shift for ghost particles
             inline vector& shift();
+
+            //- particle Courant number
+            inline scalar Co() const;
 
 
         // Tracking

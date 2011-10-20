@@ -51,6 +51,7 @@ Foam::mcParticle::mcParticle
                 >> rho_
                 >> dt_
                 >> shift_
+                >> Co_
                 >> ghost_
                 >> Phi_
                 ;
@@ -63,7 +64,7 @@ Foam::mcParticle::mcParticle
                 sizeof(m_) + sizeof(Updf_) +
                 sizeof(UParticle_) + sizeof(Utracking_) + sizeof(UFap_) +
                 sizeof(Omega_) + sizeof(rho_) + sizeof(dt_) +
-                sizeof(shift_) + sizeof(ghost_)
+                sizeof(shift_) + sizeof(Co_) + sizeof(ghost_)
             );
             is >> Phi_;
         }
@@ -227,6 +228,7 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
             << token::SPACE << p.rho_
             << token::SPACE << p.dt_
             << token::SPACE << p.shift_
+            << token::SPACE << p.Co_
             << token::SPACE << p.ghost_
             << token::SPACE << p.Phi_;
     }
@@ -239,7 +241,7 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
             sizeof(p.m_) + sizeof(p.Updf_) +
             sizeof(p.UParticle_) + sizeof(p.Utracking_) + sizeof(p.UFap_) +
             sizeof(p.Omega_) + sizeof(p.rho_)  + sizeof(p.dt_) +
-            sizeof(p.shift_) + sizeof(p.ghost_)
+            sizeof(p.shift_) + sizeof(p.Co_) + sizeof(p.ghost_)
         );
         os  << p.Phi_;
     }

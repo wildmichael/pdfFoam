@@ -28,6 +28,42 @@ License
 #include "mcParticleCloud.H"
 #include "OStringStream.H"
 
+// * * * * * * * * * * * * * Local Helper Functions  * * * * * * * * * * * * //
+
+namespace // anonymous
+{
+
+Foam::scalar computeCourantNo(const Foam::mcParticle& p)
+{
+    using namespace Foam;
+    const mcParticleCloud& cloud = refCast<const mcParticleCloud>(p.cloud());
+    const polyMesh& mesh = cloud.pMesh();
+    const surfaceVectorField& CourantCoeffs = cloud.CourantCoeffs();
+    const cell& c = mesh.cells()[p.cell()];
+    const vector& U = p.Utracking();
+    scalar dt = mesh.time().deltaT().value();
+    scalar Co = 0.0;
+    forAll(c, cellFaceI)
+    {
+        label faceI = c[cellFaceI];
+        vector coeff;
+        if (mesh.isInternalFace(faceI))
+        {
+            coeff = CourantCoeffs[faceI];
+        }
+        else
+        {
+            label patchI = mesh.boundaryMesh().whichPatch(faceI);
+            label start = mesh.boundaryMesh()[patchI].start();
+            coeff = CourantCoeffs.boundaryField()[patchI][faceI-start];
+        }
+        Co = max(Co, fabs(dt * coeff & U));
+    }
+    return Co;
+}
+
+} // anonymous namespace
+
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::mcParticle::trackData::trackData
@@ -75,6 +111,7 @@ Foam::mcParticle::mcParticle
     rho_(0.0),
     dt_(dt),
     shift_(shift),
+    Co_(0.0),
     ghost_(ghost),
     Phi_(Phi)
 {}
@@ -158,6 +195,8 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         meshTools::constrainDirection(mesh, mesh.geometricD(), Utracking_);
         meshTools::constrainDirection(mesh, mesh.geometricD(), destPos);
     }
+
+    Co_ = computeCourantNo(*this);
 
     while (td.keepParticle && !td.switchProcessor && tEnd > SMALL)
     {

@@ -49,6 +49,8 @@ SourceFiles
 #include "SortableList.H"
 #include "vectorList.H"
 #include "compressible/turbulenceModel/turbulenceModel.H"
+#include "surfaceMesh.H"
+#include "fvsPatchField.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -209,6 +211,9 @@ class mcParticleCloud:
         //- Normal of the centre plane for axi-symmetric cases
         vector centrePlaneNormal_;
 
+        //- Unit-length surface-normal vectors multiplied with the deltaCoeffs
+        surfaceVectorField CourantCoeffs_;
+
 
     // Private Member Functions
 
@@ -240,6 +245,9 @@ class mcParticleCloud:
 
         //- Remove all ghost particles from cloud
         void purgeGhostParticles();
+
+        //- Compute and print the mean and maximum particle Courant number
+        void printParticleCo();
 
         //- Disallow default bitwise copy construct
         mcParticleCloud(const mcParticleCloud&);
@@ -296,6 +304,10 @@ public:
         inline const vector& axis() const;
         //- Normal of the centre plane for axi-symmetric cases
         inline const vector& centrePlaneNormal() const;
+        //- Coefficients for the particle Courant number
+        // (Unit-length surface-normal vectors multiplied with the
+        // fvMesh::deltaCoeffs())
+        inline const surfaceVectorField& CourantCoeffs() const;
 
         //- The random number generator
         Random &random() {return random_;}

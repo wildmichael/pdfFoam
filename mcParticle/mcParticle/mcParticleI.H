@@ -97,6 +97,18 @@ inline const Foam::vector& Foam::mcParticle::UParticle() const
 }
 
 
+inline Foam::vector& Foam::mcParticle::UParticle()
+{
+    return UParticle_;
+}
+
+
+inline const Foam::vector& Foam::mcParticle::Utracking() const
+{
+    return Utracking_;
+}
+
+
 inline const Foam::vector& Foam::mcParticle::UFap() const
 {
     return UFap_;
@@ -166,6 +178,12 @@ inline const Foam::vector& Foam::mcParticle::shift() const
 inline Foam::vector& Foam::mcParticle::shift()
 {
     return shift_;
+}
+
+
+inline Foam::scalar Foam::mcParticle::Co() const
+{
+    return Co_;
 }
 
 

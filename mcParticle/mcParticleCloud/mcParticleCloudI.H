@@ -106,4 +106,9 @@ inline const Foam::vector& Foam::mcParticleCloud::centrePlaneNormal() const
 }
 
 
+inline const Foam::surfaceVectorField& Foam::mcParticleCloud::CourantCoeffs() const
+{
+    return CourantCoeffs_;
+}
+
 // ************************************************************************* //

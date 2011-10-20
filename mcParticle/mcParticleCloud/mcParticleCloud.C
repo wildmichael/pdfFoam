@@ -341,7 +341,17 @@ Foam::mcParticleCloud::mcParticleCloud
     OmegaModel_(),
     mixingModel_(),
     reactionModel_(),
-    isAxiSymmetric_(false)
+    isAxiSymmetric_(false),
+    CourantCoeffs_
+    (
+        IOobject
+        (
+            "CourantCoeffs_",
+            mesh_.pointsInstance(),
+            mesh_
+        ),
+        mesh_.surfaceInterpolation::deltaCoeffs() * mesh_.Sf() / mesh_.magSf()
+    )
 {
     // Find scalar fields
     if (dict_.found("scalarFields"))
@@ -1096,6 +1106,7 @@ void Foam::mcParticleCloud::evolve()
     );
 
     Cloud<mcParticle>::move(td);
+    printParticleCo();
 
     // "Accept" and shift the survived ghost particles
     //  and clear those still in ghost a cell
@@ -1409,6 +1420,32 @@ void Foam::mcParticleCloud::assertPopulationHealth() const
             << exit(FatalError);
     }
 
+}
+
+
+void Foam::mcParticleCloud::printParticleCo()
+{
+    scalar meanPartCoNum = 0.0;
+    scalar maxPartCoNum = 0.0;
+
+    if (mesh_.nInternalFaces() && size())
+    {
+        scalar dt = runTime_.deltaT().value();
+        forAllConstIter(mcParticleCloud, *this, pIter)
+        {
+            meanPartCoNum += pIter().Co();
+            maxPartCoNum = max(maxPartCoNum, pIter().Co());
+        }
+        label nPart = size();
+        reduce(nPart, sumOp<label>());
+        reduce(meanPartCoNum, sumOp<scalar>());
+        meanPartCoNum /= nPart;
+        reduce(maxPartCoNum, maxOp<scalar>());
+    }
+
+    Info<< "Particle Courant Number in cloud " << name()
+        << " mean: " << meanPartCoNum
+        << " max: " << maxPartCoNum << endl;
 }
 
 // ************************************************************************* //
