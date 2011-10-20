@@ -70,7 +70,7 @@ const Foam::compressible::turbulenceModel* getTurbulenceModel
 const Foam::dimensionedScalar SMALL_MASS
 (
     "SMALL_MASS",
-    Foam::dimMass,
+    Foam::dimensionSet(1.,0.,0.,0.,0.,0.,0.),
     Foam::SMALL
 );
 
@@ -78,7 +78,7 @@ const Foam::dimensionedScalar SMALL_MASS
 const Foam::dimensionedScalar SMALL_VOLUME
 (
     "SMALL_VOLUME",
-    Foam::dimVolume,
+    Foam::dimensionSet(1.,-3.,0.,0.,0.,0.,0.),
     Foam::SMALL
 );
 
