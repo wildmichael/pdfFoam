@@ -59,6 +59,9 @@ class mcRASOmegaModel :
 {
     // Private Data
 
+        //- Omega field
+        tmp<volScalarField> Omega_;
+
         //- Interpolator for Omega
         autoPtr<interpolationCellPoint<scalar> > OmegaInterp_;
 

@@ -72,15 +72,14 @@ void Foam::mcRASOmegaModel::setupInterpolator
         // If we have a kOmegaSST (or derived) object, use omega directly
         const compressible::RASModels::kOmegaSST& kOmegaModel =
             refCast<const compressible::RASModels::kOmegaSST>(turbModel);
-        interp = new interpolationCellPoint<scalar>(kOmegaModel.omega());
+        Omega_ = kOmegaModel.omega();
+        interp = new interpolationCellPoint<scalar>(Omega_);
     }
     else
     {
         // Otherwise compute Omega from epsilon/k
-        interp = new interpolationCellPoint<scalar>
-        (
-            turbModel.epsilon() / turbModel.k()
-        );
+        Omega_ = turbModel.epsilon() / turbModel.k();
+        interp = new interpolationCellPoint<scalar>(Omega_);
     }
     OmegaInterp_.reset(interp);
 }
