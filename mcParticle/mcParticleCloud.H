@@ -112,9 +112,9 @@ class mcParticleCloud:
         //- The FV density field
         const volScalarField& rhofv_;
         //- The FV TKE field
-        const volScalarField& kfv_;
+        const volScalarField* kfvPtr_;
         //- The FV mixture fraction field
-        const volScalarField& zfv_;
+        volScalarField zfv_;
 
         //- The averaging time scale
         scalar AvgTimeScale_;
@@ -183,6 +183,8 @@ class mcParticleCloud:
             dimensionedScalar URelaxTime_;
             //- Mean TKE relaxation time
             dimensionedScalar kRelaxTime_;
+            //- Minimum TKE
+            dimensionedScalar kMin_;
 
         Switch particleNumberControl_;
 
@@ -245,7 +247,6 @@ public:
             const volVectorField* U = 0,
             const volScalarField* rho = 0,
             const volScalarField* k = 0,
-            const volScalarField* z = 0,
             const word& cloudName = "defaultCloud"
         );
 
@@ -255,8 +256,9 @@ public:
         inline const fvMesh& mesh() const;
 
         //- The TKE FV field
+        // NOTE Only safe to call inside evolve().
         inline const volScalarField& kfv() const;
-        //- Tthe TKE PDF field
+        //- The TKE PDF field
         inline const volScalarField& kcPdf() const;
         //- The TKE relaxation time
         inline const dimensionedScalar& kRelaxTime() const;

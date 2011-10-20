@@ -30,6 +30,51 @@ License
 #include "fixedValueFvPatchField.H"
 #include "boundBox.H"
 #include "fvc.H"
+#include "incompressible/RAS/RASModel/RASModel.H"
+#include "incompressible/LES/LESModel/LESModel.H"
+#include "compressible/RAS/RASModel/RASModel.H"
+#include "compressible/LES/LESModel/LESModel.H"
+
+// * * * * * * * * * * * * * Local Helper Functions  * * * * * * * * * * * * //
+
+namespace
+{
+Foam::tmp<Foam::volScalarField> getkfv(const Foam::objectRegistry& obr)
+{
+    if (obr.foundObject<Foam::compressible::RASModel>("RASProperties"))
+    {
+        const Foam::compressible::RASModel& ras
+            = obr.lookupObject<Foam::compressible::RASModel>("RASProperties");
+        return ras.k();
+    }
+    else if (obr.foundObject<Foam::incompressible::RASModel>("RASProperties"))
+    {
+        const Foam::incompressible::RASModel& ras
+            = obr.lookupObject<Foam::incompressible::RASModel>("RASProperties");
+        return ras.k();
+    }
+    else if (obr.foundObject<Foam::compressible::LESModel>("LESProperties"))
+    {
+        const Foam::compressible::LESModel& les =
+        obr.lookupObject<Foam::compressible::LESModel>("LESProperties");
+        return les.k();
+    }
+    else if (obr.foundObject<Foam::incompressible::LESModel>("LESProperties"))
+    {
+        const Foam::incompressible::LESModel& les
+            = obr.lookupObject<Foam::incompressible::LESModel>("LESProperties");
+        return les.k();
+    }
+    else
+    {
+        Foam::FatalErrorIn("getkfv()")
+            << "No valid model for TKE calculation."
+            << Foam::exit(Foam::FatalError);
+        return Foam::volScalarField::null();
+    }
+}
+}
+
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 namespace Foam
@@ -68,7 +113,6 @@ Foam::mcParticleCloud::mcParticleCloud
     const volVectorField* U,
     const volScalarField* rho,
     const volScalarField* k,
-    const volScalarField* z,
     const word& cloudName
 )
 :
@@ -86,15 +130,17 @@ Foam::mcParticleCloud::mcParticleCloud
         rho ? *rho : mesh.lookupObject<volScalarField>
                          (dict.lookupOrDefault<word>("rho", "rho"))
     ),
-    kfv_
-    (
-        k ? *k : mesh.lookupObject<volScalarField>
-                     (dict.lookupOrDefault<word>("k", "k"))
-    ),
     zfv_
     (
-        z ? *z : mesh.lookupObject<volScalarField>
-                     (dict.lookupOrDefault<word>("z", "z"))
+        IOobject
+        (
+            dict.lookupOrDefault<word>("z", "z"),
+            runTime_.timeName(),
+            mesh,
+            IOobject::MUST_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh
     ),
     AvgTimeScale_
     (
@@ -138,8 +184,11 @@ Foam::mcParticleCloud::mcParticleCloud
             IOobject::AUTO_WRITE
         ),
         mesh,
-        dimensionedScalar("mMean", dimMass, 0.0)
+        dimMass,
+        rhofv_*mesh.V(),
+        rhofv_.boundaryField()
     ),
+
     VMean_
     (
         IOobject
@@ -151,8 +200,12 @@ Foam::mcParticleCloud::mcParticleCloud
             IOobject::AUTO_WRITE
         ),
         mesh,
-        dimensionedScalar("VMean", dimVolume, 0.0)
+        dimVolume,
+        mesh.V(),
+        // TODO what BC?
+        rhofv_.boundaryField()
     ),
+
     UMean_
     (
         IOobject
@@ -277,8 +330,8 @@ Foam::mcParticleCloud::mcParticleCloud
         mesh_,
         dimVelocity*dimVelocity,
         0.5*tr(TaucPdf_),
-        // Use the boundary conditions of k (FV)
-        kfv_.boundaryField()
+        // Use the TaucPdf_ boundary field only initially
+        0.5*tr(TaucPdf_.boundaryField())
     ),
 
     coeffRhoCorr_
@@ -302,21 +355,22 @@ Foam::mcParticleCloud::mcParticleCloud
         particleProperties_.lookupOrAddDefault<scalar>
                 ("kRelaxTime", runTime_.deltaT().value()*10.0)
     ),
+    kMin_
+    (
+        "kMin",
+        dimVelocity*dimVelocity,
+        particleProperties_.lookupOrAddDefault<scalar>
+                ("kMin", 10.0*SMALL)
+    ),
     particleNumberControl_
     (
         particleProperties_.lookupOrAddDefault<Switch>
                 ("particleNumberControl", true)
     )
 {
-
     if (size() > 0) // if particle data not found
     {
         mcParticle::readFields(*this);
-    }
-    else
-    {
-        Info<< "I am releasing particles initially!" << endl;
-        initReleaseParticles();
     }
 
     // Take care of statistical moments (make sure they are consistent)
@@ -425,8 +479,11 @@ void Foam::mcParticleCloud::checkParticlePropertyDict()
     cloneAt_   = max(0.5,  min(cloneAt_,   0.9));
     particleProperties_.set("cloneAt", cloneAt_);
 
-    kRelaxTime_   = max(2.0*Dt,  kRelaxTime_.value());
+    kRelaxTime_.value()   = max(2.0*Dt,  kRelaxTime_.value());
     particleProperties_.set("kRelaxTime", kRelaxTime_.value());
+
+    kMin_.value()   = max(1e-3,  min(SMALL, kMin_.value()));
+    particleProperties_.set("kMin", kMin_.value());
 
     URelaxTime_.value()   = max(2.0*Dt,  URelaxTime_.value());
     particleProperties_.set("URelaxTime", URelaxTime_.value());
@@ -681,6 +738,21 @@ void Foam::mcParticleCloud::findGhostLayers()
 
 void Foam::mcParticleCloud::evolve()
 {
+    // fetch k and impose its boundaryField on kcPdf_
+    tmp<volScalarField> tmpkfv = getkfv(mesh_); // KEEP tmpkfv!
+    kfvPtr_ = &tmpkfv();
+    kcPdf_.boundaryField() = kfvPtr_->boundaryField(); // TODO dangerous?
+
+    // initialize particle cloud if that didn't happen so far
+    if (!size())
+    {
+        Info<< "I am releasing particles initially! size = " << size() << endl;
+        initReleaseParticles();
+        Info<< "Done releasing particles. size = " << size() << endl;
+    }
+
+    // Check that kcPdf_ > SMALL
+    kcPdf_ = max(kcPdf_, kMin_);
 
     // const volScalarField& rho = mesh_.lookupObject<const volScalarField>("rho");
     // const volVectorField& U = mesh_.lookupObject<const volVectorField>("U");
@@ -718,7 +790,7 @@ void Foam::mcParticleCloud::evolve()
             IOobject::NO_WRITE
         ),
         mesh_,
-        dimVelocity,
+        dimVelocity/dimTime,
         zeroGradientFvPatchScalarField::typeName
     );
 
@@ -729,7 +801,7 @@ void Foam::mcParticleCloud::evolve()
     //interpolationCellPointFaceFlux UInterp(U);
     interpolationCellPoint<vector> UInterp(Ufv_);
     interpolationCellPoint<vector> gradPInterp(gradP);
-    interpolationCellPoint<scalar> kInterp(kfv_);
+    interpolationCellPoint<scalar> kInterp(*kfvPtr_);
     interpolationCellPoint<scalar> epsilonInterp(epsilon);
     interpolationCellPoint<scalar> zInterp(zcPdf_);
     interpolationCellPoint<vector> gradRhoInterp(gradRho);
@@ -757,6 +829,9 @@ void Foam::mcParticleCloud::evolve()
     particleNumberControl();
 
     assertPopulationHealth();
+
+    // clean up
+    kfvPtr_ = 0;
 }
 
 
@@ -768,13 +843,15 @@ void Foam::mcParticleCloud::initReleaseParticles()
     {
         scalar m = mesh_.V()[celli] * rhofv_[celli] / Npc_;
         vector Updf = UcPdf_[celli];
-        vector uscales(sqrt(kfv_[celli]), sqrt(kfv_[celli]), sqrt(kfv_[celli]));
+        // TODO shouldn't this be multiplied with 2/3?
+        vector uscales(sqrt((*kfvPtr_)[celli]),
+                       sqrt((*kfvPtr_)[celli]),
+                       sqrt((*kfvPtr_)[celli]));
         scalar z = zcPdf_[celli];
         scalar rho = rhocPdf_[celli];
 
-        particleGenInCell(celli, Npc_, m, Updf, uscales, z, rho, vector::zero, 0);
+        particleGenInCell(celli, Npc_, m, Updf, uscales, z, rho);
     }
-
     // writeFields();
 }
 
@@ -818,6 +895,7 @@ void Foam::mcParticleCloud::particleGenInCell
         {
             // What is the distribution of u?
             // How to enforce the component-wise correlations < u_i, u_j >?
+            // TODO generate correlated fluctuations
             vector u(
                 random().GaussNormal() * uscales.x(),
                 random().GaussNormal() * uscales.y(),
@@ -857,16 +935,20 @@ void Foam::mcParticleCloud::particleGenInCell
 // Enforce in/out flow BCs by populating ghost cells
 void Foam::mcParticleCloud::populateGhostCells()
 {
+    label np = 0;
+    label ng = 0;
     forAll(ghostCellLayers_, ghostPatchI)
     {
         forAll(ghostCellLayers_[ghostPatchI], faceCelli)
         {
+            ++ ng;
+            np += Npc_;
 
             label  celli = ghostCellLayers_[ghostPatchI][faceCelli];
-            label  N = Npc_;
-            scalar m = mesh_.V()[celli] * rhofv_[celli] / N;
+            scalar m = mesh_.V()[celli] * rhofv_[celli] / Npc_;
             vector Updf = Ufv_[celli];
-            scalar ksqrt = sqrt(kfv_[celli]);
+            // TODO shouldn't this be multiplied with 2/3?
+            scalar ksqrt = sqrt((*kfvPtr_)[celli]);
             vector uscales(ksqrt, ksqrt, ksqrt);
             label  ghost = 1;
             vector shift = ghostCellShifts_[ghostPatchI][faceCelli];
@@ -874,17 +956,14 @@ void Foam::mcParticleCloud::populateGhostCells()
             scalar z = zfv_.boundaryField()[ghostPatchId_[ghostPatchI]][faceCelli];
             scalar rho = rhofv_.boundaryField()[ghostPatchId_[ghostPatchI]][faceCelli];
 
-            particleGenInCell(celli, N, m, Updf, uscales, z, rho, shift, ghost);
-
-            if (debug)
-            {
-                Info<< N << " particles generated in cell " << celli
-                    << " m = " << m
-                    << " shift = " << shift << endl;
-            }
-
+            particleGenInCell(celli, Npc_, m, Updf, uscales, z, rho, shift, ghost);
         }
     }
+    if (debug)
+    {
+        Info<< np << " particles generated in " << ng << " ghost cells" << endl;
+    }
+
 }
 
 
@@ -902,7 +981,7 @@ void Foam::mcParticleCloud::purgeGhostParticles()
             if (ghostCellHash_.found(celli)) // still in ghost cell
             {
                 deleteParticle(p);
-                nDelete++;
+                ++nDelete;
             }
             else
             {
@@ -934,16 +1013,13 @@ void Foam::mcParticleCloud::purgeGhostParticles()
                         << " Info for the lost particle: " << endl;
                     oneParticleInfo(p);
                     deleteParticle(p);
+                    ++nDelete;
                 }
                 p.cell()  = newCelli;
                 p.ghost() = 0;
                 p.shift() = vector::zero;
-                nAdmit++;
+                ++nAdmit;
             }
-        }
-        else
-        {
-            continue;
         }
     }
     Info<< "Ghost particles: " << nDelete << " deleted, "
