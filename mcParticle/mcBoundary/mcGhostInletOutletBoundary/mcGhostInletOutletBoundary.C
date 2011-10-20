@@ -135,7 +135,7 @@ void Foam::mcGhostInletOutletBoundary::populateGhostCells
             const vector& u = cloud.last()->UParticle();
             if ((mesh().Sf().boundaryField()[patchID()][faceCelli] & u) < 0.)
             {
-                statFile_ << u.x() << tab << u.y() << tab << u.z() << nl;
+                statFile_() << u.x() << tab << u.y() << tab << u.z() << nl;
             }
         }
         } // end for(i)
@@ -144,7 +144,7 @@ void Foam::mcGhostInletOutletBoundary::populateGhostCells
 #ifdef FULLDEBUG
     if (debug > 1)
     {
-        statFile_.flush();
+        statFile_().flush();
     }
 #endif
     purgedGhosts_ = false;
