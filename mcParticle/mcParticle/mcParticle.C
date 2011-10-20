@@ -84,8 +84,8 @@ Foam::mcParticle::mcParticle
 
 bool Foam::mcParticle::move(mcParticle::trackData& td)
 {
-    // SLM constant, temperarily put here C0 = 2.1
-    scalar C0 = 2.1;
+    // SLM constant, temporarily put here C0 = 2.1
+    const scalar C0 = 2.1;
 
     td.switchProcessor = false;
     td.keepParticle = true;
