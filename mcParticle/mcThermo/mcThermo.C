@@ -113,17 +113,6 @@ void Foam::mcThermo::evolve()
     Time& runTime = const_cast<Time&>(mesh_.time());
     if ((runTime.timeIndex()-runTime.startTimeIndex()) % (nPDFSubCycles_ + nFVSubCycles_) + 1 > nFVSubCycles_)
     {
-        if (debug)
-        {
-            Info<< "executing mcThermo::cloudP_().evolve()" << endl;
-            Info<< tab << "cloudP_().size() = ";
-            if (cloudP_.valid())
-               Info << cloudP_().size();
-            else
-               Info << "empty";
-           Info << endl;
-        }
-
         // Instantiate the cloud on first call
         if (!cloudP_.valid())
         {
@@ -151,14 +140,14 @@ void Foam::mcThermo::evolve()
         }
         for (label i=0; i < nPDFSubCycles_; i++)
         {
+            if (i>0)
+            {
+                Info<< "Time = " << runTime.timeName() << nl << endl;
+            }
+            Info<< "Evolving Monte Carlo particle cloud " << cloudP_().name() << nl
+                << endl;
             runTime++;
             cloudP_().evolve();
-        }
-
-        if (debug)
-        {
-            Info<< "done executing mcThermo::cloudP_().evolve()" << endl;
-            Info<< tab << "cloudP_().size() = " << cloudP_().size() << endl;
         }
     }
 }
