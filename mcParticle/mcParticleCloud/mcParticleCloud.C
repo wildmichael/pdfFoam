@@ -149,6 +149,8 @@ Foam::mcParticleCloud::mcParticleCloud
     random_(55555+12345*Pstream::myProcNo()),
     Npc_(dict_.lookupOrAddDefault<label>("particlesPerCell", 30)),
     scalarNames_(0),
+    C0_(dict_.lookupOrAddDefault<scalar>("C0", 2.1)),
+    C1_(dict_.lookupOrAddDefault<scalar>("C1", 1.0)),
     eliminateAt_(dict_.lookupOrAddDefault<scalar>("eliminateAt", 1.5)),
     cloneAt_(dict_.lookupOrAddDefault<scalar>("cloneAt", 0.67)),
     Nc_(mesh_.nCells()),
@@ -614,6 +616,12 @@ void Foam::mcParticleCloud::checkParticlePropertyDict()
 {
     // Cap clone/eliminate threshold with reasonable values
     scalar Dt = runTime_.deltaT().value();
+
+    C0_ = max(0.0, C0_);
+    dict_.set("C0", C0_);
+
+    C1_ = max(0.0, min(1.0, C1_));
+    dict_.set("C1", C1_);
 
     eliminateAt_ = max(1.1,  min(eliminateAt_, 2.5));
     dict_.set("eliminateAt", eliminateAt_);

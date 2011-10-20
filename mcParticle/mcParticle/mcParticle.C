@@ -125,13 +125,13 @@ Foam::mcParticle::mcParticle
 
 bool Foam::mcParticle::move(mcParticle::trackData& td)
 {
-    // SLM constant, temporarily put here C0 = 2.1
-    const scalar C0 = 2.1;
 
     td.switchProcessor = false;
     td.keepParticle = true;
 
     mcParticleCloud& mcpc = refCast<mcParticleCloud>(td.cloud());
+    const scalar& C0 = mcpc.C0();
+    const scalar& C1 = mcpc.C1();
 
     if (isOnInletBoundary_)
     {
@@ -177,7 +177,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
 
         // Update velocity
         UParticle_ += - gradPFap/rho_ * deltaT
-            - (0.5 + 0.75 * C0) * Omega_ * (UParticle_- Updf_) * deltaT
+            - (0.5 * C1 + 0.75 * C0) * Omega_ * (UParticle_- Updf_) * deltaT
             + sqrt(C0 * kFap * Omega_) * dW
             + diffUap * deltaT;
 

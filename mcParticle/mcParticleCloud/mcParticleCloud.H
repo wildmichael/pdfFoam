@@ -126,6 +126,10 @@ class mcParticleCloud:
         wordList scalarNames_;
         //- The scalars to which to apply the mixing model
         labelList mixedScalars_;
+        //- Simplified Langevin Model constant
+        scalar C0_;
+        //- Coefficient for the dissipation in the SLM
+        scalar C1_;
         //- Particle elimination threshold
         scalar eliminateAt_;
         //- Particle cloning threshold
@@ -300,6 +304,10 @@ public:
         inline const wordList& scalarNames() const;
         //- List of indices of the scalar fields to which mixing is applied
         inline const labelList& mixedScalars() const;
+        //- Simplified Lagnevin Model constant
+        inline scalar C0() const;
+        //- Dissipation coefficient in the SLM
+        inline scalar C1() const;
         //- Whether the case is axi-symmetric
         inline bool isAxiSymmetric() const;
         //- Centerline axis for axi-symmetric cases

@@ -43,6 +43,19 @@ inline const Foam::labelList& Foam::mcParticleCloud::mixedScalars() const
     return mixedScalars_;
 }
 
+
+inline Foam::scalar Foam::mcParticleCloud::C0() const
+{
+    return C0_;
+}
+
+
+inline Foam::scalar Foam::mcParticleCloud::C1() const
+{
+    return C1_;
+}
+
+
 inline const Foam::volVectorField& Foam::mcParticleCloud::Ufv() const
 {
     return Ufv_;
