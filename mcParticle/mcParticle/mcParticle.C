@@ -138,12 +138,13 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
     }
 
     vector correctedUp = UParticle_ - Updf_ + UFap_;
-    meshTools::constrainDirection(mesh, mesh.solutionD(), correctedUp);
 
     cellPointWeight cpwx(mesh, position(), cell(), face());
     vector gradRhoFap = td.gradRhoInterp().interpolate(cpwx);
 
     Utracking_ = correctedUp - gradRhoFap;
+    meshTools::constrainDirection(mesh, mesh.solutionD(), Utracking_);
+
     point destPos = position() + tEnd * Utracking_;
 
     if (mcpc.isAxiSymmetric())
@@ -153,6 +154,8 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         tensor T = rotationTensor(rotatedCentreNormal, mcpc.centrePlaneNormal());
         transformProperties(T);
         destPos = transform(T, destPos);
+        meshTools::constrainDirection(mesh, mesh.geometricD(), Utracking_);
+        meshTools::constrainDirection(mesh, mesh.geometricD(), destPos);
     }
 
     while (td.keepParticle && !td.switchProcessor && tEnd > SMALL)
