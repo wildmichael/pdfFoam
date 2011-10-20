@@ -121,8 +121,10 @@ class mcParticleCloud
   volSymmTensorField M2_;
   volScalarField instantM0_;
 
-  labelListList ghostCellLayers_;
-  labelListList ghostFaceLayers_;
+  labelListList   ghostCellLayers_;
+  labelListList   ghostFaceLayers_;
+  HashSet<label>  ghostCellHash_;
+  HashSet<label>  ghostFaceHash_;
 
   // Mesh based velocity and Reynolds stress, obtained from particle
   // quantities.
@@ -220,7 +222,7 @@ public:
 
   //- Report Info
   void info() const;
-  void allParticlesInfo() const;
+  void particleInfo() const;
 };
 
 
