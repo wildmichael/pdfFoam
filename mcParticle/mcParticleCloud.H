@@ -41,6 +41,7 @@ SourceFiles
 #include "mcParticle.H"
 #include "IOdictionary.H"
 #include "Random.H"
+#include "labelIOField.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -79,9 +80,14 @@ class mcParticleCloud
   //- statistical moments (mass, momentum, energy)
   //- needed to obtain Updf, and Taupdf fields
   dimensionedScalar SMALL_MASS;
+
+  labelIOField   PaNIC_; // Particle # in cell
+  labelListList  cellParticleAddr_;
   volScalarField M0_;
   volVectorField M1_;
   volSymmTensorField M2_;
+
+  labelListList ghostCellLayers_;
 
   // Mesh based velocity and Reynolds stress, obtained from particle
   // quantities.
@@ -96,6 +102,11 @@ class mcParticleCloud
   //- update moments and the quantities remembered by particles
   void updateCloudPDF(scalar existWt);
   void updateParticlePDF();
+  void updateCellParticleAddr(); // Question mark remains.
+
+  // Enforce in/out flow BCs by populating ghost cells
+  void findGhostCellLayers();
+  void populateGhostCells();
 
   //- Disallow default bitwise copy construct
   mcParticleCloud(const mcParticleCloud&);

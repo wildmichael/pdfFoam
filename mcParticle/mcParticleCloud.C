@@ -28,6 +28,7 @@ License
 #include "volFields.H"
 #include "interpolationCellPoint.H"
 #include "boundBox.H"
+
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 namespace Foam
@@ -72,6 +73,20 @@ Foam::mcParticleCloud::mcParticleCloud
     Npc_(10),
 
     SMALL_MASS("SMALL_MASS", dimMass, SMALL),
+
+    PaNIC_(
+        IOobject
+        (
+         "PaNIC",
+         mesh.time().timeName(),
+         mesh_,
+         IOobject::READ_IF_PRESENT,
+         IOobject::AUTO_WRITE
+         ),
+        mesh.nCells()
+        ),
+
+    cellParticleAddr_(mesh.nCells()),
 
     M0_(
         IOobject
@@ -160,11 +175,16 @@ Foam::mcParticleCloud::mcParticleCloud
   // Ensure particles takes the updated PDF values
   updateParticlePDF();
 
+  updateCellParticleAddr();
+
   UcPdf_.writeOpt() = IOobject::AUTO_WRITE; 
   UcPdf_.rename("UcPdf");
   TaucPdf_.writeOpt() = IOobject::AUTO_WRITE; 
   TaucPdf_.rename("TauPdf");
- 
+  mesh_.time().write();
+
+  findGhostCellLayers();
+
 }
 
 
@@ -186,7 +206,8 @@ void Foam::mcParticleCloud::updateParticlePDF()
 // If moments are not read correctly, initialize them.
 void Foam::mcParticleCloud::checkMoments()
 {
-  if( M0_.headerOk() &&
+  if( PaNIC_.headerOk() &&
+      M0_.headerOk() &&
       M1_.headerOk() &&
       M2_.headerOk() )
     {
@@ -208,26 +229,116 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
   volVectorField instantM1 = M1_ * 0.0;
   volSymmTensorField instantM2 = M2_ * 0.0;
 
-      // Loop through particles to accumulate moments (0, 1, 2 order)
-      for(iterator pIter=begin(); 
-          pIter != end();
-          ++pIter
-          )
-        {
-          mcParticle & p = pIter();
-          vector u = p.UParticle() - p.Updf();
-          instantM0[p.cell()] += p.m();
-          instantM1[p.cell()] += p.m() * p.UParticle();
-          instantM2[p.cell()] += p.m() * symm(u * u);
-        }
+  PaNIC_ *= 0;
 
-      M0_ = existWt * M0_ + (1.0 - existWt) * instantM0;
-      M1_ = existWt * M1_ + (1.0 - existWt) * instantM1;
-      M2_ = existWt * M2_ + (1.0 - existWt) * instantM2;
-      // Compute U and tau
-      UcPdf_  = M1_/max(M0_, SMALL_MASS);
-      TaucPdf_  = M2_/max(M0_, SMALL_MASS);
+  // Loop through particles to accumulate moments (0, 1, 2 order)
+  // as well as particle number
+  for(iterator pIter=begin(); 
+      pIter != end();
+      ++pIter
+      )
+    {
+      mcParticle & p = pIter();
+      vector u = p.UParticle() - p.Updf();
+      PaNIC_[p.cell()] ++;
+      instantM0[p.cell()] += p.m();
+      instantM1[p.cell()] += p.m() * p.UParticle();
+      instantM2[p.cell()] += p.m() * symm(u * u);
+    }
+  
+  M0_ = existWt * M0_ + (1.0 - existWt) * instantM0;
+  M1_ = existWt * M1_ + (1.0 - existWt) * instantM1;
+  M2_ = existWt * M2_ + (1.0 - existWt) * instantM2;
+  // Compute U and tau
+  UcPdf_  = M1_/max(M0_, SMALL_MASS);
+  TaucPdf_  = M2_/max(M0_, SMALL_MASS);
 }
+
+
+// Update particle-cell addressing: for each cell, what are the IDs of the
+// particles I host?
+void Foam::mcParticleCloud::updateCellParticleAddr()
+{
+
+  labelList npi(mesh_.nCells(), 0);
+
+  forAll(PaNIC_, celli)
+    {
+      label np = PaNIC_[celli];
+      if (np > 0)
+        cellParticleAddr_[celli].setSize(np); 
+      else
+        cellParticleAddr_[celli].clear(); 
+    }
+
+  for(iterator pIter=begin(); 
+      pIter != end();
+      ++pIter
+      )
+    {
+      mcParticle & p = pIter();
+      label celli = p.cell();
+      // NOTES: it is not possible to use this origId to quickly locate
+      // particles in the cloud (for deletion). This part needs more work. 
+      cellParticleAddr_[npi[celli]] = p.origId(); 
+      npi[celli] ++;
+    }
+  
+}
+
+
+// Find "ghost cells" (actually the first layer of cells of in/out-flow patch
+void Foam::mcParticleCloud::findGhostCellLayers()
+{
+  const polyBoundaryMesh& patches = mesh_.boundaryMesh();
+  
+  // in/out-flow patches (should read from dictionary)
+  const wordList patchNames(particleProperties_.lookup("inoutPatches"));
+
+  label ngPatchs = patchNames.size();
+  labelList patchSizes(ngPatchs);
+
+  if(ngPatchs > 0)
+    {
+      ghostCellLayers_.setSize(ngPatchs);
+    }
+  else
+    { 
+      return; 
+    }
+
+
+  forAll(patchNames, nameI)
+    {
+      label patchI = patches.findPatchID(patchNames[nameI]);
+      
+      if (patchI == -1)
+        {
+          FatalErrorIn("mcParticleCloud::findGhostCellLayers()")
+            << "Illegal patch " << patchNames[nameI]
+            << ". Valid patches are " << patches.name()
+            << exit(FatalError);
+        }
+      label nf = patches[patchI].size();
+
+      patchSizes[nameI] = nf;
+      
+      if (nf > 0)
+        {
+          ghostCellLayers_[nameI].setSize(nf);
+          
+          // Find the ghost cells
+          const polyPatch& curPatch = patches[patchI];
+          label j = 0;
+          forAll(curPatch, facei)
+            {
+              label faceCelli = curPatch.faceCells()[facei];
+              ghostCellLayers_[nameI][j++] =  faceCelli;
+            }
+        }
+    }
+}
+
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
@@ -255,6 +366,10 @@ void Foam::mcParticleCloud::evolve()
     
     updateCloudPDF(existWt);
     updateParticlePDF();
+    updateCellParticleAddr();
+
+    // Correct boundary conditions:
+    populateGhostCells();
 
     allParticlesInfo();
 }
@@ -345,6 +460,12 @@ void Foam::mcParticleCloud::particleGenInCell
   
 }
 
+
+// Enforce in/out flow BCs by populating ghost cells
+void Foam::mcParticleCloud::populateGhostCells()
+{
+  
+}
 
 //This serves as a template for looping through particles in the cloud
 void Foam::mcParticleCloud::updateParticleProperties()
