@@ -705,7 +705,7 @@ void Foam::mcParticleCloud::particleGenInCell
  scalar psi
  )
 {
-  boundBox cellbb(pointField(mesh_.points(), mesh_.cellPoints()[celli]));
+  boundBox cellbb(pointField(mesh_.points(), mesh_.cellPoints()[celli]), false);
 
   vector minb = cellbb.min();
   vector dimb = cellbb.max() - minb;
