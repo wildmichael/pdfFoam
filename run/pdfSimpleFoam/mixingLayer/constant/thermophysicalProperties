@@ -32,6 +32,15 @@ cloudProperties
     OmegaModel RAS;
     mixingModel IEM;
     reactionModel Cold;
+    scalarFields
+    (
+        z
+    );
+    mixedScalars
+    (
+        z
+    );
+
 }
 
 // ************************************************************************* //
