@@ -38,6 +38,7 @@ SourceFiles
 #define mcParticleCloud_H
 
 #include "Cloud.H"
+#include "DLPtrList.H"
 #include "mcParticle.H"
 #include "mcOmegaModel.H"
 #include "mcMixingModel.H"
@@ -107,12 +108,6 @@ class mcParticleCloud:
         const Time& runTime_;
         //- The RAS model object
         const compressible::turbulenceModel& turbModel_;
-        //- The turbulent frequncy model object
-        autoPtr<mcOmegaModel> OmegaModel_;
-        //- The mixing model object
-        autoPtr<mcMixingModel> mixingModel_;
-        //- The reaction model object
-        autoPtr<mcReactionModel> reactionModel_;
 
         //- The FV velocity field
         const volVectorField& Ufv_;
@@ -169,6 +164,10 @@ class mcParticleCloud:
         //- Hash of ghost face indices
         HashSet<label>   ghostFaceHash_;
 
+        //- Owned scalar fields
+        //  (i.e. which don't exist already in the registry)
+        DLPtrList<volScalarField> ownedScalarFields_;
+
         //- Extracted, time-averaged density field
         volScalarField& rhocPdf_;
         //- Extracted, time-averaged particle-number density
@@ -193,10 +192,18 @@ class mcParticleCloud:
             //- Minimum TKE
             dimensionedScalar kMin_;
 
+        //- Enable/Disable the particle number control
         Switch particleNumberControl_;
 
         //- Flag \c prepare that is passed to mcOmegaModel::correct()
         bool prepareOmegaModel_;
+
+        //- The turbulent frequncy model object
+        autoPtr<mcOmegaModel> OmegaModel_;
+        //- The mixing model object
+        autoPtr<mcMixingModel> mixingModel_;
+        //- The reaction model object
+        autoPtr<mcReactionModel> reactionModel_;
 
     // Private Member Functions
 
@@ -243,11 +250,7 @@ public:
         //- Construct from components
         // If any of the field/object pointers happens to be 0, the
         // corresponding field will be looked up from the @a mesh. The names of
-        // the fields can be overriden in the dictionary @a dict. If
-        // @a Phi is empty, the names of the scalar fields will be looked up in
-        // the @c scalarFields list-entry of @a dict. If that does not exist or
-        // is empty, the particles will have no scalar properties and no scalar
-        // fields will be extracted.
+        // the fields can be overriden in the dictionary @a dict.
         mcParticleCloud
         (
             const fvMesh& mesh,
@@ -255,8 +258,7 @@ public:
             const word& cloudName = "defaultCloud",
             const compressible::turbulenceModel* turbModel = 0,
             const volVectorField* U = 0,
-            volScalarField* rho = 0,
-            List<volScalarField*> Phi = List<volScalarField*>()
+            volScalarField* rho = 0
         );
 
     // Member Functions

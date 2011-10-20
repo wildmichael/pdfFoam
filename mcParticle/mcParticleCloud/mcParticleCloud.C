@@ -124,8 +124,7 @@ Foam::mcParticleCloud::mcParticleCloud
     const word& cloudName,
     const compressible::turbulenceModel* turbModel,
     const volVectorField* U,
-    volScalarField* rho,
-    List<volScalarField*> Phi
+    volScalarField* rho
 )
 :
     Cloud<mcParticle>(mesh, cloudName, false),
@@ -136,9 +135,6 @@ Foam::mcParticleCloud::mcParticleCloud
     (
         turbModel ? *turbModel : *getTurbulenceModel(mesh)
     ),
-    OmegaModel_(mcOmegaModel::New(mesh, dict)),
-    mixingModel_(mcMixingModel::New(mesh, dict)),
-    reactionModel_(mcReactionModel::New(mesh, dict)),
     Ufv_
     (
         U ? *U : mesh_.lookupObject<volVectorField>
@@ -234,6 +230,8 @@ Foam::mcParticleCloud::mcParticleCloud
     ghostCellHash_(256),
     ghostFaceHash_(256),
 
+    ownedScalarFields_(),
+
     rhocPdf_
     (
         rho ? *rho : const_cast<volScalarField&>(
@@ -308,7 +306,7 @@ Foam::mcParticleCloud::mcParticleCloud
         kfv()().boundaryField()
     ),
 
-    PhicPdf_(Phi),
+    PhicPdf_(),
 
     coeffRhoCorr_
     (
@@ -339,41 +337,115 @@ Foam::mcParticleCloud::mcParticleCloud
     particleNumberControl_
     (
         dict_.lookupOrAddDefault<Switch>("particleNumberControl", true)
-    )
+    ),
+    prepareOmegaModel_(true),
+    OmegaModel_(),
+    mixingModel_(),
+    reactionModel_()
 {
-    // find scalar fields
-    if (PhicPdf_.empty() && dict_.found("scalarFields"))
+    // Find scalar fields
+    if (dict_.found("scalarFields"))
     {
         dict_.lookup("scalarFields") >> scalarNames_;
-        PhicPdf_.setSize(scalarNames_.size());
-        forAll(PhicPdf_, PhiI)
+        // Check for duplicates
+        labelList order;
+        uniqueOrder(scalarNames_, order);
+        if (scalarNames_.size() != order.size())
         {
-            PhicPdf_[PhiI] = &const_cast<volScalarField&>
-                (mesh_.lookupObject<volScalarField>(scalarNames_[PhiI]));
+            FatalErrorIn
+            (
+                "mcParticleCloud::mcParticleCloud\n"
+                "(\n"
+                "    const fvMesh&,\n"
+                "    const dictionary&,\n"
+                "    const word& cloudName,\n"
+                "    const compressible::turbulenceModel*,\n"
+                "    const volVectorField*,\n"
+                "    volScalarField* rho\n"
+                ")"
+            )
+                << "The list "
+                << dict_.lookupEntry("scalarFields", false, false).name()
+                << " contains duplicate entries.\n"
+                << exit(FatalError);
         }
     }
-    else
+    label nScalarFields = scalarNames_.size();
+    PhicPdf_.setSize(nScalarFields);
+    forAll(scalarNames_, fieldI)
     {
-        scalarNames_.setSize(PhicPdf_.size());
-        forAll(PhicPdf_, PhiI)
+        if (mesh_.foundObject<volScalarField>(scalarNames_[fieldI]))
         {
-            scalarNames_[PhiI] = PhicPdf_[PhiI]->name();
+            // Try to find that field
+            PhicPdf_[fieldI] =  &const_cast<volScalarField&>
+                (mesh_.lookupObject<volScalarField>(scalarNames_[fieldI]));
+        }
+        else
+        {
+            // Field doesn't exist already, so insert a new one into
+            // ownedScalarFields_
+            Info<< "Creating mcParticleCloud-owned field "
+                << scalarNames_[fieldI] << endl;
+            ownedScalarFields_.insert
+            (
+                new volScalarField
+                (
+                    IOobject
+                    (
+                        scalarNames_[fieldI],
+                        mesh_.time().timeName(),
+                        mesh,
+                        IOobject::MUST_READ,
+                        IOobject::AUTO_WRITE
+                    ),
+                    mesh
+                )
+            );
+            PhicPdf_[fieldI] = &ownedScalarFields_.first();
         }
     }
-    // find labels of mixed scalars
-    wordList mixedScalarNames(dict_.lookup("mixedScalars"));
-    mixedScalars_.setSize(mixedScalarNames.size());
-    label mixedI = 0;
-    forAll(mixedScalarNames, nameI)
+
+    // Find labels of mixed scalars
+    scalarNames_.setSize(nScalarFields);
+    wordList mixedScalarNames;
+    if (dict_.found("mixedScalars"))
+    {
+        dict_.lookup("mixedScalars") >> mixedScalarNames;
+        // Check for duplicates
+        labelList order;
+        uniqueOrder(mixedScalarNames, order);
+        if (mixedScalarNames.size() != order.size())
+        {
+            FatalErrorIn
+            (
+                "mcParticleCloud::mcParticleCloud\n"
+                "(\n"
+                "    const fvMesh&,\n"
+                "    const dictionary&,\n"
+                "    const word& cloudName,\n"
+                "    const compressible::turbulenceModel*,\n"
+                "    const volVectorField*,\n"
+                "    volScalarField* rho\n"
+                ")"
+            )
+                << "The list "
+                << dict_.lookupEntry("mixedScalars", false, false).name()
+                << " contains duplicate entries.\n"
+                << exit(FatalError);
+        }
+    }
+    label nMixedScalarFields = mixedScalarNames.size();
+    mixedScalars_.setSize(nMixedScalarFields);
+    forAll(mixedScalarNames, mixedScalarI)
     {
         bool found = false;
-        // find scalar in scalarNames_
-        forAll(scalarNames_, propI)
+        forAll(scalarNames_, fieldI)
         {
-            if (mixedScalarNames[nameI] == scalarNames_[propI])
+            if (mixedScalarNames[mixedScalarI] == scalarNames_[fieldI])
             {
-                mixedScalars_[mixedI++] = propI;
+                mixedScalars_[mixedScalarI] = fieldI;
                 found = true;
+                break;
             }
         }
         if (!found)
@@ -387,17 +459,24 @@ Foam::mcParticleCloud::mcParticleCloud
                 "    const word& cloudName,\n"
                 "    const compressible::turbulenceModel*,\n"
                 "    const volVectorField*,\n"
-                "    volScalarField* rho,\n"
-                "    List<volScalarField*>\n"
+                "    volScalarField* rho\n"
                 ")"
             )
-                << "No such scalar field: " << mixedScalarNames[nameI] << "\n"
+                << "No such scalar field: " << mixedScalarNames[mixedScalarI] << "\n"
                 << "Available field names are:\n" << scalarNames_ << "\n"
                 << exit(FatalError);
         }
     }
+
+    // Now that the fields exist, create the models
+    OmegaModel_ = mcOmegaModel::New(mesh_, dict);
+    mixingModel_ = mcMixingModel::New(mesh_, dict);
+    reactionModel_ = mcReactionModel::New(mesh_, dict);
+
     findGhostLayers();
     checkParticlePropertyDict();
+
+    // Populate cloud
     if (size() > 0) // if particle data found
     {
         mcParticle::readFields(*this);
