@@ -136,16 +136,16 @@ class mcParticleCloud:
 
             //- Number of particles in cell
             DimensionedField<scalar, volMesh>  PaNIC_;
-            //- Averaged mass
-            DimensionedField<scalar, volMesh> mMean_;
-            //- Averaged volume
-            DimensionedField<scalar, volMesh> VMean_;
-            //- Averaged velocity
-            DimensionedField<vector, volMesh> UMean_;
-            //- Averaged mixture fraction
-            DimensionedField<scalar, volMesh> zMean_;
-            //- Averaged Reynolds stress
-            DimensionedField<symmTensor, volMesh> uuMean_;
+            //- Averaged 0th statistical moment
+            DimensionedField<scalar, volMesh> mMom_;
+            //- Averaged 1st statistical moment of inverse-density (volume)
+            DimensionedField<scalar, volMesh> VMom_;
+            //- Averaged 1st statistical moment of velocity
+            DimensionedField<vector, volMesh> UMom_;
+            //- Averaged 1st statistical moment of mixture fraction
+            DimensionedField<scalar, volMesh> zMom_;
+            //- Averaged 2nd statistical moment of fluctuating velocity
+            DimensionedField<symmTensor, volMesh> uuMom_;
 
         //- List of cell-indices for each ghost patch
         labelListList    ghostCellLayers_;
