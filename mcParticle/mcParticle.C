@@ -112,6 +112,15 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
           + sqrt(C0 * epsilonFap) * dW
           + diffUap;
 
+        // Scale to ensure consistency on TKE
+        mcParticleCloud& mcpc = td.mcpc();
+        UParticle_ += 
+          (UParticle_ - Updf_) * mcpc.coeffkCorr() *
+          (
+           sqrt(mcpc.kfv()[celli]/mcpc.kcPdf()[celli]) - 1.0
+          );
+
+        // Evolve concentration
         psi_ += -0.5 * Cpsi *  epsilonFap / kFap * (psi_ - psiCap) * dt;
 
          

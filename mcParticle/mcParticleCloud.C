@@ -275,6 +275,10 @@ Foam::mcParticleCloud::mcParticleCloud
     dimless,
     particleProperties_.lookupOrAddDefault<scalar>("coeffUCorrection", 0.001)
    ),
+  coeffkCorr_
+  (
+   particleProperties_.lookupOrAddDefault<scalar>("coeffkCorrection", 0.001)
+   ),
   particleNumberControl_
   (
    particleProperties_.lookupOrAddDefault<Switch>("particleNumberControl", true)
@@ -391,10 +395,17 @@ void Foam::mcParticleCloud::checkParticlePropertyDict()
 {
   // Cap clone/cluster threshold with reasonable values
   clusterAt_ = max(1.1,  min(clusterAt_, 2.5)); 
-  cloneAt_   = max(0.5,  min(cloneAt_,   0.9));
   particleProperties_.set("clusterAt", clusterAt_);
+
+  cloneAt_   = max(0.5,  min(cloneAt_,   0.9));
   particleProperties_.set("cloneAt", cloneAt_);
     
+  coeffkCorr_   = max(0.0,  min(coeffkCorr_,   1.0));
+  particleProperties_.set("coeffkCorrection", coeffkCorr_);
+
+  coeffUCorr_.value()   = max(0.0,  min(coeffUCorr_.value(),   1.0));
+  particleProperties_.set("coeffUCorrection", coeffUCorr_.value());
+
   Info << "Particle Properties Dict:" << particleProperties_ << nl << endl; 
 }
 

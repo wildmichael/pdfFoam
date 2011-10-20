@@ -146,6 +146,7 @@ class mcParticleCloud
 
   dimensionedScalar coeffRhoCorr_;
   dimensionedScalar coeffUCorr_;
+  scalar coeffkCorr_;
 
   Switch particleNumberControl_;
 
@@ -205,6 +206,10 @@ public:
       inline const fvMesh& mesh() const;
       inline scalar e() const;
       inline scalar mu() const;
+
+      inline const volScalarField& kfv() const;
+      inline const volScalarField& kcPdf() const;
+      inline scalar coeffkCorr() const;
 
       inline scalar dtCloud();
       inline label Npc();

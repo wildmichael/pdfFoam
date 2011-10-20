@@ -44,6 +44,23 @@ inline Foam::scalar Foam::mcParticleCloud::mu() const
   return mu_;
 }
 
+
+inline const Foam::volScalarField& Foam::mcParticleCloud::kfv() const
+{
+  return kfv_;
+}
+
+
+inline const Foam::volScalarField& Foam::mcParticleCloud::kcPdf() const
+{
+  return kcPdf_;
+}
+
+inline Foam::scalar Foam::mcParticleCloud::coeffkCorr() const
+{
+  return coeffkCorr_;
+}
+
 inline Foam::scalar Foam::mcParticleCloud::dtCloud()
 {
   return dtCloud_;
