@@ -1,0 +1,12 @@
+EXE_INC = \
+    -I../../mcParticle/lnInclude
+
+EXE_LIBS = \
+    -L$(FOAM_USER_LIBBIN) \
+    -lbasicThermophysicalModels \
+    -lcompressibleTurbulenceModel \
+    -lcompressibleRASModels \
+    -lfiniteVolume \
+    -lmeshTools \
+    -llagrangian \
+    -lmcParticle

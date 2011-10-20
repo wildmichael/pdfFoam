@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.special import erf
+
+Umean = 2.0
+urms = 4.0
+nbins = 100
+cfl = 1e-1
+
+import generator
+rnd = generator.RandInlet(Umean, 1./(np.sqrt(2.)*urms))
+Vin = np.linspace(0, Umean+8*urms, 1000)
+pin = rnd._f(Vin, 0.)
+
+f = open('histogram.dat', 'rt')
+types = f.readline().split()[2:]
+xy = np.loadtxt(f)
+w = xy[1,0]-xy[0,0]
+
+n = xy.shape[1]-1
+for i in range(1,n+1):
+  ax = plt.subplot(n+2,1,i)
+  ax.bar(xy[:,0]-w/2, xy[:,i], width=w)
+  ax.plot(Vin, pin, 'g')
+  ax.set_title('mcInletRandom type '+types[i-1])
+
+ax = plt.subplot(n+2,1,n+1)
+UInSampleGen = np.array([rnd() for i in range(50000)])
+ax.hist(UInSampleGen, bins=nbins, normed=True)
+ax.plot(Vin, pin, 'g')
+ax.set_title('Inversion method in Python')
+
+ax = plt.subplot(n+2,1,n+2)
+npart = 1000000
+velo = (np.random.randn(npart)*urms+Umean)
+# sample positions and make time step
+pos = np.random.rand(npart) + velo*cfl/np.abs(velo).max()
+# find particles with position > 1
+idxIn = np.nonzero(pos > 1.)[0]
+UInSampleGen = velo[idxIn]
+ax.hist(UInSampleGen, bins=nbins, normed=True)
+ax.plot(Vin, pin, 'g')
+ax.set_title('Sampling method in Python')
+
+plt.show()
