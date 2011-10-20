@@ -121,9 +121,7 @@ void Foam::mcRASOmegaModel::correct
                 << exit(FatalError);
         }
     }
-    const fvMesh& mesh = cloud.mesh();
-    cellPointWeight cpw(mesh, p.position(), p.cell(), p.face());
-    p.Omega() = OmegaInterp_().interpolate(cpw);
+    p.Omega() = OmegaInterp_().interpolate(p.position(), p.cell(), p.face());
 }
 
 // ************************************************************************* //

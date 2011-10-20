@@ -41,7 +41,7 @@ Author
 #include "mcOmegaModel.H"
 
 #include "autoPtr.H"
-#include "interpolationCellPoint.H"
+#include "interpolationCellPointFace.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -63,7 +63,7 @@ class mcRASOmegaModel :
         autoPtr<volScalarField> Omega_;
 
         //- Interpolator for Omega
-        autoPtr<interpolationCellPoint<scalar> > OmegaInterp_;
+        autoPtr<interpolationCellPointFace<scalar> > OmegaInterp_;
 
     // Private Member Functions
 
