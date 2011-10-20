@@ -39,7 +39,8 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
 
     scalar C0 = 2.1;
     // TODO shouldn't this be 2.0?
-    scalar Cz = 0.6893;
+    //scalar Cz = 0.6893;
+    scalar Cz = 2.0;
 
     td.switchProcessor = false;
     td.keepParticle = true;
