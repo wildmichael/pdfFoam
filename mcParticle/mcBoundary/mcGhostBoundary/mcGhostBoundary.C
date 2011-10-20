@@ -25,7 +25,6 @@ License
 
 #include "mcGhostBoundary.H"
 
-#include "addToRunTimeSelectionTable.H"
 #include "mcParticle.H"
 #include "mcParticleCloud.H"
 #include "surfaceMesh.H"
