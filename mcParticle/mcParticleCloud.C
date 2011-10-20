@@ -272,17 +272,17 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
 
       PaNIC_[p.cell()] ++;
 
-      instantM0_[p.cell()] += p.m();
-      instantM1[p.cell()] += p.m() * p.UParticle();
+      instantM0_[p.cell()]   += p.m();
+      instantM1[p.cell()]    += p.m() * p.UParticle();
       instantMpsi1[p.cell()] += p.m() * p.psi();
-      instantM2[p.cell()] += p.m() * symm(u * u);
+      instantM2[p.cell()]    += p.m() * symm(u * u);
     }
 
   M0_    = existWt * M0_    + (1.0 - existWt) * instantM0_;
   M1_    = existWt * M1_    + (1.0 - existWt) * instantM1;
   Mpsi1_ = existWt * Mpsi1_ + (1.0 - existWt) * instantMpsi1;
   M2_    = existWt * M2_    + (1.0 - existWt) * instantM2;
-  // Compute U and tau
+  // Compute U, psi, and tau
   UcPdf_    = M1_/max(M0_, SMALL_MASS);
   psicPdf_  = Mpsi1_ / max(M0_, SMALL_MASS);
   TaucPdf_  = M2_/max(M0_, SMALL_MASS);
@@ -543,7 +543,7 @@ void Foam::mcParticleCloud::findGhostLayers()
 
 void Foam::mcParticleCloud::evolve()
 {
-     dimensionedScalar coeffCorr("coeffCorr", dimLength*dimLength/dimTime, 1.0e-2);
+     dimensionedScalar coeffCorr("coeffCorr", dimLength*dimLength/dimTime, 1.0e-7);
     const volScalarField& rho = mesh_.lookupObject<const volScalarField>("rho");
     const volVectorField& U = mesh_.lookupObject<const volVectorField>("U");
     const volVectorField& gradP = mesh_.lookupObject<const volVectorField>("grad(p)");

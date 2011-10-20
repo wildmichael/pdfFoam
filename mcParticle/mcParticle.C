@@ -106,11 +106,11 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
            );
 
         // Update velocity (rhof should be rho-particle) 
-        UParticle_ += gradPFap/rhoFap
+        UParticle_ += - gradPFap/rhoFap * dt
           - (0.5 + 0.75 * C0) * epsilonFap / kFap * (UParticle_- Updf_) * dt
           + sqrt(C0 * epsilonFap) * dW;
 
-        psi_ += -0.5*Cpsi * (psi_ - psiCap) * dt;
+        psi_ += -0.5 * Cpsi *  epsilonFap / kFap * (psi_ - psiCap) * dt;
 
         if (onBoundary() && td.keepParticle)
         {
