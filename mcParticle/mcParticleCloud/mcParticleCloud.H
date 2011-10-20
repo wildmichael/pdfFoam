@@ -39,7 +39,7 @@ SourceFiles
 
 #include "Cloud.H"
 #include "mcParticle.H"
-#include "IOdictionary.H"
+#include "dictionary.H"
 #include "Random.H"
 #include "labelIOField.H"
 #include "SortableList.H"
