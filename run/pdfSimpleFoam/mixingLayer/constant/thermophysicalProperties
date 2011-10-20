@@ -24,12 +24,6 @@ cloudProperties
     particlesPerCell      50;
     particleNumberControl on;
     cloneAt               0.9;
-    inoutPatches
-    (
-        lowerInlet
-        upperInlet
-        outlet
-    );
     OmegaModel RAS;
     mixingModel IEM;
     reactionModel naiveFlamelet;
@@ -48,6 +42,37 @@ cloudProperties
     naiveFlameletCoeffs
     {
         zName z;
+    }
+    boundaryHandlers
+    {
+            lowerInlet
+            {
+                    type ghostInlet;
+            }
+            upperInlet
+            {
+                    type ghostInlet;
+            }
+            outlet
+            {
+                    type ghostOutlet;
+            }
+            bottom
+            {
+                type            slip;
+            }
+            top
+            {
+                type            slip;
+            }
+            front
+            {
+                type            slip;
+            }
+            back
+            {
+                type            slip;
+            }
     }
 }
 
