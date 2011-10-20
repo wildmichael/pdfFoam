@@ -603,26 +603,29 @@ void Foam::mcParticleCloud::particleNumberControl()
         }
     }
 
-    // Debug only: check the list
-    if (debug)
-    {
-        forAll(cellPopFlag, celli)
-        {
-            if (cellPopFlag[celli] == TOOFEW || cellPopFlag[celli] == TOOMANY)
-            {
-                Info<< "size is " << cellParticleAddr_[celli].size()
-                    << ", flag is " << cellPopFlag[celli]
-                    << " := " << endl;
-                mcParticleList & cepl = cellParticleAddr_[celli];
+    //// Debug only: check the list
+    //if (debug)
+    //{
+    //    forAll(cellPopFlag, celli)
+    //    {
+    //        if (cellPopFlag[celli] == TOOFEW || cellPopFlag[celli] == TOOMANY)
+    //        {
+    //            Info<< "size is " << cellParticleAddr_[celli].size()
+    //                << ", flag is " << cellPopFlag[celli]
+    //                << " := " << endl;
+    //            mcParticleList & cepl = cellParticleAddr_[celli];
 
-                forAll(cepl, pci)
-                {
-                    Info<< "ID= " << cepl[pci]->origId() << ", "
-                        << "m= " << cepl[pci]->m() << endl;
-                }
-            }
-        }
-    }
+    //            forAll(cepl, pci)
+    //            {
+    //                if (cepl[pci])
+    //                {
+    //                    Info<< "ID= " << cepl[pci]->origId() << ", "
+    //                        << "m= " << cepl[pci]->m() << endl;
+    //                }
+    //            }
+    //        }
+    //    }
+    //}
 }
 
 
@@ -644,6 +647,10 @@ void Foam::mcParticleCloud::cloneParticles(label celli)
     }
 
     histNp_ += n;
+    if (debug)
+    {
+        Info<< "Cloned " << n << " particles in cell " << celli << endl;
+    }
 }
 
 
@@ -681,6 +688,11 @@ void Foam::mcParticleCloud::eliminateParticles(label celli)
         {
             pPtr->m() += massCompensate;
         }
+    }
+    if (debug)
+    {
+        Info<< "Eliminated " << nKilled
+            << " particles in cell " << celli << endl;
     }
 
 }
