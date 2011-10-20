@@ -132,6 +132,7 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
         p.UParticle_ = UParticle[i];
         p.UFap_ = UFap[i];
         p.Omega_ = Omega[i];
+        p.Phi_.setSize(PhiFields.size());
         forAll(PhiFields, PhiI)
         {
             p.Phi_[PhiI] = PhiFields[PhiI][i];
