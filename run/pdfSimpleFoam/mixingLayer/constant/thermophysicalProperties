@@ -19,7 +19,7 @@ evolutionFrequency 1;
 
 cloudProperties
 {
-    averageTimeScale      1;
+    averageTimeScale      2;
     particlesPerCell      50;
     particleNumberControl on;
     cloneAt               0.9;

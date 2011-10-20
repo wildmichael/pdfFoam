@@ -24,12 +24,12 @@ boundaryField
     lowerInlet
     {
         type            fixedValue;
-        value           uniform 49.6;
+        value           uniform 14.7;
     }
     upperInlet
     {
         type            fixedValue;
-        value           uniform 14.7;
+        value           uniform 49.6;
     }
     outlet
     {
