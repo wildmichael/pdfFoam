@@ -25,9 +25,14 @@ Class
     Foam::mcOpenBoundary
 
 Description
-    Base-class for open Monte Carlo particle boundaries that require consistent
-    reflecting (see D.W. Meyer and P. Jenny, JCP 226 1859-1873,
-    doi:10.1016/j.jcp.2007.06.014)
+    Base-class for open Monte Carlo particle boundaries.
+
+    If the @c reflecting switch is enabled (the default), consistent reflecting
+    is enabled (see D.W. Meyer and P. Jenny, JCP 226 1859-1873,
+    http://dx.doi.org/10.1016/j.jcp.2007.06.014).
+
+    The reflection at the inflow boundary is insofar inaccurate as the
+    wall-parallel motion outside the domain is neglected.
 
 SourceFiles
     mcOpenBoundary.C
@@ -43,6 +48,7 @@ Author
 #include "mcBoundary.H"
 
 #include "vectorList.H"
+#include "PtrMap.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -56,8 +62,20 @@ namespace Foam
 class mcOpenBoundary :
     public mcBoundary
 {
+    // Private Types
+
+        typedef PtrMap<DynamicList<label> > dynamicLabelListPtrMap;
+
     // Private data
 
+        //- Is this boundary reflecting?
+        Switch reflecting_;
+
+        //- Mapping of cells adjacent to this patch to a list of face indices
+        dynamicLabelListPtrMap cellFaces_;
+
+        //- Flux boundary field
+        const scalarField& phi_;
 
     // Private Member Functions
 
@@ -82,6 +100,19 @@ public:
         );
 
     // Member Functions
+
+        //- Whether boundary is reflecting
+        const Switch& reflecting() const { return reflecting_; }
+
+        //- Whether boundary is reflecting
+        Switch& reflecting() { return reflecting_; }
+
+        //- Delete particles at the outlet boundary
+        virtual void correct
+        (
+            mcParticleCloud& cloud,
+            bool afterMove
+        );
 
         //- Deal with a particle hitting the patch
         virtual void hitPatch

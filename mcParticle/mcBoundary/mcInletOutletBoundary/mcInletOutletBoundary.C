@@ -219,6 +219,8 @@ void Foam::mcInletOutletBoundary::correct
     bool afterMove
 )
 {
+    mcOpenBoundary::correct(cloud, afterMove);
+
     if (afterMove)
     {
         return;
@@ -238,6 +240,7 @@ void Foam::mcInletOutletBoundary::correct
     label np = 0;
     const polyPatch& pp = patch();
     const vectorField& Sf = mesh().Sf().boundaryField()[patchID()];
+    const scalarField& magSf = mesh().magSf().boundaryField()[patchID()];
     const vectorField& U = cloud.Ufv().boundaryField()[patchID()];
     const scalarField& rho = cloud.rhocPdf().boundaryField()[patchID()];
     List<scalarField*> PhicPdf(cloud.PhicPdf().size());
@@ -251,16 +254,20 @@ void Foam::mcInletOutletBoundary::correct
     forAll(pp, faceI)
     {
         label cellI = pp.faceCells()[faceI];
-        scalar vol = -Sf[faceI] & U[faceI] * dt;
-        if (vol < 0)
+        if ((Sf[faceI] & U[faceI]) > 0)
         {
             // Mean velocity points out of the domain, so this is an outlet
             continue;
         }
-        getInRnd(cloud)[faceI].updateCoeffs(getU(cloud)[faceI].x(),
-                                            geturms(cloud)[faceI].x());
-        // number of particles to generate
-        scalar Nf = vol / mesh().V()[cellI] * Npc;
+        mcInletRandom& inrnd = getInRnd(cloud)[faceI];
+        inrnd.updateCoeffs(getU(cloud)[faceI].x(), geturms(cloud)[faceI].x());
+        // Volume and mass of every particle generated
+        scalar Vp = mesh().V()[cellI]/Npc;
+        scalar mp = rho[faceI]*Vp;
+        // Volume flowing into domain across faceI during dt
+        scalar Vin = inrnd.UCondMean()*magSf[faceI]*dt;
+        // Number of particles to generate
+        scalar Nf = Vin/Vp;
         label N = floor(Nf);
         N += rnd.scalar01() < (Nf-N);
         if (N < 1)
@@ -268,8 +275,6 @@ void Foam::mcInletOutletBoundary::correct
             continue;
         }
         np += N;
-        // mass of every particle
-        scalar m = vol * rho[faceI] / Nf;
 
         scalarField phi(PhicPdf.size());
         forAll(PhicPdf, PhiI)
@@ -285,7 +290,7 @@ void Foam::mcInletOutletBoundary::correct
                 cloud,
                 randomPoint(cloud, faceI),
                 cellI,
-                m,
+                mp,
                 U[faceI],
                 Up,
                 U[faceI],
@@ -296,7 +301,8 @@ void Foam::mcInletOutletBoundary::correct
 #ifdef FULLDEBUG
             if (debug > 1)
             {
-                statFile_() << u.x() << tab << u.y() << tab << u.z() << nl;
+                statFile_() << Up.x() << tab << Up.y() << tab << Up.z()
+                    << tab << mp << nl;
             }
 #endif
         }

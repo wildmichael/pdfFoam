@@ -115,9 +115,11 @@ Foam::mcParticle::mcParticle
     rho_(0.0),
     shift_(shift),
     Co_(0.0),
+    reflectionBoundaryVelocity_(vector::zero),
     ghost_(ghost),
     nSteps_(0),
     isOnInletBoundary_(false),
+    reflectedAtOpenBoundary_(false),
     Phi_(Phi)
 {}
 

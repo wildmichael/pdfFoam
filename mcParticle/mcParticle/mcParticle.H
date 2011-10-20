@@ -91,6 +91,9 @@ class mcParticle
        //- particle Courant number
        scalar Co_;
 
+       //- Velocity of the "moving boundary" the particle bounced of
+       vector reflectionBoundaryVelocity_;
+
        // ==== PUT ALL label AND OTHER 4-BYTE TYPES AFTER THIS === //
 
        //- Whether this particle is a ghost
@@ -106,6 +109,9 @@ class mcParticle
        //- Whether this particle is located on an inlet boundary
        // and must be assigned a random stepFraction
        bool isOnInletBoundary_;
+
+       //- Whether this particle has been reflected at an mcOpenBoundary
+       bool reflectedAtOpenBoundary_;
 
        // ==== PUT ALL NON-POD DATA AFTER THIS === //
 
@@ -264,11 +270,23 @@ public:
             //- particle Courant number
             inline scalar Co() const;
 
+            //- Velocity of the "moving boundary" the particle bounced of
+            inline const vector& reflectionBoundaryVelocity() const;
+
+            //- Velocity of the "moving boundary" the particle bounced of
+            inline vector& reflectionBoundaryVelocity() ;
+
             //- whether this particle is located on a inlet boundary
             inline bool isOnInletBoundary() const;
 
             //- whether this particle is located on a inlet boundary
             inline bool& isOnInletBoundary();
+
+            //- Whether this particle has been reflected at an mcOpenBoundary
+            inline bool reflectedAtOpenBoundary() const;
+
+            //- Whether this particle has been reflected at an mcOpenBoundary
+            inline bool& reflectedAtOpenBoundary();
 
 
         // Tracking

@@ -61,6 +61,8 @@ Foam::mcGhostInletOutletBoundary::mcGhostInletOutletBoundary
 :
     mcOpenBoundary(mesh, patchID, dict)
 {
+    // FIXME: Is this correct?
+    reflecting() = false;
     findGhostLayer();
 }
 
@@ -273,6 +275,7 @@ void Foam::mcGhostInletOutletBoundary::findGhostLayer()
         }
     }
 }
+
 
 void Foam::mcGhostInletOutletBoundary::correct
 (

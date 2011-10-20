@@ -193,6 +193,18 @@ inline Foam::scalar Foam::mcParticle::Co() const
 }
 
 
+inline const Foam::vector& Foam::mcParticle::reflectionBoundaryVelocity() const
+{
+    return reflectionBoundaryVelocity_;
+}
+
+
+inline Foam::vector& Foam::mcParticle::reflectionBoundaryVelocity()
+{
+    return reflectionBoundaryVelocity_;
+}
+
+
 inline bool Foam::mcParticle::isOnInletBoundary() const
 {
     return isOnInletBoundary_;
@@ -202,6 +214,18 @@ inline bool Foam::mcParticle::isOnInletBoundary() const
 inline bool& Foam::mcParticle::isOnInletBoundary()
 {
     return isOnInletBoundary_;
+}
+
+
+inline bool Foam::mcParticle::reflectedAtOpenBoundary() const
+{
+    return reflectedAtOpenBoundary_;
+}
+
+
+inline bool& Foam::mcParticle::reflectedAtOpenBoundary()
+{
+    return reflectedAtOpenBoundary_;
 }
 
 // ************************************************************************* //
