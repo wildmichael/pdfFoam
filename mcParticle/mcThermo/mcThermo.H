@@ -22,20 +22,20 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::basicPdfThermo
+    Foam::mcThermo
 
 Description
-    Density from ideal gas law: rho=p/(R*T)
+    Thermo class based on MC particles
 
 SourceFiles
-    basicPdfThermo.C
+    mcThermo.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef basicPdfThermo_H
-#define basicPdfThermo_H
+#ifndef mcThermo_H
+#define mcThermo_H
 
-#include "basicRhoThermo.H"
+#include "basicThermo.H"
 #include "mcParticleCloud.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -44,17 +44,23 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                        Class basicPdfThermo Declaration
+                        Class mcThermo Declaration
 \*---------------------------------------------------------------------------*/
 
-class basicPdfThermo
+class mcThermo
 :
-    public basicRhoThermo
+    public basicThermo
 {
     // Private data
 
+        //- The mesh
+        const fvMesh& mesh_;
+
         //- Particle cloud
         autoPtr<mcParticleCloud> cloudP_;
+
+        //- Density field
+        volScalarField rho_;
 
         //- Viscosity
         dimensionedScalar nu_;
@@ -68,23 +74,23 @@ class basicPdfThermo
         void calculate();
 
         //- Construct as copy (not implemented)
-        basicPdfThermo(const basicPdfThermo&);
+        mcThermo(const mcThermo&);
 
 
 public:
 
     //- Runtime type information
-    TypeName("basicPdfThermo");
+    TypeName("mcThermo");
 
 
     // Constructors
 
         //- Construct from mesh
-        basicPdfThermo(const fvMesh& mesh);
+        mcThermo(const fvMesh& mesh);
 
 
     //- Destructor
-    virtual ~basicPdfThermo();
+    virtual ~mcThermo();
 
 
     // Member functions
@@ -94,6 +100,14 @@ public:
 
         //- Update properties
         virtual void correct();
+
+        // Fields derived from thermodynamic state variables
+
+            //- Density [kg/m^3]
+            virtual tmp<volScalarField> rho() const;
+
+            //- Return non-const access to the local density field [kg/m^3]
+            virtual volScalarField& rho();
 };
 
 

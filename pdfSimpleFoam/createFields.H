@@ -12,23 +12,10 @@
         mesh
     );
 
-    volScalarField rho
-    (
-        IOobject
-        (
-            "rho",
-            runTime.timeName(),
-            mesh,
-            IOobject::MUST_READ,
-            IOobject::AUTO_WRITE
-        ),
-        mesh
-    );
-
     Info<< "Reading thermophysical properties\n" << endl;
-    basicPdfThermo thermo(mesh);
-    thermo.rho() = rho;
+    mcThermo thermo(mesh);
     thermo.correct();
+    volScalarField& rho = thermo.rho();
     volScalarField& p = thermo.p();
 
     #include "compressibleCreatePhi.H"

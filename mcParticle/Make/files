@@ -1,5 +1,6 @@
-mcParticle.C
-mcParticleIO.C
-mcParticleCloud.C
+mcParticle/mcParticle.C
+mcParticle/mcParticleIO.C
+mcParticleCloud/mcParticleCloud.C
+mcThermo/mcThermo.C
 
 LIB = $(FOAM_USER_LIBBIN)/libmcParticle

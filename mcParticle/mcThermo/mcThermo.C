@@ -23,7 +23,7 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "basicPdfThermo.H"
+#include "mcThermo.H"
 
 #include "IOdictionary.H"
 
@@ -31,12 +31,12 @@ License
 
 namespace Foam
 {
-    defineTypeNameAndDebug(basicPdfThermo, 0);
+    defineTypeNameAndDebug(mcThermo, 0);
 }
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
-void Foam::basicPdfThermo::calculate()
+void Foam::mcThermo::calculate()
 {
     mu_  = nu_ * rho_;
 }
@@ -44,11 +44,27 @@ void Foam::basicPdfThermo::calculate()
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::basicPdfThermo::basicPdfThermo(const fvMesh& mesh)
+Foam::mcThermo::mcThermo(const fvMesh& mesh)
 :
-    basicRhoThermo(mesh),
+    basicThermo(mesh),
+
+    mesh_(mesh),
 
     cloudP_(0),
+
+    rho_
+    (
+        IOobject
+        (
+            lookupOrDefault<word>("rhoName", "rho"),
+            mesh.time().timeName(),
+            mesh,
+            IOobject::MUST_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh,
+        dimDensity
+    ),
 
     nu_
     (
@@ -73,34 +89,35 @@ Foam::basicPdfThermo::basicPdfThermo(const fvMesh& mesh)
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
 
-Foam::basicPdfThermo::~basicPdfThermo()
+Foam::mcThermo::~mcThermo()
 {}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::basicPdfThermo::correct()
+void Foam::mcThermo::correct()
 {
     if (debug)
     {
-        Info<< "entering basicPdfThermo::correct()" << endl;
+        Info<< "entering mcThermo::correct()" << endl;
     }
 
     calculate();
 
     if (debug)
     {
-        Info<< "exiting basicPdfThermo::correct()" << endl;
+        Info<< "exiting mcThermo::correct()" << endl;
     }
 }
 
-void Foam::basicPdfThermo::evolve()
+
+void Foam::mcThermo::evolve()
 {
-    if (!(rho_.mesh().time().timeIndex() % evolutionFrequency_))
+    if (!(mesh_.time().timeIndex() % evolutionFrequency_))
     {
         if (debug)
         {
-            Info<< "executing basicPdfThermo::cloudP_().evolve()" << endl;
+            Info<< "executing mcThermo::cloudP_().evolve()" << endl;
             Info<< tab << "cloudP_().size() = " << cloudP_().size() << endl;
         }
 
@@ -109,19 +126,31 @@ void Foam::basicPdfThermo::evolve()
         {
             cloudP_.reset(new mcParticleCloud
                 (
-                    rho_.mesh(),
+                    mesh_,
                     subDict("cloudProperties"),
-                    lookupOrDefault<word>("cloudName", "pdfThermoCloud")
+                    lookupOrDefault<word>("cloudName", "mcThermoCloud"),
+                    0, 0, &rho_
                 ));
         }
         cloudP_().evolve();
 
         if (debug)
         {
-            Info<< "done executing basicPdfThermo::cloudP_().evolve()" << endl;
+            Info<< "done executing mcThermo::cloudP_().evolve()" << endl;
             Info<< tab << "cloudP_().size() = " << cloudP_().size() << endl;
         }
     }
+}
+
+Foam::tmp<Foam::volScalarField> Foam::mcThermo::rho() const
+{
+    return rho_;
+}
+
+
+Foam::volScalarField& Foam::mcThermo::rho()
+{
+    return rho_;
 }
 
 

@@ -1,4 +1,3 @@
 pdfSimpleFoam.C
-basicPdfThermo.C
 
 EXE = $(FOAM_USER_APPBIN)/pdfSimpleFoam
