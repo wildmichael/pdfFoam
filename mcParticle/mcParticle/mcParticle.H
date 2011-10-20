@@ -99,6 +99,9 @@ class mcParticle
        //- Whether this particle is a ghost
        label ghost_;
 
+       //- Number of tracking steps during single time-step
+       label nSteps_;
+
        // ==== PUT ALL NON-POD DATA AFTER THIS === //
 
        //- scalar properties
@@ -244,6 +247,12 @@ public:
 
             //- whether this particle is ghost
             inline label& ghost();
+
+            //- number of tracking steps during single time step
+            inline label nSteps() const;
+
+            //- number of tracking steps during single time step
+            inline label& nSteps();
 
             //- shift for ghost particles
             inline const vector& shift() const;

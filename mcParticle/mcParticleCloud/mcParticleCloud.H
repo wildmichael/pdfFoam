@@ -51,6 +51,7 @@ SourceFiles
 #include "compressible/turbulenceModel/turbulenceModel.H"
 #include "surfaceMesh.H"
 #include "fvsPatchField.H"
+#include "IOLostParticles.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -214,6 +215,8 @@ class mcParticleCloud:
         //- Unit-length surface-normal vectors multiplied with the deltaCoeffs
         surfaceVectorField CourantCoeffs_;
 
+        //- Keeps track of the lost particles
+        IOLostParticles<mcParticle> lostParticles_;
 
     // Private Member Functions
 
@@ -343,6 +346,8 @@ public:
         //- Asserts that all particles are in domain, none of them is a
         // ghost particle and that its shift is small
         void assertPopulationHealth() const;
+        //- Post a notification that a particle has been lost
+        void notifyLostParticle(const mcParticle& p);
 };
 
 

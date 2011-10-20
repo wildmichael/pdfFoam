@@ -113,6 +113,7 @@ Foam::mcParticle::mcParticle
     shift_(shift),
     Co_(0.0),
     ghost_(ghost),
+    nSteps_(0),
     Phi_(Phi)
 {}
 
@@ -221,6 +222,21 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         // well (to ensure consistency with FV density field).
 
         scalar tf = trackToFace(destPos, td);
+        ++nSteps_;
+
+        // if we made too many very small steps, drop the particle
+        if (nSteps_ > 1000)
+        {
+#ifdef FULLDEBUG
+            Perr<< "DEBUG: particle " << origId_ << " made more than 100 "
+                   "steps, droping it. Info:\n"
+                << info() << nl;
+#endif
+            mcpc.notifyLostParticle(*this);
+            td.keepParticle = 0;
+            break;
+        };
+
         dt *= tf;
         if (debug)
         {
@@ -239,6 +255,8 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
             }
         }
     }
+    //if (mcpc.time().value() >= 0.000922)
+    //  Perr<< "       DONE moving particle " << origId_ << nl;
 
     return td.keepParticle;
 }

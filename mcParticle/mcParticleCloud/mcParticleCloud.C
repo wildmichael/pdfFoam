@@ -347,7 +347,8 @@ Foam::mcParticleCloud::mcParticleCloud
             mesh_
         ),
         mesh_.surfaceInterpolation::deltaCoeffs() * mesh_.Sf() / mesh_.magSf()
-    )
+    ),
+    lostParticles_(*this)
 {
     // Find scalar fields
     if (dict_.found("scalarFields"))
@@ -1100,6 +1101,11 @@ Foam::scalar Foam::mcParticleCloud::evolve()
         diffUInterp
     );
 
+    forAllIter(mcParticleCloud, *this, pIter)
+    {
+        pIter().nSteps() = 0;
+    }
+
     Cloud<mcParticle>::move(td);
 
     // "Accept" and shift the survived ghost particles
@@ -1145,6 +1151,11 @@ Foam::scalar Foam::mcParticleCloud::evolve()
 #endif
     Info<< "Cloud " << name() << " residuals: rho = " << rhoRes
         /*<< ", U = " << URes << ", k = " << kRes */<< endl;
+
+    label nLostPart = lostParticles_.size();
+    reduce(nLostPart, sumOp<label>());
+    Info<< "Cloud " << name() << " number of lost particles: "
+        << nLostPart << nl;
 #ifdef FULLDEBUG
     volVectorField stabUfv = Ufv_;
     forAll(stabUfv, cellI)
@@ -1531,6 +1542,13 @@ void Foam::mcParticleCloud::printParticleCo()
     Info<< "Particle Courant Number in cloud " << name()
         << " mean: " << meanPartCoNum
         << " max: " << maxPartCoNum << endl;
+}
+
+
+void Foam::mcParticleCloud::notifyLostParticle(const Foam::mcParticle& p)
+{
+    // TODO Distribute mass to other particles in cell
+    lostParticles_.add(p);
 }
 
 // ************************************************************************* //

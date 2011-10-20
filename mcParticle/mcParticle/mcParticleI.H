@@ -169,6 +169,18 @@ inline Foam::label& Foam::mcParticle::ghost()
 }
 
 
+inline Foam::label Foam::mcParticle::nSteps() const
+{
+    return nSteps_;
+}
+
+
+inline Foam::label& Foam::mcParticle::nSteps()
+{
+    return nSteps_;
+}
+
+
 inline const Foam::vector& Foam::mcParticle::shift() const
 {
     return shift_;
