@@ -335,7 +335,8 @@ public:
         );
 
         //- Evolve the particles
-        void evolve();
+        // @returns The maximum residual
+        scalar evolve();
 
         //- Report info about name and total number of particles in cloud
         void info() const;

@@ -1025,7 +1025,7 @@ void Foam::mcParticleCloud::findGhostLayers()
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::mcParticleCloud::evolve()
+Foam::scalar Foam::mcParticleCloud::evolve()
 {
 
     // lower bound for k
@@ -1117,6 +1117,71 @@ void Foam::mcParticleCloud::evolve()
     {
         assertPopulationHealth();
     }
+
+    scalar rhoRes = 0./*,
+           URes   = 0.,
+           kRes   = 0.*/;
+
+    forAll(rhocPdf_, cellI)
+    {
+        rhoRes += fabs((pndcPdf_[cellI]-rhocPdf_[cellI])/rhocPdf_[cellI]);
+#if 0
+        URes += mag
+        (
+            cmptDivide
+            (
+                UcPdf_[cellI] - Ufv_[cellI],
+                stabilise(Ufv_[cellI], 100*SMALL)
+            )
+        );
+        scalar k = kfv()()[cellI];
+        kRes += fabs((kcPdf_[cellI] - k)/k);
+#endif
+    }
+    reduce(rhoRes, sumOp<scalar>());
+#if 0
+    reduce(URes, sumOp<scalar>());
+    reduce(kRes, sumOp<scalar>());
+#endif
+    Info<< "Cloud " << name() << " residuals: rho = " << rhoRes
+        /*<< ", U = " << URes << ", k = " << kRes */<< endl;
+#ifdef FULLDEBUG
+    volVectorField stabUfv = Ufv_;
+    forAll(stabUfv, cellI)
+    {
+        stabUfv[cellI] = stabilise(stabUfv[cellI], 100*SMALL);
+    }
+    forAll(stabUfv.boundaryField(), patchI)
+    {
+        forAll(stabUfv.boundaryField()[patchI], faceI)
+        {
+            vector& Up = stabUfv.boundaryField()[patchI][faceI];
+            Up = stabilise(Up, 100*SMALL);
+        }
+    }
+    volScalarField deltaU
+    (
+        IOobject
+        (
+            "deltaU",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mag
+        (
+            cmptDivide
+            (
+                UcPdf_ - Ufv_,
+                stabUfv
+            )
+        )
+    );
+    deltaU.write();
+    Info<< "DEBUG: maximum deltaU = " << gMax(deltaU) << endl;
+#endif
+    return rhoRes/*+URes+kRes*/;
 }
 
 

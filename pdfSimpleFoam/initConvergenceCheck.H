@@ -1,7 +1,8 @@
 // initialize values for convergence checks
 
-    scalar eqnResidual = 1, maxResidual = 0;
-    scalar convergenceCriterion = 0;
+    scalar eqnResidual = 1, maxFVResidual = 0, maxPDFResidual = 0;
+    scalar FVConvergenceCriterion = 0, PDFConvergenceCriterion = 0;
 
-    simple.readIfPresent("convergence", convergenceCriterion);
+    simple.readIfPresent("convergence", FVConvergenceCriterion);
+    thermo.readIfPresent("convergence", PDFConvergenceCriterion);
 

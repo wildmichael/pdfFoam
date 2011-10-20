@@ -17,7 +17,7 @@ for (int nonOrth=0; nonOrth<=nNonOrthCorr; nonOrth++)
     if (nonOrth == 0)
     {
         eqnResidual = pEqn.solve().initialResidual();
-        maxResidual = max(eqnResidual, maxResidual);
+        maxFVResidual = max(eqnResidual, maxFVResidual);
     }
     else
     {

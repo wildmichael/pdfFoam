@@ -105,7 +105,7 @@ void Foam::mcThermo::correct()
 }
 
 
-void Foam::mcThermo::evolve()
+Foam::scalar Foam::mcThermo::evolve()
 {
     // Instantiate the cloud on first call
     if (!cloudP_.valid())
@@ -135,7 +135,7 @@ void Foam::mcThermo::evolve()
     }
     Info<< "Evolving Monte Carlo particle cloud " << cloudP_().name() << nl
         << endl;
-    cloudP_().evolve();
+    return cloudP_().evolve();
 }
 
 

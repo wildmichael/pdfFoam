@@ -1,10 +1,13 @@
 // check convergence
 
-Info<< "maxResidual = " << maxResidual << endl;
+Info<< "maxFVResidual = " << maxFVResidual << endl;
+Info<< "maxPDFResidual = " << maxPDFResidual << endl;
 
-if (maxResidual < convergenceCriterion)
+if (maxFVResidual < FVConvergenceCriterion
+    && maxPDFResidual < PDFConvergenceCriterion)
 {
-    Info<< "reached convergence criterion: " << convergenceCriterion << endl;
+    Info<< "reached convergence criterion FV: " << FVConvergenceCriterion
+        << "    PDF: " << PDFConvergenceCriterion << endl;
     runTime.writeAndEnd();
     Info<< "latestTime = " << runTime.timeName() << endl;
 }

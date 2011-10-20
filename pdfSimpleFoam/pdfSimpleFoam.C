@@ -51,17 +51,23 @@ int main(int argc, char *argv[])
     bool prevCycleWasFV = false;
     volVectorField gradP = fvc::grad(p);
 
+    scalar eqnResidual = 1, maxFVResidual = 0, maxPDFResidual = 0;
+    scalar FVConvergenceCriterion = 0, PDFConvergenceCriterion = 0;
+
     while (runTime.loop())
     {
         Info<< "Time = " << runTime.timeName() << nl << endl;
 
         #include "readThermoControls.H"
         #include "readSIMPLEControls.H"
-        #include "initConvergenceCheck.H"
 
+        simple.readIfPresent("convergence", FVConvergenceCriterion);
+        thermo.readIfPresent("convergence", PDFConvergenceCriterion);
 
         if (FVCycle)
         {
+            maxFVResidual = 0.;
+
             p.storePrevIter();
             rho.storePrevIter();
 
@@ -79,11 +85,14 @@ int main(int argc, char *argv[])
         }
         else
         {
+            maxPDFResidual = 0.;
+
             if (prevCycleWasFV)
             {
                 gradP = fvc::grad(p);
             }
-            thermo.evolve();
+            eqnResidual = thermo.evolve();
+            maxPDFResidual = max(eqnResidual, maxPDFResidual);
             prevCycleWasFV = false;
         }
 

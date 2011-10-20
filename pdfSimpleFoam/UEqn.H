@@ -13,4 +13,4 @@
         UEqn() == -fvc::grad(p)
     ).initialResidual();
 
-    maxResidual = max(eqnResidual, maxResidual);
+    maxFVResidual = max(eqnResidual, maxFVResidual);

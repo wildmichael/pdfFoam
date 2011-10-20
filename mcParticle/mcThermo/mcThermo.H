@@ -93,7 +93,8 @@ public:
     // Member functions
 
         //- Evolve the cloud
-        void evolve();
+        // @returns The maximum residual
+        scalar evolve();
 
         //- Update properties
         virtual void correct();
