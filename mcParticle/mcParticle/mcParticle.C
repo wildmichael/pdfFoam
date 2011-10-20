@@ -192,6 +192,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         tensor T = rotationTensor(rotatedCentreNormal, mcpc.centrePlaneNormal());
         transformProperties(T);
         destPos = transform(T, destPos);
+        // constrain to kill numerical artifacts
         meshTools::constrainDirection(mesh, mesh.geometricD(), Utracking_);
         meshTools::constrainDirection(mesh, mesh.geometricD(), destPos);
     }
