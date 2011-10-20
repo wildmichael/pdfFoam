@@ -1065,24 +1065,51 @@ void Foam::mcParticleCloud::oneParticleInfo(const mcParticle& p) const
 
 void Foam::mcParticleCloud::assertPopulationHealth() const
 {
-    bool cloudHealthy = true;
+    bool cloudHealthy = size() > 0;
+    OStringStream reasons;
+    if (!cloudHealthy)
+    {
+       reasons
+           << "\tNo particles in the cloud" << nl;
+    }
+
+    labelList nPart(Ufv_.size(), 0);
     forAllConstIter(mcParticleCloud, *this, pIter)
     {
         const mcParticle& p = pIter();
-        if (! mesh_.bounds().contains(p.position())
-             || p.ghost()
-             || mag(p.shift()) > 100*SMALL
-           )
+        nPart[p.cell()] += 1;
+        if (p.cell() != mesh_.findCell(p.position()))
         {
             cloudHealthy = false;
-            Pout << "***Warning: " << endl;
-            oneParticleInfo(p);
+            reasons
+                << "\tParticle " << p.origId() << " is not in cell "
+                << p.cell() << nl;
+        }
+        if (p.ghost())
+        {
+            cloudHealthy = false;
+            reasons << "\tParticle " << p.origId() << " is a ghost particle" << nl;
+        }
+        if (mag(p.shift()) > 100*SMALL)
+        {
+            cloudHealthy = false;
+            reasons
+                << "\tParticle " << p.origId()
+                << " has a non-zero shift vector" << nl;
+        }
+    }
+    forAll(nPart, cellI)
+    {
+        if (!nPart[cellI])
+        {
+            cloudHealthy = false;
+            reasons << "\tCell " << cellI << " has no particles" << nl;
         }
     }
     if(!cloudHealthy)
     {
         FatalErrorIn("mcParticleCloud::assertPopulationHealth()")
-            << "Particle health check not passed!"
+            << "Particle health check not passed:" << nl << reasons.str()
             << exit(FatalError);
     }
 
