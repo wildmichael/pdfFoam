@@ -27,6 +27,16 @@ License
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
+inline bool Foam::mcParticle::less::operator()
+(
+    const mcParticle& one,
+    const mcParticle& two
+) const
+{
+  return one.m() < two.m();
+}
+
+
 bool Foam::mcParticle::move(mcParticle::trackData& td)
 {
   // SLM constant, temperarily put here C0 = 2.1

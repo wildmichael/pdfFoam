@@ -62,6 +62,19 @@ class mcParticleCloud
 :
     public Cloud<mcParticle>
 {
+  //- scalar comparison function used for sorting
+  class less
+  {
+  public:
+    
+    inline bool operator()
+    (
+     const surfAndLabel& one,
+     const surfAndLabel& two
+     ) const;
+  };
+
+
   // Private data
   
   const fvMesh& mesh_;

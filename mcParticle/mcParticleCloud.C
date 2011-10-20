@@ -260,7 +260,7 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
 void Foam::mcParticleCloud::updateCellParticleAddr()
 {
 
-  labelList withCPAddr(mesh_.nCells(), 1);
+  labelList flagCPAddr(mesh_.nCells(), 1);
 
 
   forAll(PaNIC_, celli)
@@ -268,14 +268,15 @@ void Foam::mcParticleCloud::updateCellParticleAddr()
       label np = PaNIC_[celli];
       // classify the particle # heath condition of each cell
       if (np < 1)
-        { withCPAddr[celli] = 0; }
+        { flagCPAddr[celli] = 0; }
       else if ( np < (Npc_/2) )
-        { withCPAddr[celli] = 2; }
+        { flagCPAddr[celli] = 2; }
       else if (np > Npc_*3/2)
-        { withCPAddr[celli] = 3; }
+        { flagCPAddr[celli] = 3; }
       // clear old list
       cellParticleAddr_[celli].clear(); 
     }
+
 
 
   for(iterator pIter=begin(); 
@@ -286,31 +287,66 @@ void Foam::mcParticleCloud::updateCellParticleAddr()
       mcParticle & p = pIter();
       label celli = p.cell();
       // If a mcParticleList is necessary for this cell, construct it.
-      if(withCPAddr[celli] > 0)
-        { // could do better: instert it int he correct place 
+      if(flagCPAddr[celli] > 2)
+        { // could do better: instert it in the correct place 
           // according to ascending order of mass (if too many particles)
           // or descending order of mass (if too few particle)
-      // TODO: insert in corret place and order
+          if (celli !=247) continue;
+          Info << "celli= " << celli << endl;
           cellParticleAddr_[celli].insert(&p);
+          mcParticleList & cepl = cellParticleAddr_[celli];
+          if (cepl.size() > 1)
+            {
+              scalar prevm = 0.0;
+              scalar currm = 0.0;
+              for(mcParticleList::iterator cepIter = cepl.begin(); 
+                  cepIter != cepl.end();
+                  ++cepIter) 
+                {
+                  prevm = currm;
+                  currm = cepIter()->m();
+                  Info << "prevm = " << prevm 
+                       << "; currm = " << currm << endl;
+                  if (cepIter == cepl.begin())
+                    { 
+                      Info << "first element, passed" << endl;
+                      continue;
+                    }
+                  else if ( currm < prevm )
+                    { 
+                      Info << "swaped order" << endl;
+                      cepl.swapUp(cepIter()); 
+                    }
+                  else
+                    {
+                      Info << "done with order." << endl;
+                      break;
+                    }
+                  
+                }
+            }
         }
     }
   
   
   // Debug only: check the list
-  forAll(withCPAddr, celli)
+  forAll(flagCPAddr, celli)
     {
-
-      if (withCPAddr[celli] == 2 || withCPAddr[celli] == 3 )
+      if (celli != 247) continue;
+      if (flagCPAddr[celli] == 2 || flagCPAddr[celli] == 3 )
         { 
-          Info << "size is " << cellParticleAddr_[celli].size() << ":= " << endl;
+          Info << "size is " << cellParticleAddr_[celli].size()
+               << ", flag is " << flagCPAddr[celli]
+               << " := " << endl;
           
-          mcParticleList & pl = cellParticleAddr_[celli];
+          mcParticleList & cepl = cellParticleAddr_[celli];
 
-          for(mcParticleList::iterator pIter=pl.begin(); 
-              pIter!=pl.end();
+          for(mcParticleList::iterator pIter=cepl.begin(); 
+              pIter!=cepl.end();
               ++pIter) 
             {
-              Info << pIter()->origId() << ", " << endl;
+              Info << "ID= " << pIter()->origId() << ", " 
+                   << "m= " << pIter()->m() << endl;
             }
         }
     }
@@ -375,7 +411,6 @@ void Foam::mcParticleCloud::findGhostLayers()
               // opposite face
               // const cell& ownCell = cells[faceCelli];
               const cell& ownCell = cells[faceCelli];
-              Info << "cell = " << ownCell << ", gFaceI = " << gFaceI << endl;
               label oppositeFaceI = ownCell.opposingFaceLabel(gFaceI, faces);
               if (oppositeFaceI == -1)
                 {
@@ -385,10 +420,7 @@ void Foam::mcParticleCloud::findGhostLayers()
                 }
               else
                 {
-                  Info << "before adding" << endl;
-
                   ghostFaceLayers_[nameI][k++] =  oppositeFaceI;
-                  Info << "after adding" << endl;
                 }
               
               
@@ -397,14 +429,14 @@ void Foam::mcParticleCloud::findGhostLayers()
         }
     }
   // Check faces found
-  Info << "Normals: " << endl;
-  forAll(ghostFaceLayers_, patchI)
-    forAll(ghostFaceLayers_[patchI], facei)
-    {
-      // Info <<  "face #: " << ghostFaceLayers_[patchI][facei] << endl;
-      // Info << faces[ghostFaceLayers_[patchI][facei]].normal(mesh_.points()) << endl;
+  
+  /* forAll(ghostFaceLayers_, patchI)
+     forAll(ghostFaceLayers_[patchI], facei)
+   {
+      Info <<  "face #: " << ghostFaceLayers_[patchI][facei] << endl;
+      Info << faces[ghostFaceLayers_[patchI][facei]].normal(mesh_.points()) << endl;
       Info << faces[ghostFaceLayers_[patchI][facei]].centre(mesh_.points()) << endl;
-    }
+    } */
 
 }
 
@@ -451,7 +483,7 @@ void Foam::mcParticleCloud::initReleaseParticles()
   forAll(Ufv_, celli)
     {
       // &&& Should be a cloud property (class number)
-      scalar m = mesh_.V()[celli] * rhofv_[celli] / Npc_;
+      scalar m = mesh_.V()[celli] * rhofv_[celli] / Npc_ * (1+random().scalar01());
       vector Updf = UcPdf_[celli];
       vector uscales(sqrt(kfv_[celli]), sqrt(kfv_[celli]), sqrt(kfv_[celli]));
 
@@ -555,8 +587,6 @@ void Foam::mcParticleCloud::populateGhostCells()
 
   label globalNp = size();
   reduce(globalNp, sumOp<label>());
-  Info << " Current particle number in the system: " << size()
-       << "sum of all processors: " << globalNp << endl;
 }
 
 //This serves as a template for looping through particles in the cloud
