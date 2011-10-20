@@ -181,12 +181,9 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         UParticle_ += - gradPFap/rho_ * deltaT
             - (0.5 * C1 + 0.75 * C0) * Omega_ * (UParticle_- Updf_) * deltaT
             + sqrt(C0 * kFap * Omega_) * dW
-            + diffUap * deltaT;
-
-        // Scale to ensure consistency on TKE
-        UParticle_ +=
-              (UParticle_ - Updf_)  * deltaT / mcpc.kRelaxTime().value()
-            * (sqrt(mcpc.kfv()()[cell()]/mcpc.kcPdf()[cell()]) - 1.0);
+            + diffUap * deltaT
+            + (UParticle_ - Updf_)  * deltaT / mcpc.kRelaxTime().value()
+              * (sqrt(mcpc.kfv()()[cell()]/mcpc.kcPdf()[cell()]) - 1.0);
     }
 
     isOnInletBoundary_ = false;
