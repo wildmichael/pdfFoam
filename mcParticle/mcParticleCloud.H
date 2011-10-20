@@ -125,11 +125,13 @@ class mcParticleCloud
   volSymmTensorField M2_;
   scalarField instantM0_;
 
-  labelListList   ghostCellLayers_;
-  labelList       ghostPatchId_;
-  labelListList   ghostFaceLayers_;
-  HashSet<label>  ghostCellHash_;
-  HashSet<label>  ghostFaceHash_;
+  labelListList    ghostCellLayers_;
+  labelList        ghostPatchId_;
+  labelListList    ghostFaceLayers_;
+  List<vectorList> ghostCellShifts_;
+  HashSet<label>   ghostCellHash_;
+  HashSet<label>   ghostFaceHash_;
+
 
   // Mesh based velocity and Reynolds stress, obtained from particle
   // quantities.
@@ -162,6 +164,8 @@ class mcParticleCloud
   // Enforce in/out flow BCs by populating ghost cells
   void findGhostLayers();
   void populateGhostCells();
+
+  void purgeGhostParticles();
 
   // Boundary Fields for cloudPDF
   void setCloudPDFBoundary();

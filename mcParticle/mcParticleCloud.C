@@ -100,7 +100,7 @@ Foam::mcParticleCloud::mcParticleCloud
    ),
   
   random_(55555+12345*Pstream::myProcNo()),
-  Npc_(particleProperties_.lookupOrAddDefault<label>("particlesPerCell", 50)),
+  Npc_(particleProperties_.lookupOrAddDefault<label>("particlesPerCell", 30)),
   Nc_(mesh_.nCells()),
   histNp_(size()),
 
@@ -522,13 +522,13 @@ void Foam::mcParticleCloud::findGhostLayers()
     {
       ghostCellLayers_.setSize(ngPatchs);
       ghostFaceLayers_.setSize(ngPatchs);
+      ghostCellShifts_.setSize(ngPatchs);
       ghostPatchId_.setSize(ngPatchs);
     }
   else
     { 
       return; 
     }
-
 
   forAll(patchNames, nameI)
     {
@@ -549,16 +549,16 @@ void Foam::mcParticleCloud::findGhostLayers()
         {
           ghostCellLayers_[nameI].setSize(nf);
           ghostFaceLayers_[nameI].setSize(nf);
+          ghostCellShifts_[nameI].setSize(nf);
           ghostPatchId_[nameI] = patchI;
           // Find the ghost cells and faces
           const polyPatch& curPatch = patches[patchI];
           label j = 0;
-          label k = 0;
           forAll(curPatch, facei)
             {
               // find ghost cell
               label faceCelli = curPatch.faceCells()[facei];
-              ghostCellLayers_[nameI][j++] =  faceCelli;
+              ghostCellLayers_[nameI][j] =  faceCelli;
                 //- Add  to hash set
               ghostCellHash_.insert(faceCelli);
 
@@ -574,15 +574,18 @@ void Foam::mcParticleCloud::findGhostLayers()
                 }
               else
                 {
-                  ghostFaceLayers_[nameI][k++] =  oppositeFaceI;
+                  ghostFaceLayers_[nameI][j] =  oppositeFaceI;
+                  ghostCellShifts_[nameI][j] = mesh_.Cf()[oppositeFaceI] - mesh_.Cf()[gFaceI];
                 }
-
-                //- Add  to hash set
+              
+                //- Add face to hash set
               ghostFaceHash_.insert(oppositeFaceI);
+              j++;
             }
         }
     }
-  // Check faces found
+
+  // Check the faces found above
   
   /* forAll(ghostFaceLayers_, patchI)
      forAll(ghostFaceLayers_[patchI], facei)
@@ -590,8 +593,10 @@ void Foam::mcParticleCloud::findGhostLayers()
       Info <<  "face #: " << ghostFaceLayers_[patchI][facei] << endl;
       Info << faces[ghostFaceLayers_[patchI][facei]].normal(mesh_.points()) << endl;
       Info << faces[ghostFaceLayers_[patchI][facei]].centre(mesh_.points()) << endl;
-    } */
-
+    } 
+    forAll(ghostCellShifts_, patchI)
+    forAll(ghostCellShifts_[patchI], celli)
+    {Info << ghostCellShifts_[patchI][celli] << endl;}   */
 }
 
 
@@ -652,22 +657,25 @@ void Foam::mcParticleCloud::evolve()
     interpolationCellPoint<vector> gradRhoInterp(gradRho);
     interpolationCellPoint<vector> diffUInterp(diffU);
 
+    //Impose boundary conditions via particles
+    populateGhostCells();
 
     mcParticle::trackData td(*this, rhoInterp, UInterp, gradPInterp, kInterp, 
                              epsilonInterp, psiInterp, gradRhoInterp, diffUInterp);
 
     Cloud<mcParticle>::move(td);
 
-    // AvgTimeScale is a class member (should be read from dictionary).
     scalar existWt = 1.0/(1.0 + (mesh_.time().deltaT()/AvgTimeScale_).value());
 
-    updateCloudPDF(existWt);
+    // "Accept" and shift the survived ghost particles 
+    //  and clear those still in ghost a cell
+    purgeGhostParticles();
+
+    // Extract statistical averaging to obtain mesh-based quantities
+    updateCloudPDF(existWt); 
     updateParticlePDF();
-
+    
     particleNumberControl();
-
-    //Impose boundary conditions via particles
-    populateGhostCells();
 
     // particleInfo();
     assertPopulationHealth();
@@ -831,6 +839,11 @@ void Foam::mcParticleCloud::populateGhostCells()
     }
 }
 
+
+void Foam::mcParticleCloud::purgeGhostParticles()
+{
+  
+}
 
 
 //This serves as a template for looping through particles in the cloud
