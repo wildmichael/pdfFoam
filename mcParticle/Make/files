@@ -1,0 +1,5 @@
+mcParticle.C
+mcParticleIO.C
+mcParticleCloud.C
+
+LIB = $(FOAM_USER_LIBBIN)/libmcParticle
