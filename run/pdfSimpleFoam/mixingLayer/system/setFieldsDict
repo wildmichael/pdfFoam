@@ -24,7 +24,7 @@ regions
 (
     boxToCell
     {
-        box (0 1 -100) (100 100 100);
+        box (-100 1 -100) (100 100 100);
 
         fieldValues
         (
