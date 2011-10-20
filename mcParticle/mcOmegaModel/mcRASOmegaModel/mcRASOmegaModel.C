@@ -55,6 +55,7 @@ Foam::mcRASOmegaModel::mcRASOmegaModel
 )
 :
     mcOmegaModel(db, dict),
+    Omega_(),
     OmegaInterp_()
 {}
 
@@ -65,23 +66,20 @@ void Foam::mcRASOmegaModel::setupInterpolator
     const Foam::mcParticleCloud& cloud
 )
 {
-    interpolationCellPoint<scalar>* interp;
     const compressible::turbulenceModel& turbModel = cloud.turbulenceModel();
     if (isA<compressible::RASModels::kOmegaSST>(turbModel))
     {
         // If we have a kOmegaSST (or derived) object, use omega directly
         const compressible::RASModels::kOmegaSST& kOmegaModel =
             refCast<const compressible::RASModels::kOmegaSST>(turbModel);
-        Omega_ = kOmegaModel.omega();
-        interp = new interpolationCellPoint<scalar>(Omega_);
+        Omega_.reset(new volScalarField(kOmegaModel.omega()));
     }
     else
     {
         // Otherwise compute Omega from epsilon/k
-        Omega_ = turbModel.epsilon() / turbModel.k();
-        interp = new interpolationCellPoint<scalar>(Omega_);
+        Omega_.reset(new volScalarField(turbModel.epsilon() / turbModel.k()));
     }
-    OmegaInterp_.reset(interp);
+    OmegaInterp_.reset( new interpolationCellPointFace<scalar>(Omega_));
 }
 
 
@@ -108,6 +106,13 @@ void Foam::mcRASOmegaModel::correct
     }
     else
     {
+        if (!Omega_.valid())
+        {
+            FatalErrorIn("mcRASOmegaModel::correct"
+                "(mcParticleCloud&,mcParticle&,bool)")
+                << "autoPtr holding Omega not valid"
+                << exit(FatalError);
+        }
         if (!OmegaInterp_.valid())
         {
             FatalErrorIn("mcRASOmegaModel::correct"
