@@ -330,6 +330,7 @@ Foam::string Foam::mcParticle::info() const
         << "X     = " << position() << ", "
         << "cell  = " << cell() << ", "
         << "m     = " << m() << nl
+        << "Utracking = " << Utracking() << ", "
         << "U     = " << UParticle()  << ", "
         << "UFap  = " << UFap() << ", "
         << "Updf  = " << Updf() << nl
