@@ -205,16 +205,12 @@ class mcParticleCloud:
         //- The reaction model object
         autoPtr<mcReactionModel> reactionModel_;
 
-        //- Is the mesh of reduced dimensionality (planar/axi-symmetric)?
-        bool isReducedDimensional_;
         //- Is this a axi-symmetric case?
         bool isAxiSymmetric_;
         //- Centerline axis for axi-symmetric cases
         vector axis_;
         //- Normal of the centre plane for axi-symmetric cases
         vector centrePlaneNormal_;
-        //- Mask vector for the reduced dimensions
-        vector dimMask_;
 
 
     // Private Member Functions
@@ -297,16 +293,12 @@ public:
         inline const wordList& scalarNames() const;
         //- List of indices of the scalar fields to which mixing is applied
         inline const labelList& mixedScalars() const;
-        //- Whether the case is of reduced dimensionality (2D or axi-symmetric)
-        inline bool isReducedDimensional() const;
         //- Whether the case is axi-symmetric
         inline bool isAxiSymmetric() const;
         //- Centerline axis for axi-symmetric cases
         inline const vector& axis() const;
         //- Normal of the centre plane for axi-symmetric cases
         inline const vector& centrePlaneNormal() const;
-        //- Mask vector for the reduced dimensions
-        inline const vector& dimMask() const;
 
         //- The random number generator
         Random &random() {return random_;}

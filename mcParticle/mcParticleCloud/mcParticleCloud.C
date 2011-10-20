@@ -474,10 +474,9 @@ Foam::mcParticleCloud::mcParticleCloud
     reactionModel_ = mcReactionModel::New(mesh_, dict);
 
     // Now determine whether this is an axi-symmetric case
-    bool isReducedDimensional_ = mesh_.nGeometricD() <= 2;
     bool isAxiSymmetric_ = false;
     label nAxiSymmetric = 0;
-    if (isReducedDimensional_)
+    if (mesh_.nGeometricD() <= 2)
     {
         forAll(mesh_.boundaryMesh(), patchi)
         {
@@ -509,10 +508,6 @@ Foam::mcParticleCloud::mcParticleCloud
                 ")"
             )  << "Only one pair of wedge patches allowed" << endl
                << exit(FatalError);
-        }
-        for (label dimi=0; dimi<vector::nComponents; ++dimi)
-        {
-            dimMask_[dimi] = mesh_.geometricD()[dimi] > 0;
         }
     }
 
@@ -1184,9 +1179,9 @@ void Foam::mcParticleCloud::particleGenInCell
 
         // If the case has reduced dimensionality, put the coordinate of the
         // reduced dimension onto the coordinate plane
-        if (isReducedDimensional_)
+        if (mesh_.nGeometricD() <= 2)
         {
-            position = cmptMultiply(dimMask_, position);
+            meshTools::constrainDirection(mesh_, mesh_.geometricD(), position);
         }
 
         // Initially put $N particle per cell
