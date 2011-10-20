@@ -106,7 +106,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
            td.mcpc().random().GaussNormal()
            );
 
-        // Update velocity (rhof should be rho-particle) 
+        // Update velocity (rhof should be rho-particle??) 
         UParticle_ += - gradPFap/rhoFap * dt
           - (0.5 + 0.75 * C0) * epsilonFap / kFap * (UParticle_- Updf_) * dt
           + sqrt(C0 * epsilonFap) * dW

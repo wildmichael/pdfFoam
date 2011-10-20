@@ -28,6 +28,7 @@ License
 #include "volFields.H"
 #include "interpolationCellPoint.H"
 // #include "interpolationCellPointFaceFlux.H"
+#include "fixedValueFvPatchField.H"
 #include "boundBox.H"
 #include "fvc.H"
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
@@ -305,7 +306,6 @@ Foam::mcParticleCloud::mcParticleCloud
   findGhostLayers();
 
   checkParticlePropertyDict();
-  mesh_.time().write();
 }
 
 
@@ -649,10 +649,10 @@ void Foam::mcParticleCloud::findGhostLayers()
 void Foam::mcParticleCloud::evolve()
 {
 
-    const volScalarField& rho = mesh_.lookupObject<const volScalarField>("rho");
-    const volVectorField& U = mesh_.lookupObject<const volVectorField>("U");
+    // const volScalarField& rho = mesh_.lookupObject<const volScalarField>("rho");
+    // const volVectorField& U = mesh_.lookupObject<const volVectorField>("U");
     const volVectorField& gradP = mesh_.lookupObject<const volVectorField>("grad(p)");
-    const volScalarField& k = mesh_.lookupObject<const volScalarField>("k");
+    //    const volScalarField& k = mesh_.lookupObject<const volScalarField>("k");
     const volScalarField& epsilon = mesh_.lookupObject<const volScalarField>("epsilon");
     
     volScalarField diffRho
@@ -666,12 +666,13 @@ void Foam::mcParticleCloud::evolve()
                  ),
             mesh_,
             dimensionedScalar("diffRho", dimless, 0.0),
-            zeroGradientFvPatchScalarField::typeName
+            fixedValueFvPatchField<scalar>::typeName
          );
+    
 
-
-    diffRho.internalField() = (rhocPdf_ - rho)/rho;
+    diffRho.internalField() = (rhocPdf_ - rhofv_)/rhofv_;
     diffRho.correctBoundaryConditions();
+
     volVectorField gradRho = fvc::grad(diffRho) * coeffRhoCorr_;
 
     volVectorField diffU
@@ -691,15 +692,16 @@ void Foam::mcParticleCloud::evolve()
     diffU = (Ufv_ - UcPdf_) * coeffUCorr_;
     diffU.correctBoundaryConditions();
 
-    interpolationCellPoint<scalar> rhoInterp(rho);
+    interpolationCellPoint<scalar> rhoInterp(rhofv_);
     //interpolationCellPointFaceFlux UInterp(U);
-    interpolationCellPoint<vector> UInterp(U);
+    interpolationCellPoint<vector> UInterp(Ufv_);
     interpolationCellPoint<vector> gradPInterp(gradP);
-    interpolationCellPoint<scalar> kInterp(k);
+    interpolationCellPoint<scalar> kInterp(kfv_);
     interpolationCellPoint<scalar> epsilonInterp(epsilon);
     interpolationCellPoint<scalar> psiInterp(psicPdf_);
     interpolationCellPoint<vector> gradRhoInterp(gradRho);
     interpolationCellPoint<vector> diffUInterp(diffU);
+    interpolationCellPoint<scalar> kcPdfInterp(kcPdf_);
 
     //Impose boundary conditions via particles
     populateGhostCells();
@@ -709,19 +711,17 @@ void Foam::mcParticleCloud::evolve()
 
     Cloud<mcParticle>::move(td);
 
-    scalar existWt = 1.0/(1.0 + (mesh_.time().deltaT()/AvgTimeScale_).value());
-
     // "Accept" and shift the survived ghost particles 
     //  and clear those still in ghost a cell
     purgeGhostParticles();
 
+    scalar existWt = 1.0/(1.0 + (mesh_.time().deltaT()/AvgTimeScale_).value());
     // Extract statistical averaging to obtain mesh-based quantities
     updateCloudPDF(existWt); 
     updateParticlePDF();
     
     particleNumberControl();
 
-    // particleInfo();
     assertPopulationHealth();
 }
 
