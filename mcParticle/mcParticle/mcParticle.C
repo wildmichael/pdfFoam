@@ -189,7 +189,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
 
     isOnInletBoundary_ = false;
 
-    vector correctedUp = UParticle_ - Updf_ + UFap_;
+    vector correctedUp = UParticle_; // - Updf_ + UFap_;
 
     vector gradRhoFap = td.gradRhoInterp().interpolate
     (
