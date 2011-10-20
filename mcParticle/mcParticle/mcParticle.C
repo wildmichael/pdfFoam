@@ -54,6 +54,11 @@ Foam::scalar computeCourantNo(const Foam::mcParticle& p)
         else
         {
             label patchI = mesh.boundaryMesh().whichPatch(faceI);
+            if (!CourantCoeffs.boundaryField()[patchI].size())
+            {
+                // skip empty boundaries
+                continue;
+            }
             label start = mesh.boundaryMesh()[patchI].start();
             coeff = CourantCoeffs.boundaryField()[patchI][faceI-start];
         }
