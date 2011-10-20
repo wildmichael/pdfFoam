@@ -71,7 +71,8 @@ Foam::autoPtr<Foam::mcMixingModel> Foam::mcMixingModel::New
             << exit(FatalError);
     }
 
-    return autoPtr<mcMixingModel>(cstrIter()(db, dict));
+    const dictionary& coeffs = dict.subDict(mixingType+"Coeffs");
+    return autoPtr<mcMixingModel>(cstrIter()(db, coeffs));
 }
 
 // ************************************************************************* //

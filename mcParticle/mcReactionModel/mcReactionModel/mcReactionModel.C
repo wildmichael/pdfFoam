@@ -69,8 +69,8 @@ Foam::autoPtr<Foam::mcReactionModel> Foam::mcReactionModel::New
             << mcReactionModelConstructorTablePtr_->sortedToc()
             << exit(FatalError);
     }
-
-    return autoPtr<mcReactionModel>(cstrIter()(db, dict));
+    const dictionary& coeffs = dict.subDict(reactionType+"Coeffs");
+    return autoPtr<mcReactionModel>(cstrIter()(db, coeffs));
 }
 
 // ************************************************************************* //

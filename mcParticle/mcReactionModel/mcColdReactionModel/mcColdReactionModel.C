@@ -39,7 +39,7 @@ namespace Foam
         mcReactionModel,
         mcColdReactionModel,
         mcReactionModel,
-        Cold
+        cold
     );
 
 } // namespace Foam
