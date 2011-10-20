@@ -85,9 +85,6 @@ class mcParticle
        //- density
        scalar rho_;
 
-       //- current time step
-       scalar dt_;
-
        //- separation (only for ghost cells)
        vector shift_;
 
@@ -171,7 +168,6 @@ public:
             const vector& UParticle,
             const vector& UFap,
             const scalarField& Phi,
-            const scalar dt,
             const vector& shift = vector::zero,
             const label  ghost = 0
 
@@ -238,9 +234,6 @@ public:
 
             //- density
             inline scalar& rho();
-
-            //- particle time step
-            inline scalar& dt();
 
             //- whether this particle is ghost
             inline label ghost() const;

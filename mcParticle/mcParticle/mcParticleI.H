@@ -151,12 +151,6 @@ inline Foam::scalar& Foam::mcParticle::rho()
 }
 
 
-inline Foam::scalar& Foam::mcParticle::dt()
-{
-    return dt_;
-}
-
-
 inline Foam::label Foam::mcParticle::ghost() const
 {
     return ghost_;

@@ -49,7 +49,6 @@ Foam::mcParticle::mcParticle
                 >> UFap_
                 >> Omega_
                 >> rho_
-                >> dt_
                 >> shift_
                 >> Co_
                 >> ghost_
@@ -64,7 +63,7 @@ Foam::mcParticle::mcParticle
                 reinterpret_cast<char*>(&m_),
                 sizeof(m_) + sizeof(Updf_) +
                 sizeof(UParticle_) + sizeof(Utracking_) + sizeof(UFap_) +
-                sizeof(Omega_) + sizeof(rho_) + sizeof(dt_) +
+                sizeof(Omega_) + sizeof(rho_) +
                 sizeof(shift_) + sizeof(Co_) + sizeof(ghost_) +
                 sizeof(nSteps_)
             );
@@ -229,7 +228,6 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
             << token::SPACE << p.UFap_
             << token::SPACE << p.Omega_
             << token::SPACE << p.rho_
-            << token::SPACE << p.dt_
             << token::SPACE << p.shift_
             << token::SPACE << p.Co_
             << token::SPACE << p.ghost_
@@ -244,7 +242,7 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
             reinterpret_cast<const char*>(&p.m_),
             sizeof(p.m_) + sizeof(p.Updf_) +
             sizeof(p.UParticle_) + sizeof(p.Utracking_) + sizeof(p.UFap_) +
-            sizeof(p.Omega_) + sizeof(p.rho_)  + sizeof(p.dt_) +
+            sizeof(p.Omega_) + sizeof(p.rho_) +
             sizeof(p.shift_) + sizeof(p.Co_) + sizeof(p.ghost_) +
             sizeof(p.nSteps_)
         );

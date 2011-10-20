@@ -102,7 +102,6 @@ Foam::mcParticle::mcParticle
     const vector& UParticle,
     const vector& UFap,
     const scalarField&  Phi,
-    const scalar  dt,
     const vector& shift,
     const label   ghost
 )
@@ -114,7 +113,6 @@ Foam::mcParticle::mcParticle
     UFap_(UFap),
     Omega_(0.0),
     rho_(0.0),
-    dt_(dt),
     shift_(shift),
     Co_(0.0),
     ghost_(ghost),

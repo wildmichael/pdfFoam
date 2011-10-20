@@ -1293,7 +1293,6 @@ void Foam::mcParticleCloud::particleGenInCell
                 UParticle,
                 UFap,
                 Phi,
-                runTime_.deltaT().value(),
                 shift,
                 ghost
             );
