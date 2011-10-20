@@ -4,6 +4,7 @@ set -x
 
 wclean  mcParticle
 wclean  pdfUncoupledFoam
+wclean  pdfSimpleFoam
 
 
 

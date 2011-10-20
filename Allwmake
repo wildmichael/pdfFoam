@@ -5,8 +5,5 @@ set -e
 
 wmake libso mcParticle
 wmake pdfUncoupledFoam
-
-
-
-
+wmake pdfSimpleFoam
 
