@@ -70,9 +70,7 @@ inline Foam::mcParticle::mcParticle
   UFap_(UFap),
   psi_(psi),
   dt_(dt)
-{
-
-}
+{}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
