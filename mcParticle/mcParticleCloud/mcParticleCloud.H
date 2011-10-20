@@ -99,7 +99,7 @@ class mcParticleCloud:
         //- The mesh
         const fvMesh& mesh_;
         //- The control dictionary
-        dictionary particleProperties_;
+        dictionary dict_;
         //- The time object
         const Time& runTime_;
         //- The RAS model object

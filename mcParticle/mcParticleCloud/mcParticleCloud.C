@@ -109,7 +109,7 @@ Foam::mcParticleCloud::mcParticleCloud
 :
     Cloud<mcParticle>(mesh, cloudName, false),
     mesh_(mesh),
-    particleProperties_(dict),
+    dict_(dict),
     runTime_(mesh.time()),
     turbModel_
     (
@@ -118,32 +118,31 @@ Foam::mcParticleCloud::mcParticleCloud
     Ufv_
     (
         U ? *U : mesh.lookupObject<volVectorField>
-                     (dict.lookupOrDefault<word>("U", "U"))
+                     (dict_.lookupOrDefault<word>("U", "U"))
     ),
     rhofv_
     (
         rho ? *rho : const_cast<volScalarField&>(
             mesh.lookupObject<volScalarField>(
-                dict.lookupOrDefault<word>("rho", "rho")))
+                dict_.lookupOrDefault<word>("rho", "rho")))
     ),
     zfv_
     (
         z ? *z : const_cast<volScalarField&>(
             mesh.lookupObject<volScalarField>(
-                dict.lookupOrDefault<word>(
+                dict_.lookupOrDefault<word>(
                     "mixtureFraction", "z")))
     ),
     AvgTimeScale_
     (
-        particleProperties_.lookupOrAddDefault<scalar>
+        dict_.lookupOrAddDefault<scalar>
                 ("averageTimeScale", 0.1*runTime_.endTime().value())
     ),
     random_(55555+12345*Pstream::myProcNo()),
-    Npc_(particleProperties_.lookupOrAddDefault<label>
-                ("particlesPerCell", 30)),
-    eliminateAt_(particleProperties_.lookupOrAddDefault<scalar>
-                ("eliminateAt", 1.5)),
-    cloneAt_(particleProperties_.lookupOrAddDefault<scalar>("cloneAt", 0.67)),
+    Npc_(dict_.lookupOrAddDefault<label>("particlesPerCell", 30)),
+    scalarNames_(0),
+    eliminateAt_(dict_.lookupOrAddDefault<scalar>("eliminateAt", 1.5)),
+    cloneAt_(dict_.lookupOrAddDefault<scalar>("cloneAt", 0.67)),
     Nc_(mesh_.nCells()),
     histNp_(size()),
 
@@ -307,34 +306,31 @@ Foam::mcParticleCloud::mcParticleCloud
     (
         "cRhoCorr",
         dimTime,
-        particleProperties_.lookupOrAddDefault<scalar>
-                ("coeffRhoCorrection", 1.0e-7)
+        dict_.lookupOrAddDefault<scalar>("coeffRhoCorrection", 1.0e-7)
     ),
     URelaxTime_
     (
         "URelaxTime",
         dimTime,
-        particleProperties_.lookupOrAddDefault<scalar>
+        dict_.lookupOrAddDefault<scalar>
                 ("URelaxTime", runTime_.deltaT().value()*10.0)
     ),
     kRelaxTime_
     (
         "kRelaxTime",
         dimTime,
-        particleProperties_.lookupOrAddDefault<scalar>
+        dict_.lookupOrAddDefault<scalar>
                 ("kRelaxTime", runTime_.deltaT().value()*10.0)
     ),
     kMin_
     (
         "kMin",
         dimVelocity*dimVelocity,
-        particleProperties_.lookupOrAddDefault<scalar>
-                ("kMin", 10.0*SMALL)
+        dict_.lookupOrAddDefault<scalar>("kMin", 10.0*SMALL)
     ),
     particleNumberControl_
     (
-        particleProperties_.lookupOrAddDefault<Switch>
-                ("particleNumberControl", true)
+        dict_.lookupOrAddDefault<Switch>("particleNumberControl", true)
     )
 {
     findGhostLayers();
@@ -505,21 +501,21 @@ void Foam::mcParticleCloud::checkParticlePropertyDict()
     scalar Dt = runTime_.deltaT().value();
 
     eliminateAt_ = max(1.1,  min(eliminateAt_, 2.5));
-    particleProperties_.set("eliminateAt", eliminateAt_);
+    dict_.set("eliminateAt", eliminateAt_);
 
-    cloneAt_   = max(0.5,  min(cloneAt_,   0.9));
-    particleProperties_.set("cloneAt", cloneAt_);
+    cloneAt_   = max(0.5,  min(cloneAt_, 0.9));
+    dict_.set("cloneAt", cloneAt_);
 
     kRelaxTime_.value()   = max(2.0*Dt,  kRelaxTime_.value());
-    particleProperties_.set("kRelaxTime", kRelaxTime_.value());
+    dict_.set("kRelaxTime", kRelaxTime_.value());
 
     kMin_.value()   = max(1e-3,  min(SMALL, kMin_.value()));
-    particleProperties_.set("kMin", kMin_.value());
+    dict_.set("kMin", kMin_.value());
 
     URelaxTime_.value()   = max(2.0*Dt,  URelaxTime_.value());
-    particleProperties_.set("URelaxTime", URelaxTime_.value());
+    dict_.set("URelaxTime", URelaxTime_.value());
 
-    Info<< "Sanitized particleProperties dict:" << particleProperties_ << nl << endl;
+    Info<< "Sanitized cloudProperties dict:" << dict_ << endl;
 }
 
 
@@ -690,7 +686,7 @@ void Foam::mcParticleCloud::findGhostLayers()
     const faceList& faces = mesh_.faces();
     const polyBoundaryMesh& patches = mesh_.boundaryMesh();
     // in/out-flow patches (should read from dictionary)
-    const wordList patchNames(particleProperties_.lookup("inoutPatches"));
+    const wordList patchNames(dict_.lookup("inoutPatches"));
 
     label ngPatchs = patchNames.size();
     labelList patchSizes(ngPatchs);
