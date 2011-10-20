@@ -74,11 +74,7 @@ Foam::mcParticle::mcParticle
     shift_(shift),
     ghost_(ghost),
     Phi_(Phi)
-{
-    // call Omega and reaction models to initialize Omega and rho
-    c.applyOmegaModel(*this);
-    c.applyReactionModel(*this);
-}
+{}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 

@@ -338,7 +338,6 @@ Foam::mcParticleCloud::mcParticleCloud
     (
         dict_.lookupOrAddDefault<Switch>("particleNumberControl", true)
     ),
-    prepareOmegaModel_(true),
     OmegaModel_(),
     mixingModel_(),
     reactionModel_(),
@@ -1076,6 +1075,15 @@ void Foam::mcParticleCloud::evolve()
     //Impose boundary conditions via particles
     populateGhostCells();
 
+    OmegaModel_().correct(*this);
+    mixingModel_().correct(*this);
+    reactionModel_().correct(*this);
+
+    scalar existWt = 1.0/(1.0 + (runTime_.deltaT()/AvgTimeScale_).value());
+    // Extract statistical averaging to obtain mesh-based quantities
+    updateCloudPDF(existWt);
+    updateParticlePDF();
+
     mcParticle::trackData td
     (
         *this,
@@ -1092,15 +1100,6 @@ void Foam::mcParticleCloud::evolve()
     // "Accept" and shift the survived ghost particles
     //  and clear those still in ghost a cell
     purgeGhostParticles();
-
-    OmegaModel_().correct(*this);
-    mixingModel_().correct(*this);
-    reactionModel_().correct(*this);
-
-    scalar existWt = 1.0/(1.0 + (runTime_.deltaT()/AvgTimeScale_).value());
-    // Extract statistical averaging to obtain mesh-based quantities
-    updateCloudPDF(existWt);
-    updateParticlePDF();
 
     particleNumberControl();
 
@@ -1131,6 +1130,8 @@ void Foam::mcParticleCloud::initReleaseParticles()
 
         particleGenInCell(celli, Npc_, m, Updf, uscales, Phi);
     }
+    OmegaModel_().correct(*this);
+    reactionModel_().correct(*this);
     // writeFields();
 }
 
@@ -1163,7 +1164,6 @@ void Foam::mcParticleCloud::particleGenInCell
     vector dimb = cellbb.max() - minb;
 
     label Npgen = 0;
-    prepareOmegaModel_ = true;
     for (int i = 0; i < 100 * N; i++)
     {
         // Relative coordinate [0, 1] in this cell
@@ -1215,7 +1215,6 @@ void Foam::mcParticleCloud::particleGenInCell
 
             addParticle(ptr);
             ++Npgen;
-            prepareOmegaModel_ = false;
         }
 
         // until enough particles are generated.
@@ -1344,18 +1343,6 @@ void Foam::mcParticleCloud::purgeGhostParticles()
     }
     Info<< "Ghost particles: " << nDelete << " deleted, "
         << nAdmit << " admitted." << endl;
-}
-
-
-void Foam::mcParticleCloud::applyOmegaModel(Foam::mcParticle& p)
-{
-    OmegaModel_().correct(*this, p, prepareOmegaModel_);
-}
-
-
-void Foam::mcParticleCloud::applyReactionModel(Foam::mcParticle& p)
-{
-    reactionModel_().correct(*this, p);
 }
 
 

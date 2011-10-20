@@ -195,9 +195,6 @@ class mcParticleCloud:
         //- Enable/Disable the particle number control
         Switch particleNumberControl_;
 
-        //- Flag \c prepare that is passed to mcOmegaModel::correct()
-        bool prepareOmegaModel_;
-
         //- The turbulent frequncy model object
         autoPtr<mcOmegaModel> OmegaModel_;
         //- The mixing model object
@@ -322,12 +319,6 @@ public:
 
         //- Evolve the particles
         void evolve();
-
-        //- Apply the Omega model to a single particle
-        void applyOmegaModel(mcParticle& p);
-
-        //- Apply the reaction model to a single particle
-        void applyReactionModel(mcParticle& p);
 
         //- Report info about name and total number of particles in cloud
         void info() const;
