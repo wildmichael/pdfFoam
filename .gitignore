@@ -1,0 +1,7 @@
+*.o
+*~
+*.a
+*.dep
+linux64*
+linux*
+lnInclude*
