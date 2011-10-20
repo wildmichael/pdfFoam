@@ -279,7 +279,7 @@ void Foam::mcInletOutletBoundary::correct
 
         for (label i=0; i<N; ++i)
         {
-            vector u = randomVelocity(cloud, faceI);
+            vector Up = randomVelocity(cloud, faceI);
             mcParticle* p = new mcParticle
             (
                 cloud,
@@ -287,7 +287,7 @@ void Foam::mcInletOutletBoundary::correct
                 cellI,
                 m,
                 U[faceI],
-                u,
+                Up,
                 U[faceI],
                 phi
             );
