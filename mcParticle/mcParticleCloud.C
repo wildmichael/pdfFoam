@@ -64,42 +64,48 @@ inline bool Foam::mcParticleCloud::more::operator()
 Foam::mcParticleCloud::mcParticleCloud
 (
     const fvMesh& mesh,
-    const volVectorField& U,
-    const volScalarField& rho,
-    const volScalarField& k,
-    const volScalarField& psi,
+    const dictionary& dict,
+    const volVectorField* U,
+    const volScalarField* rho,
+    const volScalarField* k,
+    const volScalarField* z,
     const word& cloudName
 )
 :
     Cloud<mcParticle>(mesh, cloudName, false),
     mesh_(mesh),
+    particleProperties_(dict),
     runTime_(mesh.time()),
-    Ufv_(U),
-    rhofv_(rho),
-    kfv_(k),
-    psifv_(psi),
-
-    particleProperties_
+    Ufv_
     (
-        IOobject
-        (
-            "particleProperties",
-            runTime_.constant(),
-            mesh_,
-            IOobject::MUST_READ,
-            IOobject::NO_WRITE
-        )
-     ),
-
+        U ? *U : mesh.lookupObject<volVectorField>
+                     (dict.lookupOrDefault<word>("U", "U"))
+    ),
+    rhofv_
+    (
+        rho ? *rho : mesh.lookupObject<volScalarField>
+                         (dict.lookupOrDefault<word>("rho", "rho"))
+    ),
+    kfv_
+    (
+        k ? *k : mesh.lookupObject<volScalarField>
+                     (dict.lookupOrDefault<word>("k", "k"))
+    ),
+    zfv_
+    (
+        z ? *z : mesh.lookupObject<volScalarField>
+                     (dict.lookupOrDefault<word>("z", "z"))
+    ),
     AvgTimeScale_
     (
         particleProperties_.lookupOrAddDefault<scalar>
                 ("averageTimeScale", 0.1*runTime_.endTime().value())
     ),
-
     random_(55555+12345*Pstream::myProcNo()),
-    Npc_(particleProperties_.lookupOrAddDefault<label>("particlesPerCell", 30)),
-    eliminateAt_(particleProperties_.lookupOrAddDefault<scalar>("eliminateAt", 1.5)),
+    Npc_(particleProperties_.lookupOrAddDefault<label>
+                ("particlesPerCell", 30)),
+    eliminateAt_(particleProperties_.lookupOrAddDefault<scalar>
+                ("eliminateAt", 1.5)),
     cloneAt_(particleProperties_.lookupOrAddDefault<scalar>("cloneAt", 0.67)),
     Nc_(mesh_.nCells()),
     histNp_(size()),
@@ -107,9 +113,9 @@ Foam::mcParticleCloud::mcParticleCloud
     cellParticleAddr_(Nc_),
 
     PaNIC_
+    (
+        IOobject
         (
-         IOobject
-         (
             "PaNIC",
             runTime_.timeName(),
             mesh_,
@@ -121,56 +127,71 @@ Foam::mcParticleCloud::mcParticleCloud
         zeroGradientFvPatchScalarField::typeName
     ),
 
-    M0_(
+    mMean_
+    (
         IOobject
         (
-            "M0",
+            "mMean",
             runTime_.timeName(),
             mesh_,
             IOobject::READ_IF_PRESENT,
             IOobject::AUTO_WRITE
         ),
         mesh,
-        dimensionedScalar("M0", dimMass, 0.0)
+        dimensionedScalar("mMean", dimMass, 0.0)
     ),
-    M1_
+    VMean_
     (
         IOobject
         (
-            "M1",
+            "VMean",
             runTime_.timeName(),
-            mesh,
+            mesh_,
             IOobject::READ_IF_PRESENT,
             IOobject::AUTO_WRITE
         ),
         mesh,
-        dimensionedVector("M1", dimMass*dimVelocity, vector::zero)
-        ),
-    Mpsi1_(
-        IOobject
-        (
-            "Mpsi",
-            runTime_.timeName(),
-            mesh,
-            IOobject::READ_IF_PRESENT,
-            IOobject::AUTO_WRITE
-        ),
-        mesh,
-        dimensionedScalar("Mpsi", dimMass, 0.0)
-        ),
-    M2_
+        dimensionedScalar("VMean", dimVolume, 0.0)
+    ),
+    UMean_
     (
         IOobject
         (
-            "M2",
+            "UMean",
             runTime_.timeName(),
             mesh,
             IOobject::READ_IF_PRESENT,
             IOobject::AUTO_WRITE
         ),
         mesh,
-        dimensionedSymmTensor("M2", dimEnergy, symmTensor:: zero)
+        dimensionedVector("UMean", dimMass*dimVelocity, vector::zero)
+    ),
+    zMean_
+    (
+        IOobject
+        (
+            "zMean",
+            runTime_.timeName(),
+            mesh,
+            IOobject::READ_IF_PRESENT,
+            IOobject::AUTO_WRITE
         ),
+        mesh,
+        dimensionedScalar("zMean", dimMass, 0.0)
+    ),
+    uuMean_
+    (
+        IOobject
+        (
+            "uuMean",
+            runTime_.timeName(),
+            mesh,
+            IOobject::READ_IF_PRESENT,
+            IOobject::AUTO_WRITE
+        ),
+        mesh,
+        dimensionedSymmTensor("uuMean", dimEnergy, symmTensor:: zero)
+    ),
 
     ghostCellHash_(256),
     ghostFaceHash_(256),
@@ -187,11 +208,10 @@ Foam::mcParticleCloud::mcParticleCloud
         ),
         mesh_,
         dimDensity,
-        M0_/mesh_.V(),
-        rho.boundaryField()
+        mMean_/VMean_,
+        rhofv_.boundaryField()
     ),
 
-    //- Use the boundary conditions of U (FV)
     UcPdf_
     (
         IOobject
@@ -204,16 +224,16 @@ Foam::mcParticleCloud::mcParticleCloud
         ),
         mesh_,
         dimVelocity,
-        M1_/max(M0_, SMALL_MASS),
+        UMean_/max(mMean_, SMALL_MASS),
+        // Use the boundary conditions of U (FV)
         Ufv_.boundaryField()
     ),
 
-    //- Use the boundary conditions of psi (FV)
-    psicPdf_
+    zcPdf_
     (
         IOobject
         (
-            "psiCloudPDF",
+            "zCloudPDF",
             runTime_.timeName(),
             mesh,
             IOobject::READ_IF_PRESENT,
@@ -221,9 +241,9 @@ Foam::mcParticleCloud::mcParticleCloud
         ),
         mesh_,
         dimless,
-        Mpsi1_/max(M0_, SMALL_MASS),
-        // Use the boundary conditions of psi (FV)
-        psifv_.boundaryField()
+        zMean_/max(mMean_, SMALL_MASS),
+        // Use the boundary conditions of z (FV)
+        zfv_.boundaryField()
     ),
 
     TaucPdf_
@@ -265,7 +285,8 @@ Foam::mcParticleCloud::mcParticleCloud
     (
         "cRhoCorr",
         dimTime,
-        particleProperties_.lookupOrAddDefault<scalar>("coeffRhoCorrection", 1.0e-7)
+        particleProperties_.lookupOrAddDefault<scalar>
+                ("coeffRhoCorrection", 1.0e-7)
     ),
     URelaxTime_
     (
@@ -283,7 +304,8 @@ Foam::mcParticleCloud::mcParticleCloud
     ),
     particleNumberControl_
     (
-        particleProperties_.lookupOrAddDefault<Switch>("particleNumberControl", true)
+        particleProperties_.lookupOrAddDefault<Switch>
+                ("particleNumberControl", true)
     )
 {
 
@@ -314,9 +336,11 @@ Foam::mcParticleCloud::mcParticleCloud
 void Foam::mcParticleCloud::checkMoments()
 {
     if (PaNIC_.headerOk() &&
-        M0_.headerOk() &&
-        M1_.headerOk() &&
-        M2_.headerOk())
+        mMean_.headerOk() &&
+        VMean_.headerOk() &&
+        UMean_.headerOk() &&
+        zMean_.headerOk() &&
+        uuMean_.headerOk())
     {
         Info<< "Moments read correctly." << endl;
     }
@@ -331,10 +355,11 @@ void Foam::mcParticleCloud::checkMoments()
 // Perform particle averaging to obtained cell-based values.
 void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
 {
-    scalarField      instantM0(Nc_, 0.0);
-    vectorField      instantM1(Nc_, vector::zero);
-    scalarField      instantMpsi1(Nc_, 0.0);
-    symmTensorField  instantM2(Nc_, symmTensor::zero);
+    scalarField      mMeanInstant(Nc_, 0.0);
+    scalarField      VMeanInstant(Nc_, 0.0);
+    vectorField      UMeanInstant(Nc_, vector::zero);
+    scalarField      zMeanInstant(Nc_, 0.0);
+    symmTensorField  uuMeanInstant(Nc_, symmTensor::zero);
 
     PaNIC_ *= 0;
 
@@ -349,30 +374,32 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
         ++PaNIC_[cellI];
 
         const scalar m = p.m();
-        instantM0[cellI]    += m;
-        instantM1[cellI]    += m * p.UParticle();
-        instantMpsi1[cellI] += m * p.psi();
-        instantM2[cellI]    += m * symm(u * u);
+        mMeanInstant[cellI]  += m;
+        VMeanInstant[cellI]  += m / p.rho();
+        UMeanInstant[cellI]  += m * p.UParticle();
+        zMeanInstant[cellI]  += m * p.z();
+        uuMeanInstant[cellI] += m * symm(u * u);
     }
 
     // Do time-averaging of moments
     scalar newWt = 1.0 - existWt;
-    M0_.internalField()    = existWt*M0_.internalField()    + newWt*instantM0;
-    M1_.internalField()    = existWt*M1_.internalField()    + newWt*instantM1;
-    Mpsi1_.internalField() = existWt*Mpsi1_.internalField() + newWt*instantMpsi1;
-    M2_.internalField()    = existWt*M2_.internalField()    + newWt*instantM2;
+    mMean_.internalField() =existWt*mMean_.internalField() +newWt*mMeanInstant;
+    VMean_.internalField() =existWt*VMean_.internalField() +newWt*VMeanInstant;
+    UMean_.internalField() =existWt*UMean_.internalField() +newWt*UMeanInstant;
+    zMean_.internalField() =existWt*zMean_.internalField() +newWt*zMeanInstant;
+    uuMean_.internalField()=existWt*uuMean_.internalField()+newWt*uuMeanInstant;
 
-    // Compute U, psi, tau and k
-    rhocPdf_.internalField() = M0_/mesh_.V();
-    UcPdf_.internalField()   = M1_/max(M0_, SMALL_MASS);
-    psicPdf_                 = Mpsi1_ / max(M0_, SMALL_MASS);
-    TaucPdf_.internalField() = M2_/max(M0_, SMALL_MASS);
+    // Compute mean fields
+    rhocPdf_.internalField() = mMean_/VMean_;
+    UcPdf_.internalField()   = UMean_/max(mMean_, SMALL_MASS);
+    zcPdf_                   = zMean_ / max(mMean_, SMALL_MASS);
+    TaucPdf_.internalField() = uuMean_/max(mMean_, SMALL_MASS);
     kcPdf_.internalField()   = 0.5 * tr(TaucPdf_.internalField());
 
     // Update boundary conditions
     rhocPdf_.correctBoundaryConditions();
     UcPdf_.correctBoundaryConditions();
-    psicPdf_.correctBoundaryConditions();
+    zcPdf_.correctBoundaryConditions();
     TaucPdf_.correctBoundaryConditions();
     kcPdf_.correctBoundaryConditions();
 }
@@ -395,10 +422,10 @@ void Foam::mcParticleCloud::checkParticlePropertyDict()
     eliminateAt_ = max(1.1,  min(eliminateAt_, 2.5));
     particleProperties_.set("eliminateAt", eliminateAt_);
 
-    cloneAt_ = max(0.5,  min(cloneAt_,   0.9));
+    cloneAt_   = max(0.5,  min(cloneAt_,   0.9));
     particleProperties_.set("cloneAt", cloneAt_);
 
-    kRelaxTime_ = max(2.0*Dt,  kRelaxTime_.value());
+    kRelaxTime_   = max(2.0*Dt,  kRelaxTime_.value());
     particleProperties_.set("kRelaxTime", kRelaxTime_.value());
 
     URelaxTime_.value()   = max(2.0*Dt,  URelaxTime_.value());
@@ -704,7 +731,7 @@ void Foam::mcParticleCloud::evolve()
     interpolationCellPoint<vector> gradPInterp(gradP);
     interpolationCellPoint<scalar> kInterp(kfv_);
     interpolationCellPoint<scalar> epsilonInterp(epsilon);
-    interpolationCellPoint<scalar> psiInterp(psicPdf_);
+    interpolationCellPoint<scalar> zInterp(zcPdf_);
     interpolationCellPoint<vector> gradRhoInterp(gradRho);
     interpolationCellPoint<vector> diffUInterp(diffU);
     interpolationCellPoint<scalar> kcPdfInterp(kcPdf_);
@@ -713,7 +740,8 @@ void Foam::mcParticleCloud::evolve()
     populateGhostCells();
 
     mcParticle::trackData td(*this, rhoInterp, UInterp, gradPInterp, kInterp,
-                             epsilonInterp, psiInterp, gradRhoInterp, diffUInterp);
+                             epsilonInterp, zInterp, gradRhoInterp,
+                             diffUInterp);
 
     Cloud<mcParticle>::move(td);
 
@@ -741,9 +769,10 @@ void Foam::mcParticleCloud::initReleaseParticles()
         scalar m = mesh_.V()[celli] * rhofv_[celli] / Npc_;
         vector Updf = UcPdf_[celli];
         vector uscales(sqrt(kfv_[celli]), sqrt(kfv_[celli]), sqrt(kfv_[celli]));
-        scalar psi = psicPdf_[celli];
+        scalar z = zcPdf_[celli];
+        scalar rho = rhocPdf_[celli];
 
-        particleGenInCell(celli, Npc_, m, Updf, uscales, psi, vector::zero, 0);
+        particleGenInCell(celli, Npc_, m, Updf, uscales, z, rho, vector::zero, 0);
     }
 
     // writeFields();
@@ -759,7 +788,8 @@ void Foam::mcParticleCloud::particleGenInCell
     scalar m,
     const vector& Updf,
     const vector& uscales,
-    scalar psi,
+    scalar z,
+    scalar rho,
     const vector& shift,
     label  ghost
 )
@@ -798,7 +828,7 @@ void Foam::mcParticleCloud::particleGenInCell
 
             mcParticle* ptr = new mcParticle
                 (
-                    *this,  position, celli, m, Updf, UParticle, UFap, psi,
+                    *this,  position, celli, m, Updf, UParticle, UFap, z, rho,
                     runTime_.deltaT().value(), shift, ghost
                 );
 
@@ -840,10 +870,11 @@ void Foam::mcParticleCloud::populateGhostCells()
             vector uscales(ksqrt, ksqrt, ksqrt);
             label  ghost = 1;
             vector shift = ghostCellShifts_[ghostPatchI][faceCelli];
-            // psi: from patch value (boundary condition)
-            scalar psi = psifv_.boundaryField()[ghostPatchId_[ghostPatchI]][faceCelli];
+            // z: from patch value (boundary condition)
+            scalar z = zfv_.boundaryField()[ghostPatchId_[ghostPatchI]][faceCelli];
+            scalar rho = rhofv_.boundaryField()[ghostPatchId_[ghostPatchI]][faceCelli];
 
-            particleGenInCell(celli, N, m, Updf, uscales, psi, shift, ghost);
+            particleGenInCell(celli, N, m, Updf, uscales, z, rho, shift, ghost);
 
             if (debug)
             {
@@ -949,7 +980,7 @@ void Foam::mcParticleCloud::oneParticleInfo(const mcParticle& p) const
         << "Ufv   = " << Ufv_[p.cell()] << ", "
         << "UFap  = " << p.UFap() << ", "
         << "Updf  = " << p.Updf() << nl
-        << "psi   = " << p.psi() << ", "
+        << "z     = " << p.z() << ", "
         << "ghost = " << p.ghost() << ", "
         << "shift = " << p.shift()
         << endl;

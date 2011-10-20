@@ -76,8 +76,11 @@ class mcParticle
        // (same time with Updf & UParticle)
        vector UFap_;
 
-       //- scalar concetration
-       scalar psi_;
+       //- mixture fraction
+       scalar z_;
+
+       //- density
+       scalar rho_;
 
        //- current time step
        scalar dt_;
@@ -89,6 +92,11 @@ class mcParticle
 
        //- Whether this particle is a ghost
        label ghost_;
+
+protected:
+
+       //- update the thermodynamic data
+       void updateThermo();
 
 public:
 
@@ -107,7 +115,7 @@ public:
             const interpolationCellPoint<vector>& gradPInterp_;
             const interpolationCellPoint<scalar>& kInterp_;
             const interpolationCellPoint<scalar>& epsilonInterp_;
-            const interpolationCellPoint<scalar>& psiInterp_;
+            const interpolationCellPoint<scalar>& zInterp_;
             const interpolationCellPoint<vector>& gradRhoInterp_;
             const interpolationCellPoint<vector>& diffUInterp_;
 
@@ -127,7 +135,7 @@ public:
        const interpolationCellPoint<vector>& gradPInterp,
        const interpolationCellPoint<scalar>& kInterp,
        const interpolationCellPoint<scalar>& epsilonInterp,
-       const interpolationCellPoint<scalar>& psiInterp,
+       const interpolationCellPoint<scalar>& zInterp,
        const interpolationCellPoint<vector>& gradRhoInterp,
        const interpolationCellPoint<vector>& diffUInterp
        );
@@ -146,7 +154,7 @@ public:
 
       inline const interpolationCellPoint<scalar>& epsilonInterp() const;
 
-      inline const interpolationCellPoint<scalar>& psiInterp() const;
+      inline const interpolationCellPoint<scalar>& zInterp() const;
 
       inline const interpolationCellPoint<vector>& gradRhoInterp() const;
 
@@ -166,7 +174,8 @@ public:
             const vector& Updf,
             const vector& UParticle,
             const vector& UFap,
-            const scalar psi,
+            const scalar z,
+            const scalar rho,
             const scalar dt,
             const vector& shift = vector::zero,
             const label  ghost = 0
@@ -211,8 +220,11 @@ public:
             //- Fluid velocity @ particle location
             inline const vector& UFap() const;
 
-            //- species concentration
-            inline const scalar& psi() const;
+            //- mixture fraction
+            inline const scalar& z() const;
+
+            //- density
+            inline const scalar& rho() const;
 
             //- particle time step
             inline scalar& dt();

@@ -33,7 +33,7 @@ inline Foam::mcParticle::trackData::trackData
     const interpolationCellPoint<vector>& gradPInterp,
     const interpolationCellPoint<scalar>& kInterp,
     const interpolationCellPoint<scalar>& epsilonInterp,
-    const interpolationCellPoint<scalar>& psiInterp,
+    const interpolationCellPoint<scalar>& zInterp,
     const interpolationCellPoint<vector>& gradRhoInterp,
     const interpolationCellPoint<vector>& diffUInterp
 )
@@ -44,7 +44,7 @@ inline Foam::mcParticle::trackData::trackData
     gradPInterp_(gradPInterp),
     kInterp_(kInterp),
     epsilonInterp_(epsilonInterp),
-    psiInterp_(psiInterp),
+    zInterp_(zInterp),
     gradRhoInterp_(gradRhoInterp),
     diffUInterp_(diffUInterp)
 {}
@@ -59,7 +59,8 @@ inline Foam::mcParticle::mcParticle
  const vector& Updf,
  const vector& UParticle,
  const vector& UFap,
- const scalar  psi,
+ const scalar  z,
+ const scalar  rho,
  const scalar  dt,
  const vector& shift,
  const label   ghost
@@ -70,11 +71,14 @@ inline Foam::mcParticle::mcParticle
   Updf_(Updf),
   UParticle_(UParticle),
   UFap_(UFap),
-  psi_(psi),
+  z_(z),
+  rho_(rho),
   dt_(dt),
   shift_(shift),
   ghost_(ghost)
-{}
+{
+    updateThermo();
+}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
@@ -115,9 +119,9 @@ Foam::mcParticle::trackData::epsilonInterp() const
 }
 
 inline const Foam::interpolationCellPoint<Foam::scalar>&
-Foam::mcParticle::trackData::psiInterp() const
+Foam::mcParticle::trackData::zInterp() const
 {
-    return psiInterp_;
+    return zInterp_;
 }
 
 
@@ -163,11 +167,15 @@ inline const Foam::vector& Foam::mcParticle::UFap() const
     return UFap_;
 }
 
-inline const Foam::scalar& Foam::mcParticle::psi() const
+inline const Foam::scalar& Foam::mcParticle::z() const
 {
-  return psi_;
+  return z_;
 }
 
+inline const Foam::scalar& Foam::mcParticle::rho() const
+{
+  return rho_;
+}
 
 inline Foam::scalar& Foam::mcParticle::dt()
 {

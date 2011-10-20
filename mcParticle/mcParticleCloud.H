@@ -102,6 +102,8 @@ class mcParticleCloud:
 
         //- The mesh
         const fvMesh& mesh_;
+        //- The control dictionary
+        dictionary particleProperties_;
         //- The time object
         const Time& runTime_;
 
@@ -111,10 +113,8 @@ class mcParticleCloud:
         const volScalarField& rhofv_;
         //- The FV TKE field
         const volScalarField& kfv_;
-        //- The FV scalar field
-        const volScalarField& psifv_;
-        //- The control dictionary
-        IOdictionary particleProperties_;
+        //- The FV mixture fraction field
+        const volScalarField& zfv_;
 
         //- The averaging time scale
         scalar AvgTimeScale_;
@@ -141,13 +141,15 @@ class mcParticleCloud:
             //- Number of particles in cell
             volScalarField      PaNIC_;
             //- Averaged mass
-            volScalarField M0_;
+            volScalarField mMean_;
+            //- Averaged volume
+            volScalarField VMean_;
             //- Averaged velocity
-            volVectorField M1_;
+            volVectorField UMean_;
             //- Averaged mixture fraction
-            volScalarField Mpsi1_;
+            volScalarField zMean_;
             //- Averaged Reynolds stress
-            volSymmTensorField M2_;
+            volSymmTensorField uuMean_;
 
         //- List of cell-indices for each ghost patch
         labelListList    ghostCellLayers_;
@@ -166,8 +168,8 @@ class mcParticleCloud:
         volScalarField rhocPdf_;
         //- Extracted, time-averaged velocity
         volVectorField UcPdf_;
-        //- Extracted, time-averaged scalar
-        volScalarField psicPdf_;
+        //- Extracted, time-averaged mixture fraction
+        volScalarField zcPdf_;
         //- Extracted, time-averaged turbulent stress tensor
         volSymmTensorField TaucPdf_;
         //- Extracted, time-averaged TKE
@@ -232,14 +234,18 @@ public:
 
     // Constructors
 
-        //- Construct given mesh
+        //- Construct from components
+        // If any of the field pointers happens to be 0, the corresponding
+        // field will be looked up from the @a mesh. The names of the fields
+        // can be overriden in the dictionary @a dict.
         mcParticleCloud
         (
-            const fvMesh&,
-            const volVectorField& U,
-            const volScalarField& rho,
-            const volScalarField& k,
-            const volScalarField& psi,
+            const fvMesh& mesh,
+            const dictionary& dict,
+            const volVectorField* U = 0,
+            const volScalarField* rho = 0,
+            const volScalarField* k = 0,
+            const volScalarField* z = 0,
             const word& cloudName = "defaultCloud"
         );
 
@@ -267,13 +273,14 @@ public:
         // values and the scale of velocity fluctuation
         void particleGenInCell
         (
-            label  celli,
-            label  N,
+            label celli,
+            label N,
             scalar m,
-            const  vector& Updf,
-            const  vector& uscales,
-            scalar psi,
-            const  vector& shift = vector::zero,
+            const vector& Updf,
+            const vector& uscales,
+            scalar z,
+            scalar rho,
+            const vector& shift = vector::zero,
             label  ghost = 0
         );
 

@@ -97,12 +97,24 @@
     args.optionReadIfPresent("cloudName", mcParticleCloudName);
 
     Info<< "Constructing mcParticleCloud " << mcParticleCloudName << endl;
+    IOdictionary particleProperties
+    (
+       IOobject
+        (
+            "particleProperties",
+            runTime.constant(),
+            mesh,
+            IOobject::MUST_READ,
+            IOobject::NO_WRITE
+        )
+    );
     mcParticleCloud mcCloud
     (
      mesh, 
-     U,
-     rho,
-     k,
-     psi,
+     particleProperties,
+     &U,
+     &rho,
+     &k,
+     &psi,
      mcParticleCloudName
     );

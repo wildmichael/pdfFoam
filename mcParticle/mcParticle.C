@@ -27,13 +27,19 @@ License
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
+void Foam::mcParticle::updateThermo()
+{
+    // compute rho
+    rho_ = (1. - 3.2*z_*(1.-z_));
+}
 
 bool Foam::mcParticle::move(mcParticle::trackData& td)
 {
   // SLM constant, temperarily put here C0 = 2.1
 
     scalar C0 = 2.1;
-    scalar Cpsi = 0.6893;
+    // TODO shouldn't this be 2.0?
+    scalar Cz = 0.6893;
 
     td.switchProcessor = false;
     td.keepParticle = true;
@@ -84,11 +90,10 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         cellPointWeight cpw(mesh, position(), celli, face());
 
         // fluid quantities @ particle position
-        scalar rhoFap = td.rhoInterp().interpolate(cpw);
         vector gradPFap = td.gradPInterp().interpolate(cpw);
         scalar kFap = td.kInterp().interpolate(cpw);
         scalar epsilonFap = td.epsilonInterp().interpolate(cpw);
-        scalar psiCap = td.psiInterp().interpolate(cpw);
+        scalar zCap = td.zInterp().interpolate(cpw);
         vector diffUap = td.diffUInterp().interpolate(cpw);
 
         // interpolate fluid velocity to particle location This
@@ -106,8 +111,8 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
                 td.mcpc().random().GaussNormal()
             );
 
-        // Update velocity (rhof should be rho-particle??)
-        UParticle_ += - gradPFap/rhoFap * dt
+        // Update velocity
+        UParticle_ += - gradPFap/rho_ * dt
             - (0.5 + 0.75 * C0) * epsilonFap / kFap * (UParticle_- Updf_) * dt
             + sqrt(C0 * epsilonFap) * dW
             + diffUap * dt;
@@ -119,7 +124,9 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
             * (sqrt(mcpc.kfv()[celli]/mcpc.kcPdf()[celli]) - 1.0);
 
         // Evolve concentration
-        psi_ += -0.5 * Cpsi *  epsilonFap / kFap * (psi_ - psiCap) * dt;
+        z_ += -0.5 * Cz *  epsilonFap / kFap * (z_ - zCap) * dt;
+
+        updateThermo();
 
         if (onBoundary() && td.keepParticle)
         {
