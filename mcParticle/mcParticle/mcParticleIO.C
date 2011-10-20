@@ -45,6 +45,7 @@ Foam::mcParticle::mcParticle
             m_ = readScalar(is);
             is  >> Updf_
                 >> UParticle_
+                >> Utracking_
                 >> UFap_
                 >> Omega_
                 >> rho_
@@ -60,7 +61,7 @@ Foam::mcParticle::mcParticle
             (
                 reinterpret_cast<char*>(&m_),
                 sizeof(m_) + sizeof(Updf_) +
-                sizeof(UParticle_) + sizeof(UFap_) +
+                sizeof(UParticle_) + sizeof(Utracking_) + sizeof(UFap_) +
                 sizeof(Omega_) + sizeof(rho_) + sizeof(dt_) +
                 sizeof(shift_) + sizeof(ghost_)
             );
@@ -219,6 +220,7 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
             << token::SPACE << p.m_
             << token::SPACE << p.Updf_
             << token::SPACE << p.UParticle_
+            << token::SPACE << p.Utracking_
             << token::SPACE << p.UFap_
             << token::SPACE << p.Omega_
             << token::SPACE << p.rho_
@@ -234,7 +236,7 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
         (
             reinterpret_cast<const char*>(&p.m_),
             sizeof(p.m_) + sizeof(p.Updf_) +
-            sizeof(p.UParticle_) + sizeof(p.UFap_) +
+            sizeof(p.UParticle_) + sizeof(p.Utracking_) + sizeof(p.UFap_) +
             sizeof(p.Omega_) + sizeof(p.rho_)  + sizeof(p.dt_) +
             sizeof(p.shift_) + sizeof(p.ghost_)
         );

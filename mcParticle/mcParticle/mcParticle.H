@@ -72,6 +72,9 @@ class mcParticle
         //- particle velocity (mean + flutuation) (primary variable)
         vector UParticle_;
 
+        //- particle tracking velocity leading to destination position
+        vector Utracking_;
+
        //- fluid velocity @ particle location, updated at the end of each Lagrangian dt
        // (same time with Updf & UParticle)
        vector UFap_;

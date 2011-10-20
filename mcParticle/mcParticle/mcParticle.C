@@ -145,7 +145,8 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
     cellPointWeight cpwx(mesh, position(), cell(), face());
     vector gradRhoFap = td.gradRhoInterp().interpolate(cpwx);
 
-    point destPos = position() + tEnd * (correctedUp - gradRhoFap);
+    Utracking_ = correctedUp - gradRhoFap;
+    point destPos = position() + tEnd * Utracking_;
 
     if (mcpc.isAxiSymmetric())
     {
@@ -170,6 +171,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
 
         // set the lagrangian time-step
         scalar dt = min(dtMax, tEnd);
+        destPos = position() + dt * Utracking_;
 
         // Particle does not move with its actual velocity, but with
         // FV interpolated velocity plus particle fluctuation
@@ -292,6 +294,7 @@ void Foam::mcParticle::transformProperties (const tensor& T)
     Particle<mcParticle>::transformProperties(T);
     // Only transform fluctuating velocity
     UParticle_ = transform(T, UParticle_-Updf_)+Updf_;
+    Utracking_ = transform(T, Utracking_);
 }
 
 
