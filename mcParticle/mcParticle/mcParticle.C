@@ -290,10 +290,8 @@ bool Foam::mcParticle::hitPatch                                               \
 {                                                                             \
     if (isA<wedgePolyPatch>(patch))                                           \
     {                                                                         \
-        FatalErrorIn("mcParticle::hitPatch"                                   \
-            "(const polyPatch&, " #TRACKDATA "&, const label)")               \
-            << "A mcParticle should never hit a wedge patch!" << endl         \
-            << abort(FatalError);                                             \
+        const polyMesh& mesh = cloud().pMesh();                               \
+        meshTools::constrainDirection(mesh, mesh.geometricD(), position());   \
     }                                                                         \
     else                                                                      \
     {                                                                         \
