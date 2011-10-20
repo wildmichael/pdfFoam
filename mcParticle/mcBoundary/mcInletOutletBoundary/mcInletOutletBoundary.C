@@ -299,19 +299,19 @@ void Foam::mcInletOutletBoundary::correct
             }
 #endif
         }
-#ifdef FULLDEBUG
-            if (debug > 1)
-            {
-                statFile_().flush();
-            }
-#endif
-        if (debug)
-        {
-            reduce(np, sumOp<label>());
-            Info<< "Inlet particles: " << np << " generated"
-                " on patch " << patch().name() << endl;
-        }
     }
+    if (debug)
+    {
+        reduce(np, sumOp<label>());
+        Info<< "Inlet particles: " << np << " generated"
+            " on patch " << patch().name() << endl;
+    }
+#ifdef FULLDEBUG
+    if (debug > 1)
+    {
+        statFile_().flush();
+    }
+#endif
 }
 
 // ************************************************************************* //
