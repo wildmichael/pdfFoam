@@ -109,7 +109,7 @@ class mcParticleCloud
   label Npc_;
   // How many particle existed in history (including living ones)
   // only include particles generated in this run.
-  label histNp_; 
+  scalar histNp_; 
 
   //- statistical moments (mass, momentum, energy)
   //- needed to obtain Updf (and later Taupdf) fields

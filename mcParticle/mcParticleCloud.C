@@ -92,9 +92,10 @@ Foam::mcParticleCloud::mcParticleCloud
      ),
 
     dtCloud_(mesh.time().deltaT().value()),
-    AvgTimeScale_(mesh.time().endTime().value()),
+  //    AvgTimeScale_(mesh.time().endTime().value()),
+    AvgTimeScale_(20.0),
     random_(55555+12345*Pstream::myProcNo()),
-    Npc_(particleProperties_.lookupOrAddDefault<label>("particlesPerCell", 20)),
+    Npc_(particleProperties_.lookupOrAddDefault<label>("particlesPerCell", 50)),
     histNp_(size()),
 
     SMALL_MASS("SMALL_MASS", dimMass, SMALL),
@@ -542,7 +543,7 @@ void Foam::mcParticleCloud::findGhostLayers()
 
 void Foam::mcParticleCloud::evolve()
 {
-     dimensionedScalar coeffCorr("coeffCorr", dimLength*dimLength/dimTime, 1.0e-3);
+     dimensionedScalar coeffCorr("coeffCorr", dimLength*dimLength/dimTime, 1.0e-2);
     const volScalarField& rho = mesh_.lookupObject<const volScalarField>("rho");
     const volVectorField& U = mesh_.lookupObject<const volVectorField>("U");
     const volVectorField& gradP = mesh_.lookupObject<const volVectorField>("grad(p)");
@@ -583,8 +584,7 @@ void Foam::mcParticleCloud::evolve()
     Cloud<mcParticle>::move(td);
 
     // AvgTimeScale is a class member (should be read from dictionary).
-    scalar existWt = 0.8;
-      // 1.0/(1.0 + (mesh_.time().deltaT()/AvgTimeScale_).value());
+    scalar existWt = 1.0/(1.0 + (mesh_.time().deltaT()/AvgTimeScale_).value());
 
     updateCloudPDF(existWt);
     updateParticlePDF();
@@ -726,7 +726,7 @@ void Foam::mcParticleCloud::populateGhostCells()
               scalar m = (mesh_.V()[celli] * rhofv_[celli] - instantM0_[celli])  / N;
               if (m <= 0) 
                 {
-                  Info << "populateGhostCells::warning: negative mass"
+                  Info << "populateGhostCells::warning on negative mass. "
                        << "patch " << ghostPatchI << "; "
                        << "cell " << celli << endl;
                   continue; // prevent negative mass
@@ -775,9 +775,9 @@ void Foam::mcParticleCloud::info() const
 {
   Info<< "Cloud: " << this->name() << nl
       << "    Current number of particles         = "
-      << returnReduce(this->size(), sumOp<label>()) << nl
-      << "    Totally number of particles existed = "
-      << returnReduce(histNp_,      sumOp<label>()) << nl;
+      << returnReduce(this->size(), sumOp<label>()) << nl;
+  //      << "    Totally number of particles existed = "
+  //      << returnReduce(histNp_,      sumOp<label>()) << nl;
 }
 
 
