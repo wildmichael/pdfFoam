@@ -563,7 +563,7 @@ void Foam::mcParticleCloud::checkMoments()
                     IOobject::AUTO_WRITE
                 ),
                 mesh_,
-                dimensionedScalar(name, dimless, 0)
+                dimensionedScalar(name, dimMass, 0)
             ));
         if (!PhiMom_[PhiI].headerOk())
         {
