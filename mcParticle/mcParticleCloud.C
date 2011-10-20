@@ -91,7 +91,7 @@ Foam::mcParticleCloud::mcParticleCloud
     dtCloud_(mesh.time().deltaT().value()),
     AvgTimeScale_(mesh.time().endTime().value()),
     random_(55555+12345*Pstream::myProcNo()),
-    Npc_(3),
+    Npc_(30),
 
     SMALL_MASS("SMALL_MASS", dimMass, SMALL),
 
@@ -466,6 +466,8 @@ void Foam::mcParticleCloud::evolve()
     const volScalarField& k = mesh_.lookupObject<const volScalarField>("k");
     const volScalarField& epsilon = mesh_.lookupObject<const volScalarField>("epsilon");
 
+    Info << "current time index: " << mesh_.time().timeIndex() << endl;
+
     interpolationCellPoint<scalar> rhoInterp(rho);
     interpolationCellPoint<vector> UInterp(U);
     interpolationCellPoint<vector> gradPInterp(gradP);
@@ -497,11 +499,10 @@ void Foam::mcParticleCloud::initReleaseParticles()
   // Populate each cell with partilces
   forAll(Ufv_, celli)
     {
-      if(celli > 0) continue;
       
       // &&& Should be a cloud property (class number)
       scalar m = mesh_.V()[celli] * rhofv_[celli] / Npc_;
-      vector Updf = UcPdf_[celli];
+      vector Updf = Ufv_[celli];
       vector uscales(sqrt(kfv_[celli]), sqrt(kfv_[celli]), sqrt(kfv_[celli]));
 
       particleGenInCell(celli, Npc_, m, Updf, uscales);
@@ -581,7 +582,7 @@ void Foam::mcParticleCloud::populateGhostCells()
       forAll(ghostCellLayers_[patchi], faceCelli)
         {
           label celli = ghostCellLayers_[patchi][faceCelli];
-          if (celli > 0) return;
+
           if(PaNIC_[celli] < Npc_ / 2)
             { 
               label N = Npc_- PaNIC_[celli];
@@ -590,7 +591,7 @@ void Foam::mcParticleCloud::populateGhostCells()
               vector Updf = Ufv_[celli];
               scalar ksqrt = sqrt(kfv_[celli]);
               vector uscales(ksqrt, ksqrt, ksqrt);
-              //NOTE: the mass is not correct.
+
               particleGenInCell(celli,  N, m, Updf, uscales);
               if (debug_)
                 Info << N << " particles generated in cell " << celli
