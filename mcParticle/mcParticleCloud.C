@@ -742,7 +742,7 @@ void Foam::mcParticleCloud::initReleaseParticles()
       particleGenInCell(celli, N, m, Updf, uscales, psi, vector::zero, 0);
     }
 
-  writeFields();
+  // writeFields();
 }
 
 
