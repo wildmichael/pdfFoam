@@ -53,6 +53,7 @@ Foam::mcParticle::mcParticle
                 >> Co_
                 >> ghost_
                 >> nSteps_
+                >> isOnInletBoundary_
                 >> Phi_
                 ;
         }
@@ -65,7 +66,7 @@ Foam::mcParticle::mcParticle
                 sizeof(UParticle_) + sizeof(Utracking_) + sizeof(UFap_) +
                 sizeof(Omega_) + sizeof(rho_) +
                 sizeof(shift_) + sizeof(Co_) + sizeof(ghost_) +
-                sizeof(nSteps_)
+                sizeof(nSteps_) + sizeof(isOnInletBoundary_)
             );
             is >> Phi_;
         }
@@ -232,6 +233,7 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
             << token::SPACE << p.Co_
             << token::SPACE << p.ghost_
             << token::SPACE << p.nSteps_
+            << token::SPACE << p.isOnInletBoundary_
             << token::SPACE << p.Phi_;
     }
     else
@@ -244,7 +246,7 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
             sizeof(p.UParticle_) + sizeof(p.Utracking_) + sizeof(p.UFap_) +
             sizeof(p.Omega_) + sizeof(p.rho_) +
             sizeof(p.shift_) + sizeof(p.Co_) + sizeof(p.ghost_) +
-            sizeof(p.nSteps_)
+            sizeof(p.nSteps_) + sizeof(p.isOnInletBoundary_)
         );
         os  << p.Phi_;
     }

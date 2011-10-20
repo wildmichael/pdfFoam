@@ -192,4 +192,16 @@ inline Foam::scalar Foam::mcParticle::Co() const
     return Co_;
 }
 
+
+inline bool Foam::mcParticle::isOnInletBoundary() const
+{
+    return isOnInletBoundary_;
+}
+
+
+inline bool& Foam::mcParticle::isOnInletBoundary()
+{
+    return isOnInletBoundary_;
+}
+
 // ************************************************************************* //

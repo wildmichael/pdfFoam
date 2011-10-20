@@ -99,6 +99,14 @@ class mcParticle
        //- Number of tracking steps during single time-step
        label nSteps_;
 
+       // ==== PUT ALL char AND OTHER 2-BYTE TYPES AFTER THIS === //
+
+       // ==== PUT ALL bool AND OTHER 1-BYTE TYPES AFTER THIS === //
+
+       //- Whether this particle is located on an inlet boundary
+       // and must be assigned a random stepFraction
+       bool isOnInletBoundary_;
+
        // ==== PUT ALL NON-POD DATA AFTER THIS === //
 
        //- scalar properties
@@ -255,6 +263,12 @@ public:
 
             //- particle Courant number
             inline scalar Co() const;
+
+            //- whether this particle is located on a inlet boundary
+            inline bool isOnInletBoundary() const;
+
+            //- whether this particle is located on a inlet boundary
+            inline bool& isOnInletBoundary();
 
 
         // Tracking

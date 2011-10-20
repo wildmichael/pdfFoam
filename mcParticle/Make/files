@@ -16,5 +16,7 @@ mcBoundary/mcEmptyBoundary/mcEmptyBoundary.C
 mcBoundary/mcGhostInletOutletBoundary/mcGhostInletOutletBoundary.C
 mcBoundary/mcProcessorBoundary/mcProcessorBoundary.C
 mcBoundary/mcOpenBoundary/mcOpenBoundary.C
+mcBoundary/mcInletOutletBoundary/mcInletOutletBoundary.C
+mcBoundary/mcInletOutletBoundary/InletRandom.C
 
 LIB = $(FOAM_USER_LIBBIN)/libmcParticle

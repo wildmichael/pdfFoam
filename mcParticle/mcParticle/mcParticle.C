@@ -117,6 +117,7 @@ Foam::mcParticle::mcParticle
     Co_(0.0),
     ghost_(ghost),
     nSteps_(0),
+    isOnInletBoundary_(false),
     Phi_(Phi)
 {}
 
@@ -132,6 +133,11 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
 
     mcParticleCloud& mcpc = refCast<mcParticleCloud>(td.cloud());
 
+    if (isOnInletBoundary_)
+    {
+        stepFraction() = mcpc.random().scalar01();
+    }
+
     const polyMesh& mesh = mcpc.pMesh();
     const polyBoundaryMesh& pbMesh = mesh.boundaryMesh();
 
@@ -139,7 +145,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
     scalar tEnd = (1.0 - stepFraction())*deltaT;
     scalar dtMax = tEnd;
 
-    if (stepFraction() < SMALL)
+    if (stepFraction() < SMALL || isOnInletBoundary_)
     {
         if (debug)
         {
@@ -180,6 +186,8 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
               (UParticle_ - Updf_)  * deltaT / mcpc.kRelaxTime().value()
             * (sqrt(mcpc.kfv()()[cell()]/mcpc.kcPdf()[cell()]) - 1.0);
     }
+
+    isOnInletBoundary_ = false;
 
     vector correctedUp = UParticle_ - Updf_ + UFap_;
 
