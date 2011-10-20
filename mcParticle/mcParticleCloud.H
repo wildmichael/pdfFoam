@@ -132,7 +132,6 @@ class mcParticleCloud
   HashSet<label>   ghostCellHash_;
   HashSet<label>   ghostFaceHash_;
 
-
   // Mesh based velocity and Reynolds stress, obtained from particle
   // quantities.
   volScalarField rhocPdf_;

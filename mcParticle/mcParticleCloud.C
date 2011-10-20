@@ -818,9 +818,9 @@ void Foam::mcParticleCloud::populateGhostCells()
           
           particleGenInCell(celli, N, m, Updf, uscales, psi, ghost, shift);
           
-          if (1)
+          if (debug_)
             Info << N << " particles generated in cell " << celli
-                 << " m= " << m 
+                 << " m = " << m 
                  << " shift = " << shift << endl;
 
         }
@@ -830,7 +830,31 @@ void Foam::mcParticleCloud::populateGhostCells()
 
 void Foam::mcParticleCloud::purgeGhostParticles()
 {
-  
+  for(mcParticleCloud::iterator pIter=begin(); 
+      pIter != end();
+      ++pIter
+      )
+    {
+      mcParticle & p = pIter();
+      if( p.ghost() > 0 ) // This is a ghost
+        {
+          label celli = p.cell();
+          if( ghostCellHash_.found(celli) ) // still in ghost cell
+            {
+              deleteParticle(p);
+            }
+          else
+            { 
+              // shift and accept this particle
+              p.ghost()    = 0;
+              p.shift() = vector::zero;
+            }
+        }
+      else
+        { 
+          continue; 
+        }
+    }  
 }
 
 

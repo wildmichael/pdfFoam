@@ -215,6 +215,17 @@ public:
             //- particle time step
             inline scalar& dt();
 
+            //- whether this particle is ghost
+            inline label ghost() const;
+
+            inline label& ghost();
+
+            //- shift for ghost particles
+            inline const vector& shift() const;
+
+            inline vector& shift();
+
+
         // Tracking
 
             //- Move

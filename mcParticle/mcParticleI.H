@@ -175,4 +175,24 @@ inline Foam::scalar& Foam::mcParticle::dt()
 }
 
 
+inline Foam::label Foam::mcParticle::ghost() const
+{
+    return ghost_;
+}
+
+inline Foam::label& Foam::mcParticle::ghost()
+{
+    return ghost_;
+}
+
+inline const Foam::vector& Foam::mcParticle::shift() const
+{
+    return shift_;
+}
+
+inline Foam::vector& Foam::mcParticle::shift()
+{
+    return shift_;
+}
+
 // ************************************************************************* //
