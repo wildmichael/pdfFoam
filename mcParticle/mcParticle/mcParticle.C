@@ -272,9 +272,6 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
             }
         }
     }
-    //if (mcpc.time().value() >= 0.000922)
-    //  Perr<< "       DONE moving particle " << origId_ << nl;
-
     return td.keepParticle;
 }
 
