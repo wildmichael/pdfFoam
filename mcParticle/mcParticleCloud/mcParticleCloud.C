@@ -1090,9 +1090,6 @@ void Foam::mcParticleCloud::evolve()
     reactionModel_().correct(*this);
 
     scalar existWt = 1.0/(1.0 + (runTime_.deltaT()/AvgTimeScale_).value());
-    // Extract statistical averaging to obtain mesh-based quantities
-    updateCloudPDF(existWt);
-    updateParticlePDF();
 
     mcParticle::trackData td
     (
@@ -1106,11 +1103,15 @@ void Foam::mcParticleCloud::evolve()
     );
 
     Cloud<mcParticle>::move(td);
-    printParticleCo();
 
     // "Accept" and shift the survived ghost particles
     //  and clear those still in ghost a cell
     purgeGhostParticles();
+
+    // Extract statistical averaging to obtain mesh-based quantities
+    updateCloudPDF(existWt);
+    updateParticlePDF();
+    printParticleCo();
 
     particleNumberControl();
 
