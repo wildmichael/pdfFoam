@@ -59,7 +59,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         // set the lagrangian time-step
         scalar dt = min(dtMax, tEnd);
 
-        // remember which cell the parcel is in
+        // remember which cell the particle is in
         // since this will change if a face is hit
         label celli = cell();
 

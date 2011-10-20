@@ -405,23 +405,15 @@ void Foam::mcParticleCloud::particleNumberControl()
     // Sort the lists with particles, and perform particle number control
     forAll(cellPopFlag, celli)
       { 
-
         if (cellPopFlag[celli] == TOOFEW)
           {      
-            // Exclude ghost cells
-            if (!ghostCellHash_.found(celli))
-              {
-                sort(cellParticleAddr_[celli], more());
-                cloneParticles(celli);
-              }
+            sort(cellParticleAddr_[celli], more());
+            cloneParticles(celli);
           }
         else if ( cellPopFlag[celli] == TOOMANY )
           {
-            if (!ghostCellHash_.found(celli))
-              {
-                sort(cellParticleAddr_[celli],  less());
-                clusterParticles(celli);
-              }
+            sort(cellParticleAddr_[celli],  less());
+            clusterParticles(celli);
           }
       }
         
@@ -830,6 +822,9 @@ void Foam::mcParticleCloud::populateGhostCells()
 
 void Foam::mcParticleCloud::purgeGhostParticles()
 {
+
+  label nDelete = 0;
+  label nAdmit = 0;
   for(mcParticleCloud::iterator pIter=begin(); 
       pIter != end();
       ++pIter
@@ -842,19 +837,38 @@ void Foam::mcParticleCloud::purgeGhostParticles()
           if( ghostCellHash_.found(celli) ) // still in ghost cell
             {
               deleteParticle(p);
+              nDelete++;
             }
           else
             { 
-              // shift and accept this particle
-              p.ghost()    = 0;
+              // shift and accept this particle as normal member
+              p.position() -= p.shift();
+              label newCelli = mesh_.findCell(p.position());
+              if (newCelli < 0) 
+                {
+                  Pout << "Warning in mcParticleCloud::purgeGhostParticles()" << nl
+                       << "Shifting of ghost particles caused loss."  << nl
+                       << "Possible causes are: " << nl
+                       << " (1) Strange ghost cell shapes;" << nl
+                       << " (2) parallel computing + large time steps" << nl
+                       << "Info for the lost particle: " << endl;
+                  oneParticleInfo(p);
+                  deleteParticle(p);
+                }
+              p.cell()  = newCelli;
+              p.ghost() = 0;
               p.shift() = vector::zero;
+              nAdmit++;
             }
         }
       else
         { 
           continue; 
         }
-    }  
+    }
+
+  Info << "Ghost particles: " << nDelete << " deleted, " << nAdmit << " admitted." << endl;
+  
 }
 
 
