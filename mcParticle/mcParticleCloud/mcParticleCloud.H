@@ -237,6 +237,9 @@ class mcParticleCloud:
             //- Eliminate particles in @a celli
             void eliminateParticles(label celli);
 
+        //- Initialize statistical moments
+        void initMoments();
+
         //- Finds the ghost cell layers
         void findGhostLayers();
 

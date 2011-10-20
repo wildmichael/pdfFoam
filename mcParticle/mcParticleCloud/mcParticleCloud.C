@@ -577,7 +577,7 @@ void Foam::mcParticleCloud::checkMoments()
     else if (size() > 0)
     {
         Info<< "Moments are missing. Forced re-initialization." << endl;
-        updateCloudPDF(0.0);
+        initMoments();
     }
     else
     {
@@ -1241,6 +1241,30 @@ void Foam::mcParticleCloud::particleGenInCell
         histNp_ += Npgen;
     }
 
+}
+
+
+// Initialize statistical moments from FV data
+void Foam::mcParticleCloud::initMoments()
+{
+    mMom_  = mesh_.V() * rhocPdf_;
+    pndcPdf_.internalField() = rhocPdf_.internalField();
+
+    VMom_  = mMom_ / rhocPdf_;
+
+    UMom_  = mMom_ * Ufv_;
+    UcPdf_.internalField()   = Ufv_.internalField();
+    UcPdf_.correctBoundaryConditions();
+
+    forAll(PhicPdf_, PhiI)
+    {
+        PhiMom_[PhiI] = mMom_ * (*PhicPdf_[PhiI]);
+    }
+
+    uuMom_ = mMom_ * turbulenceModel().R()();
+
+    kcPdf_.internalField()   = turbulenceModel().k()().internalField();
+    kcPdf_.correctBoundaryConditions();
 }
 
 
