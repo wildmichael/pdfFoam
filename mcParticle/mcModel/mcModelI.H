@@ -23,57 +23,11 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "mcColdReactionModel.H"
-
-#include "addToRunTimeSelectionTable.H"
-#include "mcParticleCloud.H"
-
-// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
-
-namespace Foam
-{
-
-    defineTypeNameAndDebug(mcColdReactionModel, 0);
-    addNamedToRunTimeSelectionTable
-    (
-        mcReactionModel,
-        mcColdReactionModel,
-        mcReactionModel,
-        Cold
-    );
-
-} // namespace Foam
-
-// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
-
-Foam::mcColdReactionModel::mcColdReactionModel
-(
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& dict
-)
-:
-    mcReactionModel(db, dict),
-    rho_(dict.lookupOrDefault<scalar>("density", 1.0))
-{}
-
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::mcColdReactionModel::correct(Foam::mcParticleCloud& cloud)
+const Foam::objectRegistry& Foam::mcModel::db() const
 {
-    forAllIter(mcParticleCloud, cloud, pIter)
-    {
-        correct(cloud, pIter());
-    }
-}
-
-
-void Foam::mcColdReactionModel::correct
-(
-    Foam::mcParticleCloud& cloud,
-    Foam::mcParticle& p
-)
-{
-    p.rho() = rho_;
+    return db_;
 }
 
 // ************************************************************************* //

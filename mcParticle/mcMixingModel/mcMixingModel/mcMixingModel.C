@@ -38,15 +38,20 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::mcMixingModel::mcMixingModel(const Foam::dictionary& dict)
+Foam::mcMixingModel::mcMixingModel
+(
+    const Foam::objectRegistry& db,
+    const Foam::dictionary& dict
+)
 :
-    dictionary(dict)
+    mcModel(db, dict)
 {}
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
 
 Foam::autoPtr<Foam::mcMixingModel> Foam::mcMixingModel::New
 (
+    const Foam::objectRegistry& db,
     const Foam::dictionary& dict
 )
 {
@@ -66,7 +71,7 @@ Foam::autoPtr<Foam::mcMixingModel> Foam::mcMixingModel::New
             << exit(FatalError);
     }
 
-    return autoPtr<mcMixingModel>(cstrIter()(dict));
+    return autoPtr<mcMixingModel>(cstrIter()(db, dict));
 }
 
 // ************************************************************************* //

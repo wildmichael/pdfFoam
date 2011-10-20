@@ -81,6 +81,7 @@ public:
         //- Construct from components
         mcRASOmegaModel
         (
+            const objectRegistry& db,
             const dictionary& mcRASOmegaModelDict
         );
 

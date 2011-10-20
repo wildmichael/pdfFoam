@@ -38,8 +38,9 @@ Author
 #ifndef mcOmegaModel_H
 #define mcOmegaModel_H
 
+#include "mcModel.H"
+
 #include "autoPtr.H"
-#include "dictionary.H"
 #include "interpolationCellPoint.H"
 #include "runTimeSelectionTables.H"
 #include "typeInfo.H"
@@ -57,7 +58,7 @@ class mcParticleCloud;
 \*---------------------------------------------------------------------------*/
 
 class mcOmegaModel :
-    public dictionary
+    public mcModel
 {
 
     // Private Member Functions
@@ -80,9 +81,10 @@ public:
             mcOmegaModel,
             mcOmegaModel,
             (
+                const Foam::objectRegistry& db,
                 const dictionary& mcOmegaModelDict
             ),
-            (mcOmegaModelDict)
+            (db, mcOmegaModelDict)
         );
 
     // Constructors
@@ -90,6 +92,7 @@ public:
         //- Construct from components
         mcOmegaModel
         (
+            const Foam::objectRegistry& db,
             const dictionary& mcOmegaModelDict
         );
 
@@ -99,6 +102,7 @@ public:
         //- Return a reference to the selected Omega model
         static autoPtr<mcOmegaModel> New
         (
+            const Foam::objectRegistry& db,
             const dictionary& mcOmegaModelDict
         );
 

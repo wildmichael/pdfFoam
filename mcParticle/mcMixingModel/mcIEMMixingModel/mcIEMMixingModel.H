@@ -81,6 +81,7 @@ public:
         //- Construct from components
         mcIEMMixingModel
         (
+            const objectRegistry& db,
             const dictionary& mcIEMMixingModelDict
         );
 

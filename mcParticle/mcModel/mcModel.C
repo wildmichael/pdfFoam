@@ -23,55 +23,30 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "mcOmegaModel.H"
+#include "mcModel.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
-    defineTypeNameAndDebug(mcOmegaModel, 0);
-    defineRunTimeSelectionTable(mcOmegaModel, mcOmegaModel);
+    defineTypeNameAndDebug(mcModel, 0);
 
 } // namespace Foam
 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::mcOmegaModel::mcOmegaModel
+Foam::mcModel::mcModel
 (
     const Foam::objectRegistry& db,
     const Foam::dictionary& dict
 )
 :
-    mcModel(db, dict)
+    dictionary(dict),
+    db_(db),
+    scalarFields_(),
+    mixedScalarFields_()
 {}
-
-// * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
-
-Foam::autoPtr<Foam::mcOmegaModel> Foam::mcOmegaModel::New
-(
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& dict
-)
-{
-    word reactionType(dict.lookup("OmegaModel"));
-
-    mcOmegaModelConstructorTable::iterator cstrIter =
-        mcOmegaModelConstructorTablePtr_->find(reactionType);
-
-    if (cstrIter == mcOmegaModelConstructorTablePtr_->end())
-    {
-        FatalErrorIn
-        (
-            "mcOmegaModel::New(const fvMesh&, const dictionary&)"
-        )   << "Unknown mcOmegaModel type " << reactionType << endl << endl
-            << "Valid mcOmegaModel types are :" << endl
-            << mcOmegaModelConstructorTablePtr_->sortedToc()
-            << exit(FatalError);
-    }
-
-    return autoPtr<mcOmegaModel>(cstrIter()(db, dict));
-}
 
 // ************************************************************************* //

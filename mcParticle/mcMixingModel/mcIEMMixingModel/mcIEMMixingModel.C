@@ -47,9 +47,13 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::mcIEMMixingModel::mcIEMMixingModel(const Foam::dictionary& dict)
+Foam::mcIEMMixingModel::mcIEMMixingModel
+(
+    const Foam::objectRegistry& db,
+    const Foam::dictionary& dict
+)
 :
-    mcMixingModel(dict),
+    mcMixingModel(db, dict),
     Cmix2_(0.5*lookupOrDefault<scalar>("Cmix", 2.0))
 {}
 

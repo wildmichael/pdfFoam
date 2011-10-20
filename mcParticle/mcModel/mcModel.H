@@ -25,24 +25,25 @@ Class
     Foam::mcMixingModel
 
 Description
-    Abstract base class for Monte Carlo mixing models
+    Abstract base class for Monte Carlo sub-models
 
 SourceFiles
-    mcMixingModel.C
+    mcModelI.H
+    mcModel.C
 
 Author
     Michael Wild
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef mcMixingModel_H
-#define mcMixingModel_H
+#ifndef mcModel_H
+#define mcModel_H
 
-#include "mcModel.H"
-
-#include "autoPtr.H"
-#include "runTimeSelectionTables.H"
+#include "dictionary.H"
+#include "labelList.H"
+#include "List.H"
 #include "typeInfo.H"
+#include "volFieldsFwd.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -50,74 +51,66 @@ namespace Foam
 {
 
 class mcParticleCloud;
+class objectRegistry;
 
 /*---------------------------------------------------------------------------*\
-                        Class mcMixingModel Declaration
+                           Class mcModel Declaration
 \*---------------------------------------------------------------------------*/
 
-class mcMixingModel :
-    public mcModel
+class mcModel :
+    public dictionary
 {
+
+    // Private Data
+
+        //- Object registry
+        const objectRegistry& db_;
+        //- List of scalar fields extracted from the cloud needed by the model
+        List<volScalarField*> scalarFields_;
+        //- List of scalar fields extracted from the cloud that need mixing
+        labelList mixedScalarFields_;
 
     // Private Member Functions
 
         // Disallow default bitwise copy construct and assignment
-        mcMixingModel(const mcMixingModel&);
-        void operator=(const mcMixingModel&);
+        mcModel(const mcModel&);
+        void operator=(const mcModel&);
 
 public:
 
     //- Runtime type information
-    TypeName("mcMixingModel");
-
-
-    // Declare run-time constructor selection table
-
-        declareRunTimeSelectionTable
-        (
-            autoPtr,
-            mcMixingModel,
-            mcMixingModel,
-            (
-                const objectRegistry& db,
-                const dictionary& mcMixingModelDict
-            ),
-            (db, mcMixingModelDict)
-        );
+    TypeName("mcModel");
 
     // Constructors
 
         //- Construct from components
-        mcMixingModel
+        mcModel
         (
             const objectRegistry& db,
-            const dictionary& mcMixingModelDict
-        );
-
-
-    // Selectors
-
-        //- Return a reference to the selected mixing model
-        static autoPtr<mcMixingModel> New
-        (
-            const objectRegistry& db,
-            const dictionary& mcMixingModelDict
+            const dictionary& dict
         );
 
     //- Destructor
-        virtual ~mcMixingModel()
+        virtual ~mcModel()
         {}
 
     // Member Functions
 
-        //- Apply the mixing model to the particle cloud
+        //- Apply the model to the particle cloud
         virtual void correct(mcParticleCloud& cloud) = 0;
+
+        //- The object registry
+        inline const objectRegistry& db() const;
 
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#include "mcModelI.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

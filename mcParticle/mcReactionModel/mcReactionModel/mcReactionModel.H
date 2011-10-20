@@ -38,8 +38,9 @@ Author
 #ifndef mcReactionModel_H
 #define mcReactionModel_H
 
+#include "mcModel.H"
+
 #include "autoPtr.H"
-#include "dictionary.H"
 #include "runTimeSelectionTables.H"
 #include "typeInfo.H"
 
@@ -56,7 +57,7 @@ class mcParticleCloud;
 \*---------------------------------------------------------------------------*/
 
 class mcReactionModel :
-    public dictionary
+    public mcModel
 {
 
     // Private Member Functions
@@ -79,9 +80,10 @@ public:
             mcReactionModel,
             mcReactionModel,
             (
+                const objectRegistry& db,
                 const dictionary& mcReactionModelDict
             ),
-            (mcReactionModelDict)
+            (db, mcReactionModelDict)
         );
 
     // Constructors
@@ -89,6 +91,7 @@ public:
         //- Construct from components
         mcReactionModel
         (
+            const objectRegistry& db,
             const dictionary& mcReactionModelDict
         );
 
@@ -98,6 +101,7 @@ public:
         //- Return a reference to the selected reaction model
         static autoPtr<mcReactionModel> New
         (
+            const objectRegistry& db,
             const dictionary& mcReactionModelDict
         );
 

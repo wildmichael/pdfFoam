@@ -48,9 +48,13 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::mcRASOmegaModel::mcRASOmegaModel(const Foam::dictionary& dict)
+Foam::mcRASOmegaModel::mcRASOmegaModel
+(
+    const Foam::objectRegistry& db,
+    const Foam::dictionary& dict
+)
 :
-    mcOmegaModel(dict),
+    mcOmegaModel(db, dict),
     OmegaInterp_()
 {}
 

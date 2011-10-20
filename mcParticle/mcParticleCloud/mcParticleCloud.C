@@ -136,9 +136,9 @@ Foam::mcParticleCloud::mcParticleCloud
     (
         turbModel ? *turbModel : *getTurbulenceModel(mesh)
     ),
-    OmegaModel_(mcOmegaModel::New(dict)),
-    mixingModel_(mcMixingModel::New(dict)),
-    reactionModel_(mcReactionModel::New(dict)),
+    OmegaModel_(mcOmegaModel::New(mesh, dict)),
+    mixingModel_(mcMixingModel::New(mesh, dict)),
+    reactionModel_(mcReactionModel::New(mesh, dict)),
     Ufv_
     (
         U ? *U : mesh_.lookupObject<volVectorField>

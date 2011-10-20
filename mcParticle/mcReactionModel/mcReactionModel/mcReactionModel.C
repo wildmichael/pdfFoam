@@ -37,15 +37,20 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::mcReactionModel::mcReactionModel(const Foam::dictionary& dict)
+Foam::mcReactionModel::mcReactionModel
+(
+    const Foam::objectRegistry& db,
+    const Foam::dictionary& dict
+)
 :
-    dictionary(dict)
+    mcModel(db, dict)
 {}
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
 
 Foam::autoPtr<Foam::mcReactionModel> Foam::mcReactionModel::New
 (
+    const Foam::objectRegistry& db,
     const Foam::dictionary& dict
 )
 {
@@ -65,7 +70,7 @@ Foam::autoPtr<Foam::mcReactionModel> Foam::mcReactionModel::New
             << exit(FatalError);
     }
 
-    return autoPtr<mcReactionModel>(cstrIter()(dict));
+    return autoPtr<mcReactionModel>(cstrIter()(db, dict));
 }
 
 // ************************************************************************* //

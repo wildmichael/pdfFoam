@@ -73,6 +73,7 @@ public:
         //- Construct from components
         mcColdReactionModel
         (
+            const objectRegistry& db,
             const dictionary& mcColdReactionModelDict
         );
 
