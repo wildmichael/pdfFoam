@@ -113,6 +113,7 @@ Foam::mcParticleCloud::mcParticleCloud
     const volVectorField* U,
     volScalarField* rho,
     const volScalarField* k,
+    volScalarField* z,
     const word& cloudName
 )
 :
@@ -127,20 +128,16 @@ Foam::mcParticleCloud::mcParticleCloud
     ),
     rhofv_
     (
-        rho ? *rho : const_cast<volScalarField&>(mesh.lookupObject<volScalarField>
-                         (dict.lookupOrDefault<word>("rho", "rho")))
+        rho ? *rho : const_cast<volScalarField&>(
+            mesh.lookupObject<volScalarField>(
+                dict.lookupOrDefault<word>("rho", "rho")))
     ),
     zfv_
     (
-        IOobject
-        (
-            dict.lookupOrDefault<word>("z", "z"),
-            runTime_.timeName(),
-            mesh,
-            IOobject::MUST_READ,
-            IOobject::AUTO_WRITE
-        ),
-        mesh
+        z ? *z : const_cast<volScalarField&>(
+            mesh.lookupObject<volScalarField>(
+                dict.lookupOrDefault<word>(
+                    "mixtureFraction", "z")))
     ),
     AvgTimeScale_
     (
@@ -276,23 +273,6 @@ Foam::mcParticleCloud::mcParticleCloud
         UMean_/max(mMean_, SMALL_MASS),
         // Use the boundary conditions of U (FV)
         Ufv_.boundaryField()
-    ),
-
-    zcPdf_
-    (
-        IOobject
-        (
-            "zCloudPDF",
-            runTime_.timeName(),
-            mesh,
-            IOobject::READ_IF_PRESENT,
-            IOobject::AUTO_WRITE
-        ),
-        mesh_,
-        dimless,
-        zMean_/max(mMean_, SMALL_MASS),
-        // Use the boundary conditions of z (FV)
-        zfv_.boundaryField()
     ),
 
     TaucPdf_
@@ -492,14 +472,14 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
     rhofv_.internalField() = mMean_/VMean_;
     pndcPdf_.internalField() = mMean_/mesh_.V();
     UcPdf_.internalField()   = UMean_/max(mMean_, SMALL_MASS);
-    zcPdf_.internalField()   = zMean_ / max(mMean_, SMALL_MASS);
+    zfv_.internalField()   = zMean_ / max(mMean_, SMALL_MASS);
     TaucPdf_.internalField() = uuMean_/max(mMean_, SMALL_MASS);
     kcPdf_.internalField()   = 0.5 * tr(TaucPdf_.internalField());
 
     // Update boundary conditions
     rhofv_.correctBoundaryConditions();
     UcPdf_.correctBoundaryConditions();
-    zcPdf_.correctBoundaryConditions();
+    zfv_.correctBoundaryConditions();
     TaucPdf_.correctBoundaryConditions();
     kcPdf_.correctBoundaryConditions();
 }
@@ -875,6 +855,7 @@ void Foam::mcParticleCloud::evolve()
     interpolationCellPoint<scalar> kInterp(*kfvPtr_);
     interpolationCellPoint<scalar> epsilonInterp(epsilon);
     interpolationCellPoint<scalar> zInterp(zcPdf_);
+    interpolationCellPoint<scalar> zInterp(zfv_);
     interpolationCellPoint<vector> gradRhoInterp(gradRho);
     interpolationCellPoint<vector> diffUInterp(diffU);
     interpolationCellPoint<scalar> kcPdfInterp(kcPdf_);

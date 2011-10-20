@@ -168,8 +168,6 @@ class mcParticleCloud:
         volScalarField pndcPdf_;
         //- Extracted, time-averaged velocity
         volVectorField UcPdf_;
-        //- Extracted, time-averaged mixture fraction
-        volScalarField zcPdf_;
         //- Extracted, time-averaged turbulent stress tensor
         volSymmTensorField TaucPdf_;
         //- Extracted, time-averaged TKE
@@ -249,6 +247,7 @@ public:
             const volVectorField* U = 0,
             volScalarField* rho = 0,
             const volScalarField* k = 0,
+            volScalarField* z = 0,
             const word& cloudName = "defaultCloud"
         );
 
