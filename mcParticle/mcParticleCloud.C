@@ -333,6 +333,7 @@ void Foam::mcParticleCloud::findGhostLayers()
           // Find the ghost cells and faces
           const polyPatch& curPatch = patches[patchI];
           label j = 0;
+          label k = 0;
           forAll(curPatch, facei)
             {
               // ghost cell
@@ -342,8 +343,8 @@ void Foam::mcParticleCloud::findGhostLayers()
 
               // opposite face
               // const cell& ownCell = cells[faceCelli];
-              const cell& ownCell = cells[mesh_.faceOwner()[gFaceI]];
-              Info << "cell = " << ownCell << "gFaceI = " << gFaceI << endl;
+              const cell& ownCell = cells[faceCelli];
+              Info << "cell = " << ownCell << ", gFaceI = " << gFaceI << endl;
               label oppositeFaceI = ownCell.opposingFaceLabel(gFaceI, faces);
               if (oppositeFaceI == -1)
                 {
@@ -353,12 +354,27 @@ void Foam::mcParticleCloud::findGhostLayers()
                 }
               else
                 {
-                  ghostFaceLayers_[nameI][j++] =  oppositeFaceI;
+                  Info << "before adding" << endl;
+
+                  ghostFaceLayers_[nameI][k++] =  oppositeFaceI;
+                  Info << "after adding" << endl;
                 }
+              
+              
 
             }
         }
     }
+  // Check faces found
+  Info << "Normals: " << endl;
+  forAll(ghostFaceLayers_, patchI)
+    forAll(ghostFaceLayers_[patchI], facei)
+    {
+      // Info <<  "face #: " << ghostFaceLayers_[patchI][facei] << endl;
+      // Info << faces[ghostFaceLayers_[patchI][facei]].normal(mesh_.points()) << endl;
+      Info << faces[ghostFaceLayers_[patchI][facei]].centre(mesh_.points()) << endl;
+    }
+
 }
 
 
