@@ -861,9 +861,6 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     reactionModel_().correct(*this);
 
     scalar existWt = 1.0/(1.0 + (runTime_.deltaT()/AvgTimeScale_).value());
-    // Extract statistical averaging to obtain mesh-based quantities
-    updateCloudPDF(existWt);
-    updateParticlePDF();
 
     mcParticle::trackData td
     (
@@ -882,13 +879,17 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     }
 
     Cloud<mcParticle>::move(td);
-    printParticleCo();
 
     // Correct boundary conditions
     forAll(boundaryHandlers_, boundaryI)
     {
         boundaryHandlers_[boundaryI].correct(*this, true);
     }
+
+    // Extract statistical averaging to obtain mesh-based quantities
+    updateCloudPDF(existWt);
+    updateParticlePDF();
+    printParticleCo();
 
     particleNumberControl();
 
