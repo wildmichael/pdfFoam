@@ -23,63 +23,49 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "mcGhostOutletBoundary.H"
+#include "mcOpenBoundary.H"
 
-#include "addToRunTimeSelectionTable.H"
 #include "mcParticle.H"
+#include "mcParticleCloud.H"
+#include "surfaceMesh.H"
+#include "fvsPatchField.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
-    defineTypeNameAndDebug(mcGhostOutletBoundary, 0);
-    addNamedToRunTimeSelectionTable
-    (
-        mcBoundary,
-        mcGhostOutletBoundary,
-        mcBoundary,
-        ghostOutlet
-    );
+    defineTypeNameAndDebug(mcOpenBoundary, 0);
 
 } // namespace Foam
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::mcGhostOutletBoundary::mcGhostOutletBoundary
+Foam::mcOpenBoundary::mcOpenBoundary
 (
     const Foam::fvMesh& mesh,
     Foam::label patchID,
     const Foam::dictionary& dict
 )
 :
-    mcGhostBoundary(mesh, patchID, dict)
+    mcBoundary(mesh, patchID, dict)
 {}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::mcGhostOutletBoundary::correct
-(
-    Foam::mcParticleCloud& cloud,
-    bool afterMove
-)
-{
-    mcGhostBoundary::correct(cloud, afterMove);
-}
-
-void Foam::mcGhostOutletBoundary::hitPatch
+void Foam::mcOpenBoundary::hitPatch
 (
     Foam::mcParticle& p,
     Foam::mcParticle::trackData& td
 )
 {
     // TODO moving-wall reflection
-    // (Meyer and Jenny 2007: http://dx.doi.org/10.1016/j.jcp.2007.06.014)
+    // (Meyer and Jenny 2007: doi:10.1016/j.jcp.2007.06.014)
     td.keepParticle = false;
 }
 
 
-void Foam::mcGhostOutletBoundary::hitPatch
+void Foam::mcOpenBoundary::hitPatch
 (
     Foam::mcParticle& p,
     int&

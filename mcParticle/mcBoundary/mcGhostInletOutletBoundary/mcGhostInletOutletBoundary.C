@@ -23,8 +23,9 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "mcGhostBoundary.H"
+#include "mcGhostInletOutletBoundary.H"
 
+#include "addToRunTimeSelectionTable.H"
 #include "mcParticle.H"
 #include "mcParticleCloud.H"
 #include "surfaceMesh.H"
@@ -35,23 +36,30 @@ License
 namespace Foam
 {
 
-    defineTypeNameAndDebug(mcGhostBoundary, 0);
+    defineTypeNameAndDebug(mcGhostInletOutletBoundary, 0);
+    addNamedToRunTimeSelectionTable
+    (
+        mcBoundary,
+        mcGhostInletOutletBoundary,
+        mcBoundary,
+        ghostInletOutlet
+    );
 
-    HashSet<label> mcGhostBoundary::ghostCellHash_(256);
-    bool mcGhostBoundary::purgedGhosts_(false);
+    HashSet<label> mcGhostInletOutletBoundary::ghostCellHash_(256);
+    bool mcGhostInletOutletBoundary::purgedGhosts_(false);
 
 } // namespace Foam
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::mcGhostBoundary::mcGhostBoundary
+Foam::mcGhostInletOutletBoundary::mcGhostInletOutletBoundary
 (
     const Foam::fvMesh& mesh,
     Foam::label patchID,
     const Foam::dictionary& dict
 )
 :
-    mcBoundary(mesh, patchID, dict)
+    mcOpenBoundary(mesh, patchID, dict)
 {
     findGhostLayer();
 }
@@ -59,8 +67,23 @@ Foam::mcGhostBoundary::mcGhostBoundary
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 // Enforce in/out flow BCs by populating ghost cells
-void Foam::mcGhostBoundary::populateGhostCells(Foam::mcParticleCloud& cloud)
+void Foam::mcGhostInletOutletBoundary::populateGhostCells
+(
+    Foam::mcParticleCloud& cloud
+)
 {
+#ifdef FULLDEBUG
+    if (debug > 1 && !statFile_.valid())
+    {
+        statFile_.reset
+        (
+            new OFstream
+            (
+                mesh().time().path() / patch().name()+".ghostInletOutlet"
+            )
+        );
+    }
+#endif
     label np = 0;
     label ng = 0;
     forAll(ghostCellLayer_, faceCelli)
@@ -68,12 +91,15 @@ void Foam::mcGhostBoundary::populateGhostCells(Foam::mcParticleCloud& cloud)
         ++ng;
         np += cloud.Npc();
 
-        label  celli = ghostCellLayer_[faceCelli];
-        scalar m = mesh().V()[celli] * cloud.rhocPdf()[celli] / cloud.Npc();
-        vector Updf = cloud.Ufv()[celli];
-        // TODO shouldn't this be multiplied with 2/3?
-        scalar ksqrt = sqrt(cloud.kfv()()[celli]);
-        vector uscales(ksqrt, ksqrt, ksqrt);
+        label celli = ghostCellLayer_[faceCelli];
+        label patchI = patchID();
+        scalar m = mesh().V()[celli]
+                 * cloud.rhocPdf().boundaryField()[patchI][faceCelli]
+                 / cloud.Npc();
+        const vector& Updf = cloud.Ufv().boundaryField()[patchI][faceCelli];
+        scalar urms = sqrt(
+            2./3.*cloud.kfv()().boundaryField()[patchI][faceCelli]);
+        vector uscales(urms, urms, urms);
         label  ghost = 1;
         vector shift = ghostCellShifts_[faceCelli];
         // Phi: from patch value (boundary condition)
@@ -84,10 +110,18 @@ void Foam::mcGhostBoundary::populateGhostCells(Foam::mcParticleCloud& cloud)
             Phi[PhiI] = f.boundaryField()[patchID()][faceCelli];
         }
 
+        // When compiling in Debug mode, generate each particle individually
+#ifdef FULLDEBUG
+        label N = 1;
+        for (label i=0; i < cloud.Npc(); ++i)
+        {
+#else
+        label N = cloud.Npc();
+#endif
         cloud.particleGenInCell
         (
             celli,
-            cloud.Npc(),
+            N,
             m,
             Updf,
             uscales,
@@ -95,7 +129,24 @@ void Foam::mcGhostBoundary::populateGhostCells(Foam::mcParticleCloud& cloud)
             shift,
             ghost
         );
+#ifdef FULLDEBUG
+        if (debug > 1)
+        {
+            const vector& u = cloud.last()->UParticle();
+            if ((mesh().Sf().boundaryField()[patchID()][faceCelli] & u) < 0.)
+            {
+                statFile_ << u.x() << tab << u.y() << tab << u.z() << nl;
+            }
+        }
+        } // end for(i)
+#endif
     }
+#ifdef FULLDEBUG
+    if (debug > 1)
+    {
+        statFile_.flush();
+    }
+#endif
     purgedGhosts_ = false;
     if (debug)
     {
@@ -110,7 +161,10 @@ void Foam::mcGhostBoundary::populateGhostCells(Foam::mcParticleCloud& cloud)
 }
 
 
-void Foam::mcGhostBoundary::purgeGhostParticles(Foam::mcParticleCloud& cloud)
+void Foam::mcGhostInletOutletBoundary::purgeGhostParticles
+(
+    Foam::mcParticleCloud& cloud
+)
 {
     if (purgedGhosts_)
         return;
@@ -150,7 +204,8 @@ void Foam::mcGhostBoundary::purgeGhostParticles(Foam::mcParticleCloud& cloud)
             }
             if (newCelli < 0)
             {
-                WarningIn("mcGhostBoundary::purgeGhostParticles(mcParticleCloud&)")
+                WarningIn("mcGhostInletOutletBoundary::"
+                    "purgeGhostParticles(mcParticleCloud&)")
                     << " Shifting of ghost particles caused loss."  << nl
                     << " Possible causes are: " << nl
                     << "  (1) Strange ghost cell shapes;" << nl
@@ -180,7 +235,7 @@ void Foam::mcGhostBoundary::purgeGhostParticles(Foam::mcParticleCloud& cloud)
 }
 
 
-void Foam::mcGhostBoundary::findGhostLayer()
+void Foam::mcGhostInletOutletBoundary::findGhostLayer()
 {
     label nf = patch().size();
 
@@ -205,7 +260,7 @@ void Foam::mcGhostBoundary::findGhostLayer()
             label oppositeFaceI = ownCell.opposingFaceLabel(gFaceI, faces);
             if (oppositeFaceI == -1)
             {
-                FatalErrorIn("mcGhostBoundary::findGhostLayer()")
+                FatalErrorIn("mcGhostInletOutletBoundary::findGhostLayer()")
                     << "Face:" << facei << " owner cell:" << faceCelli
                     << " is not a hex?" << abort(FatalError);
             }
@@ -219,7 +274,7 @@ void Foam::mcGhostBoundary::findGhostLayer()
     }
 }
 
-void Foam::mcGhostBoundary::correct
+void Foam::mcGhostInletOutletBoundary::correct
 (
     Foam::mcParticleCloud& cloud,
     bool afterMove

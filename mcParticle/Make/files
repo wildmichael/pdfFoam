@@ -13,9 +13,8 @@ mcReactionModel/mcNaiveFlameletModel/mcNaiveFlameletModel.C
 mcBoundary/mcBoundary/mcBoundary.C
 mcBoundary/mcSlipBoundary/mcSlipBoundary.C
 mcBoundary/mcEmptyBoundary/mcEmptyBoundary.C
-mcBoundary/mcGhostBoundary/mcGhostBoundary.C
-mcBoundary/mcGhostInletBoundary/mcGhostInletBoundary.C
-mcBoundary/mcGhostOutletBoundary/mcGhostOutletBoundary.C
+mcBoundary/mcGhostInletOutletBoundary/mcGhostInletOutletBoundary.C
 mcBoundary/mcProcessorBoundary/mcProcessorBoundary.C
+mcBoundary/mcOpenBoundary/mcOpenBoundary.C
 
 LIB = $(FOAM_USER_LIBBIN)/libmcParticle

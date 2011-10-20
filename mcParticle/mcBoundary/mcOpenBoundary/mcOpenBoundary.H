@@ -22,21 +22,23 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::mcGhostBoundary
+    Foam::mcOpenBoundary
 
 Description
-    Base-class for Monte Carlo particle boundaries that require ghost layers
+    Base-class for open Monte Carlo particle boundaries that require consistent
+    reflecting (see D.W. Meyer and P. Jenny, JCP 226 1859-1873,
+    doi:10.1016/j.jcp.2007.06.014)
 
 SourceFiles
-    mcGhostBoundary.C
+    mcOpenBoundary.C
 
 Author
     Michael Wild
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef mcGhostBoundary_H
-#define mcGhostBoundary_H
+#ifndef mcOpenBoundary_H
+#define mcOpenBoundary_H
 
 #include "mcBoundary.H"
 
@@ -48,48 +50,31 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                       Class mcGhostBoundary Declaration
+                        Class mcOpenBoundary Declaration
 \*---------------------------------------------------------------------------*/
 
-class mcGhostBoundary :
+class mcOpenBoundary :
     public mcBoundary
 {
     // Private data
 
-        //- Global hash of ghost cell indices
-        static HashSet<label> ghostCellHash_;
-        //- Global indicator whether ghost-particles have been purged
-        static bool purgedGhosts_;
-        //- List of cell-indices for each ghost patch
-        labelList    ghostCellLayer_;
-        //- List of ghost-cell shifts for each ghost patch
-        vectorList ghostCellShifts_;
 
     // Private Member Functions
 
-        //- Enforce in/out flow BCs by populating ghost cells
-        void populateGhostCells(mcParticleCloud& cloud);
-
-        //- Remove all ghost particles from cloud
-        void purgeGhostParticles(mcParticleCloud& cloud);
-
-        //- Finds the ghost cell layers
-        void findGhostLayer();
-
         // Disallow default bitwise copy construct and assignment
-        mcGhostBoundary(const mcGhostBoundary&);
-        void operator=(const mcGhostBoundary&);
+        mcOpenBoundary(const mcOpenBoundary&);
+        void operator=(const mcOpenBoundary&);
 
 public:
 
     //- Runtime type information
-    TypeName("mcGhostBoundary");
+    TypeName("mcOpenBoundary");
 
 
     // Constructors
 
         //- Construct from components
-        mcGhostBoundary
+        mcOpenBoundary
         (
             const fvMesh& mesh,
             label patchID,
@@ -98,8 +83,19 @@ public:
 
     // Member Functions
 
-        //- Release particles at the inlet boundary
-        virtual void correct(mcParticleCloud& cloud, bool afterMove);
+        //- Deal with a particle hitting the patch
+        virtual void hitPatch
+        (
+            mcParticle& p,
+            mcParticle::trackData& td
+        );
+
+        //- Deal with a particle hitting the patch without trackData
+        virtual void hitPatch
+        (
+            mcParticle& p,
+            int&
+        );
 
 };
 

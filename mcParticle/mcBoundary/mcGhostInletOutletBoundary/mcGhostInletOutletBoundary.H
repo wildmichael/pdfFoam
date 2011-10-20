@@ -22,23 +22,23 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::mcGhostInletBoundary
+    Foam::mcGhostInletOutletBoundary
 
 Description
-    Inlet boundary using ghost-layers for Monte Carlo particles
+    Inlet/outlet boundary using ghost-layers for Monte Carlo particles
 
 SourceFiles
-    mcGhostInletBoundary.C
+    mcGhostInletOutletBoundary.C
 
 Author
     Michael Wild
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef mcGhostInletBoundary_H
-#define mcGhostInletBoundary_H
+#ifndef mcGhostInletOutletBoundary_H
+#define mcGhostInletOutletBoundary_H
 
-#include "mcGhostBoundary.H"
+#include "mcOpenBoundary.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -46,28 +46,53 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                     Class mcGhostInletBoundary Declaration
+                  Class mcGhostInletOutletBoundary Declaration
 \*---------------------------------------------------------------------------*/
 
-class mcGhostInletBoundary :
-    public mcGhostBoundary
+class mcGhostInletOutletBoundary :
+    public mcOpenBoundary
 {
+    // Private data
+
+        //- Global hash of ghost cell indices
+        static HashSet<label> ghostCellHash_;
+        //- Global indicator whether ghost-particles have been purged
+        static bool purgedGhosts_;
+        //- List of cell-indices for each ghost patch
+        labelList    ghostCellLayer_;
+        //- List of ghost-cell shifts for each ghost patch
+        vectorList ghostCellShifts_;
+#ifdef FULLDEBUG
+        //- Output for generated particle velocities (only those
+        // <em>entering</em> the domain)
+        autoPtr<OFstream> statFile_;
+#endif
+
     // Private Member Functions
 
+        //- Enforce in/out flow BCs by populating ghost cells
+        void populateGhostCells(mcParticleCloud& cloud);
+
+        //- Remove all ghost particles from cloud
+        void purgeGhostParticles(mcParticleCloud& cloud);
+
+        //- Finds the ghost cell layers
+        void findGhostLayer();
+
         // Disallow default bitwise copy construct and assignment
-        mcGhostInletBoundary(const mcGhostInletBoundary&);
-        void operator=(const mcGhostInletBoundary&);
+        mcGhostInletOutletBoundary(const mcGhostInletOutletBoundary&);
+        void operator=(const mcGhostInletOutletBoundary&);
 
 public:
 
     //- Runtime type information
-    TypeName("mcGhostInletBoundary");
+    TypeName("mcGhostInletOutletBoundary");
 
 
     // Constructors
 
         //- Construct from components
-        mcGhostInletBoundary
+        mcGhostInletOutletBoundary
         (
             const fvMesh& mesh,
             label patchID,
@@ -76,25 +101,11 @@ public:
 
     // Member Functions
 
-        //- Release ghost particles at the inlet boundary
+        //- Release ghost particles at the boundary
         virtual void correct
         (
             mcParticleCloud& cloud,
             bool afterMove
-        );
-
-        //- Deal with a particle hitting the patch
-        virtual void hitPatch
-        (
-            mcParticle& p,
-            mcParticle::trackData& td
-        );
-
-        //- Deal with a particle hitting the patch without trackData
-        virtual void hitPatch
-        (
-            mcParticle& p,
-            int&
         );
 
 };
