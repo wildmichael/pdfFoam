@@ -125,6 +125,7 @@ Foam::mcParticleCloud::mcParticleCloud
     const word& cloudName,
     const compressible::turbulenceModel* turbModel,
     const volVectorField* U,
+    const volScalarField* p,
     volScalarField* rho
 )
 :
@@ -140,6 +141,11 @@ Foam::mcParticleCloud::mcParticleCloud
     (
         U ? *U : mesh_.lookupObject<volVectorField>
                      (dict_.lookupOrDefault<word>("UName", "U"))
+    ),
+    pfv_
+    (
+        p ? *p : mesh_.lookupObject<volScalarField>
+                     (dict_.lookupOrDefault<word>("pName", "p"))
     ),
     AvgTimeScale_
     (
@@ -829,8 +835,8 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     // lower bound for k
     kcPdf_ = max(kcPdf_, kMin_);
 
-    const volVectorField& gradP =
-        mesh_.lookupObject<const volVectorField>("grad(p)");
+    const volVectorField gradP =
+        fvc::grad(pfv_ - 2./3.*rhocPdf_*kfv());
 
     volScalarField diffRho
     (

@@ -127,7 +127,7 @@ Foam::scalar Foam::mcThermo::evolve()
                 mesh_,
                 subDict("cloudProperties"),
                 lookupOrDefault<word>("cloudName", "mcThermoCloud"),
-                0, 0, &rho_
+                0, 0, 0, &rho_
             )
         );
         // Reset the time object to the correct time

@@ -115,6 +115,9 @@ class mcParticleCloud:
         //- The FV velocity field
         const volVectorField& Ufv_;
 
+        //- The FV pressure field
+        const volScalarField& pfv_;
+
         //- The averaging time scale
         scalar AvgTimeScale_;
 
@@ -271,6 +274,7 @@ public:
             const word& cloudName = "defaultCloud",
             const compressible::turbulenceModel* turbModel = 0,
             const volVectorField* U = 0,
+            const volScalarField* p = 0,
             volScalarField* rho = 0
         );
 
