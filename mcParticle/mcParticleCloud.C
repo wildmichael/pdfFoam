@@ -58,7 +58,13 @@ const Foam::compressible::turbulenceModel* getTurbulenceModel
         return 0;
     }
 }
-}
+
+
+const Foam::dimensionedScalar SMALL_MASS("SMALL_MASS", Foam::dimMass, Foam::SMALL);
+
+const Foam::dimensionedScalar SMALL_VOLUME("SMALL_VOLUME", Foam::dimVolume, Foam::SMALL);
+
+} // anonymous namespace
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -66,7 +72,6 @@ namespace Foam
 {
 defineParticleTypeNameAndDebug(mcParticle, 0);
 defineTemplateTypeNameAndDebug(Cloud<mcParticle>, 0);
-const dimensionedScalar mcParticleCloud::SMALL_MASS("SMALL_MASS", dimMass, SMALL);
 };
 
 
@@ -469,7 +474,7 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
     uuMean_ = existWt * uuMean_ + newWt * uuMeanInstant;
 
     // Compute mean fields
-    rhofv_.internalField() = mMean_/VMean_;
+    rhofv_.internalField()   = mMean / max(VMean, SMALL_VOLUME);
     pndcPdf_.internalField() = mMean_/mesh_.V();
     UcPdf_.internalField()   = UMean_/max(mMean_, SMALL_MASS);
     zfv_.internalField()   = zMean_ / max(mMean_, SMALL_MASS);

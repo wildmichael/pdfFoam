@@ -94,12 +94,6 @@ class mcParticleCloud:
                 ) const;
         };
 
-    // Private static data
-
-        //- A small mass
-        static const dimensionedScalar SMALL_MASS;
-
-
     // Private data
 
         //- The mesh
