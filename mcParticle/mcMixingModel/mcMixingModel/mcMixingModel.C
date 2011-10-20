@@ -23,67 +23,50 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+#include "mcMixingModel.H"
 
-inline const Foam::fvMesh& Foam::mcParticleCloud::mesh() const
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
+
+namespace Foam
 {
-    return mesh_;
-}
+
+    defineTypeNameAndDebug(mcMixingModel, 0);
+    defineRunTimeSelectionTable(mcMixingModel, mcMixingModel);
+
+} // namespace Foam
 
 
-inline const Foam::compressible::turbulenceModel&
-Foam::mcParticleCloud::turbulenceModel() const
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
+
+Foam::mcMixingModel::mcMixingModel(const Foam::dictionary& dict)
+:
+    dictionary(dict)
+{}
+
+// * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
+
+Foam::autoPtr<Foam::mcMixingModel> Foam::mcMixingModel::New
+(
+    const Foam::dictionary& dict
+)
 {
-    return turbModel_;
-}
+    word mixingType(dict.lookup("mixingModel"));
 
+    mcMixingModelConstructorTable::iterator cstrIter =
+        mcMixingModelConstructorTablePtr_->find(mixingType);
 
-inline const Foam::labelList& Foam::mcParticleCloud::mixedScalars() const
-{
-    return mixedScalars_;
-}
+    if (cstrIter == mcMixingModelConstructorTablePtr_->end())
+    {
+        FatalErrorIn
+        (
+            "mcMixingModel::New(const fvMesh&, const dictionary&)"
+        )   << "Unknown mcMixingModel type " << mixingType << endl << endl
+            << "Valid mcMixingModel types are :" << endl
+            << mcMixingModelConstructorTablePtr_->sortedToc()
+            << exit(FatalError);
+    }
 
-
-inline const Foam::tmp<Foam::volScalarField> Foam::mcParticleCloud::kfv() const
-{
-    return turbModel_.k();
-}
-
-
-inline const Foam::tmp<Foam::volScalarField>
-Foam::mcParticleCloud::epsilonfv() const
-{
-    return turbModel_.epsilon();
-}
-
-
-inline const Foam::volScalarField& Foam::mcParticleCloud::kcPdf() const
-{
-    return kcPdf_;
-}
-
-
-inline const Foam::List<Foam::volScalarField*>&
-Foam::mcParticleCloud::PhicPdf() const
-{
-    return PhicPdf_;
-}
-
-
-inline const Foam::dimensionedScalar& Foam::mcParticleCloud::kRelaxTime() const
-{
-    return kRelaxTime_;
-}
-
-inline Foam::label Foam::mcParticleCloud::Npc()
-{
-    return Npc_;
-}
-
-
-inline const Foam::wordList& Foam::mcParticleCloud::scalarNames() const
-{
-    return scalarNames_;
+    return autoPtr<mcMixingModel>(cstrIter()(dict));
 }
 
 // ************************************************************************* //

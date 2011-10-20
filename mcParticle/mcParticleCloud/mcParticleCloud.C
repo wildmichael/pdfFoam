@@ -115,6 +115,9 @@ Foam::mcParticleCloud::mcParticleCloud
     (
         turbModel ? *turbModel : *getTurbulenceModel(mesh)
     ),
+    OmegaModel_(mcOmegaModel::New(dict)),
+    mixingModel_(mcMixingModel::New(dict)),
+    reactionModel_(mcReactionModel::New(dict)),
     Ufv_
     (
         U ? *U : mesh_.lookupObject<volVectorField>
@@ -334,6 +337,42 @@ Foam::mcParticleCloud::mcParticleCloud
         forAll(PhicPdf_, PhiI)
         {
             scalarNames_[PhiI] = PhicPdf_[PhiI]->name();
+        }
+    }
+    // find labels of mixed scalars
+    wordList mixedScalarNames(dict_.lookup("mixedScalars"));
+    mixedScalars_.setSize(mixedScalarNames.size());
+    label mixedI = 0;
+    forAll(mixedScalarNames, nameI)
+    {
+        bool found = false;
+        // find scalar in scalarNames_
+        forAll(scalarNames_, propI)
+        {
+            if (mixedScalarNames[nameI] == scalarNames_[propI])
+            {
+                mixedScalars_[mixedI++] = propI;
+                found = true;
+            }
+        }
+        if (!found)
+        {
+            FatalErrorIn
+            (
+                "mcParticleCloud::mcParticleCloud\n"
+                "(\n"
+                "    const fvMesh&,\n"
+                "    const dictionary&,\n"
+                "    const word& cloudName,\n"
+                "    const compressible::turbulenceModel*,\n"
+                "    const volVectorField*,\n"
+                "    volScalarField* rho,\n"
+                "    List<volScalarField*>\n"
+                ")"
+            )
+                << "No such scalar field: " << mixedScalarNames[nameI] << "\n"
+                << "Available field names are:\n" << scalarNames_ << "\n"
+                << exit(FatalError);
         }
     }
     findGhostLayers();
@@ -873,13 +912,6 @@ void Foam::mcParticleCloud::evolve()
     interpolationCellPoint<vector> UInterp(Ufv_);
     interpolationCellPoint<vector> gradPInterp(gradP);
     interpolationCellPoint<scalar> kInterp(kfv());
-    interpolationCellPoint<scalar> epsilonInterp(epsilonfv());
-    PtrList<interpolationCellPoint<scalar> > PhiInterp(PhicPdf_.size());
-    forAll(PhicPdf_, PhiI)
-    {
-        PhiInterp.set(PhiI,
-                      new interpolationCellPoint<scalar>(*PhicPdf_[PhiI]));
-    }
     interpolationCellPoint<vector> gradRhoInterp(gradRho);
     interpolationCellPoint<vector> diffUInterp(diffU);
     interpolationCellPoint<scalar> kcPdfInterp(kcPdf_);
@@ -888,14 +920,17 @@ void Foam::mcParticleCloud::evolve()
     populateGhostCells();
 
     mcParticle::trackData td(*this, rhoInterp, UInterp, gradPInterp, kInterp,
-                             epsilonInterp, PhiInterp, gradRhoInterp,
-                             diffUInterp);
+                             gradRhoInterp, diffUInterp);
 
     Cloud<mcParticle>::move(td);
 
     // "Accept" and shift the survived ghost particles
     //  and clear those still in ghost a cell
     purgeGhostParticles();
+
+    OmegaModel_().correct(*this);
+    mixingModel_().correct(*this);
+    reactionModel_().correct(*this);
 
     scalar existWt = 1.0/(1.0 + (runTime_.deltaT()/AvgTimeScale_).value());
     // Extract statistical averaging to obtain mesh-based quantities
@@ -952,6 +987,7 @@ void Foam::mcParticleCloud::particleGenInCell
     vector dimb = cellbb.max() - minb;
 
     label Npgen = 0;
+    prepareOmegaModel_ = true;
     for (int i = 0; i < 100 * N; i++)
     {
         // Relative coordinate [0, 1] in this cell
@@ -987,6 +1023,7 @@ void Foam::mcParticleCloud::particleGenInCell
 
             addParticle(ptr);
             Npgen ++;
+            prepareOmegaModel_ = false;
         }
 
         // until enough particles are generated.
@@ -1105,6 +1142,19 @@ void Foam::mcParticleCloud::purgeGhostParticles()
     Info<< "Ghost particles: " << nDelete << " deleted, "
         << nAdmit << " admitted." << endl;
 }
+
+
+void Foam::mcParticleCloud::applyOmegaModel(Foam::mcParticle& p)
+{
+    OmegaModel_().correct(*this, p, prepareOmegaModel_);
+}
+
+
+void Foam::mcParticleCloud::applyReactionModel(Foam::mcParticle& p)
+{
+    reactionModel_().correct(*this, p);
+}
+
 
 void Foam::mcParticleCloud::info() const
 {

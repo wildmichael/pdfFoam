@@ -45,6 +45,7 @@ Foam::mcParticle::mcParticle
             is  >> Updf_
                 >> UParticle_
                 >> UFap_
+                >> Omega_
                 >> rho_
                 >> dt_
                 >> shift_
@@ -59,7 +60,7 @@ Foam::mcParticle::mcParticle
                 reinterpret_cast<char*>(&m_),
                 sizeof(m_) + sizeof(Updf_) +
                 sizeof(UParticle_) + sizeof(UFap_) +
-                sizeof(rho_) + sizeof(dt_) +
+                sizeof(Omega_) + sizeof(rho_) + sizeof(dt_) +
                 sizeof(shift_) + sizeof(ghost_)
             );
             is >> Phi_;
@@ -91,6 +92,9 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
     IOField<vector> UFap(c.fieldIOobject("UFap", IOobject::MUST_READ));
     c.checkFieldIOobject(c, UFap);
 
+    IOField<scalar> Omega(c.fieldIOobject("Omega", IOobject::MUST_READ));
+    c.checkFieldIOobject(c, Omega);
+
     IOField<scalarField> Phi(c.fieldIOobject("Phi", IOobject::MUST_READ));
     c.checkFieldIOobject(c, Phi);
 
@@ -106,6 +110,7 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
         p.Updf_ = Updf[i];
         p.UParticle_ = UParticle[i];
         p.UFap_ = UFap[i];
+        p.Omega_ = Omega[i];
         p.Phi_ = Phi[i];
         p.rho_ = rho[i];
         p.shift_ = vector::zero;
@@ -125,6 +130,7 @@ void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
     IOField<vector> Updf(c.fieldIOobject("Updf", IOobject::NO_READ), np);
     IOField<vector> UParticle(c.fieldIOobject("UParticle", IOobject::NO_READ), np);
     IOField<vector> UFap(c.fieldIOobject("UFap", IOobject::NO_READ), np);
+    IOField<scalar> Omega(c.fieldIOobject("Omega", IOobject::NO_READ), np);
     IOField<scalarField> Phi(c.fieldIOobject("Phi", IOobject::NO_READ), np);
     IOField<scalar> rho(c.fieldIOobject("rho", IOobject::NO_READ), np);
 
@@ -137,6 +143,7 @@ void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
         Updf[i] = p.Updf_;
         UParticle[i] = p.UParticle_;
         UFap[i] = p.UFap_;
+        Omega[i] = p.Omega_;
         Phi[i] = p.Phi_;
         rho[i] = p.rho_;
         i++;
@@ -146,6 +153,7 @@ void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
     Updf.write();
     UParticle.write();
     UFap.write();
+    Omega.write();
     Phi.write();
     rho.write();
 }
@@ -162,6 +170,7 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
             << token::SPACE << p.Updf_
             << token::SPACE << p.UParticle_
             << token::SPACE << p.UFap_
+            << token::SPACE << p.Omega_
             << token::SPACE << p.rho_
             << token::SPACE << p.dt_
             << token::SPACE << p.shift_
@@ -176,7 +185,7 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
             reinterpret_cast<const char*>(&p.m_),
             sizeof(p.m_) + sizeof(p.Updf_) +
             sizeof(p.UParticle_) + sizeof(p.UFap_) +
-            sizeof(p.rho_)  + sizeof(p.dt_) +
+            sizeof(p.Omega_) + sizeof(p.rho_)  + sizeof(p.dt_) +
             sizeof(p.shift_) + sizeof(p.ghost_)
         );
         os  << p.Phi_;

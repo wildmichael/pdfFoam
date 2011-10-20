@@ -23,67 +23,50 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+#include "mcOmegaModel.H"
 
-inline const Foam::fvMesh& Foam::mcParticleCloud::mesh() const
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
+
+namespace Foam
 {
-    return mesh_;
-}
+
+    defineTypeNameAndDebug(mcOmegaModel, 0);
+    defineRunTimeSelectionTable(mcOmegaModel, mcOmegaModel);
+
+} // namespace Foam
 
 
-inline const Foam::compressible::turbulenceModel&
-Foam::mcParticleCloud::turbulenceModel() const
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
+
+Foam::mcOmegaModel::mcOmegaModel(const Foam::dictionary& dict)
+:
+    dictionary(dict)
+{}
+
+// * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
+
+Foam::autoPtr<Foam::mcOmegaModel> Foam::mcOmegaModel::New
+(
+    const Foam::dictionary& dict
+)
 {
-    return turbModel_;
-}
+    word reactionType(dict.lookup("OmegaModel"));
 
+    mcOmegaModelConstructorTable::iterator cstrIter =
+        mcOmegaModelConstructorTablePtr_->find(reactionType);
 
-inline const Foam::labelList& Foam::mcParticleCloud::mixedScalars() const
-{
-    return mixedScalars_;
-}
+    if (cstrIter == mcOmegaModelConstructorTablePtr_->end())
+    {
+        FatalErrorIn
+        (
+            "mcOmegaModel::New(const fvMesh&, const dictionary&)"
+        )   << "Unknown mcOmegaModel type " << reactionType << endl << endl
+            << "Valid mcOmegaModel types are :" << endl
+            << mcOmegaModelConstructorTablePtr_->sortedToc()
+            << exit(FatalError);
+    }
 
-
-inline const Foam::tmp<Foam::volScalarField> Foam::mcParticleCloud::kfv() const
-{
-    return turbModel_.k();
-}
-
-
-inline const Foam::tmp<Foam::volScalarField>
-Foam::mcParticleCloud::epsilonfv() const
-{
-    return turbModel_.epsilon();
-}
-
-
-inline const Foam::volScalarField& Foam::mcParticleCloud::kcPdf() const
-{
-    return kcPdf_;
-}
-
-
-inline const Foam::List<Foam::volScalarField*>&
-Foam::mcParticleCloud::PhicPdf() const
-{
-    return PhicPdf_;
-}
-
-
-inline const Foam::dimensionedScalar& Foam::mcParticleCloud::kRelaxTime() const
-{
-    return kRelaxTime_;
-}
-
-inline Foam::label Foam::mcParticleCloud::Npc()
-{
-    return Npc_;
-}
-
-
-inline const Foam::wordList& Foam::mcParticleCloud::scalarNames() const
-{
-    return scalarNames_;
+    return autoPtr<mcOmegaModel>(cstrIter()(dict));
 }
 
 // ************************************************************************* //

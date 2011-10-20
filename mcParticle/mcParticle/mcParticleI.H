@@ -23,38 +23,6 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
-
-inline Foam::mcParticle::mcParticle
-(
- const Cloud<mcParticle>& c,
- const vector& position,
- const label   celli,
- const scalar  m,
- const vector& Updf,
- const vector& UParticle,
- const vector& UFap,
- const scalarField&  Phi,
- const scalar  dt,
- const vector& shift,
- const label   ghost
-)
-:
-  Particle<mcParticle>(c, position, celli),
-  m_(m),
-  Updf_(Updf),
-  UParticle_(UParticle),
-  UFap_(UFap),
-  rho_(0.0),
-  dt_(dt),
-  shift_(shift),
-  ghost_(ghost),
-  Phi_(Phi)
-{
-    updateThermo();
-}
-
-
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 inline const Foam::interpolationCellPoint<Foam::scalar>&
@@ -79,18 +47,6 @@ inline const Foam::interpolationCellPoint<Foam::scalar>&
 Foam::mcParticle::trackData::kInterp() const
 {
     return kInterp_;
-}
-
-inline const Foam::interpolationCellPoint<Foam::scalar>&
-Foam::mcParticle::trackData::epsilonInterp() const
-{
-    return epsilonInterp_;
-}
-
-inline const Foam::PtrList<Foam::interpolationCellPoint<Foam::scalar> >&
-Foam::mcParticle::trackData::PhiInterp() const
-{
-    return PhiInterp_;
 }
 
 
@@ -136,10 +92,30 @@ inline const Foam::vector& Foam::mcParticle::UFap() const
     return UFap_;
 }
 
+
+inline Foam::scalar Foam::mcParticle::Omega() const
+{
+  return Omega_;
+}
+
+
+inline Foam::scalar& Foam::mcParticle::Omega()
+{
+  return Omega_;
+}
+
+
 inline const Foam::scalarField& Foam::mcParticle::Phi() const
 {
   return Phi_;
 }
+
+
+inline Foam::scalarField& Foam::mcParticle::Phi()
+{
+  return Phi_;
+}
+
 
 inline Foam::scalar Foam::mcParticle::rho() const
 {

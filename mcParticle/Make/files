@@ -2,5 +2,8 @@ mcParticle/mcParticle.C
 mcParticle/mcParticleIO.C
 mcParticleCloud/mcParticleCloud.C
 mcThermo/mcThermo.C
+mcOmegaModel/mcOmegaModel/mcOmegaModel.C
+mcMixingModel/mcMixingModel/mcMixingModel.C
+mcReactionModel/mcReactionModel/mcReactionModel.C
 
 LIB = $(FOAM_USER_LIBBIN)/libmcParticle

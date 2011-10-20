@@ -39,6 +39,9 @@ SourceFiles
 
 #include "Cloud.H"
 #include "mcParticle.H"
+#include "mcOmegaModel.H"
+#include "mcMixingModel.H"
+#include "mcReactionModel.H"
 #include "dictionary.H"
 #include "Random.H"
 #include "labelIOField.H"
@@ -104,6 +107,12 @@ class mcParticleCloud:
         const Time& runTime_;
         //- The RAS model object
         const compressible::turbulenceModel& turbModel_;
+        //- The turbulent frequncy model object
+        autoPtr<mcOmegaModel> OmegaModel_;
+        //- The mixing model object
+        autoPtr<mcMixingModel> mixingModel_;
+        //- The reaction model object
+        autoPtr<mcReactionModel> reactionModel_;
 
         //- The FV velocity field
         const volVectorField& Ufv_;
@@ -117,6 +126,8 @@ class mcParticleCloud:
         label Npc_;
         //- List of scalar field names
         wordList scalarNames_;
+        //- The scalars to which to apply the mixing model
+        labelList mixedScalars_;
         //- Particle elimination threshold
         scalar eliminateAt_;
         //- Particle cloning threshold
@@ -184,6 +195,9 @@ class mcParticleCloud:
 
         Switch particleNumberControl_;
 
+        //- Flag \c prepare that is passed to mcOmegaModel::correct()
+        bool prepareOmegaModel_;
+
     // Private Member Functions
 
         //- Ensure moments are cnosistently read
@@ -250,18 +264,25 @@ public:
         //- Access the mesh
         inline const fvMesh& mesh() const;
 
+        //- Access the turbulence model
+        inline const compressible::turbulenceModel& turbulenceModel() const;
+
         //- The TKE FV field
         inline const tmp<volScalarField> kfv() const;
         //- The turbulent dissipation field
         inline const tmp<volScalarField> epsilonfv() const;
         //- The TKE PDF field
         inline const volScalarField& kcPdf() const;
+        //- The scalar PDF fields
+        inline const List<volScalarField*>& PhicPdf() const;
         //- The TKE relaxation time
         inline const dimensionedScalar& kRelaxTime() const;
         //- The desired number of particles per cell
         inline label Npc();
         //- The names of the scalar fiels
         inline const wordList& scalarNames() const;
+        //- List of indices of the scalar fields to which mixing is applied
+        inline const labelList& mixedScalars() const;
 
         //- The random number generator
         Random &random() {return random_;}
@@ -285,6 +306,12 @@ public:
 
         //- Evolve the particles
         void evolve();
+
+        //- Apply the Omega model to a single particle
+        void applyOmegaModel(mcParticle& p);
+
+        //- Apply the reaction model to a single particle
+        void applyReactionModel(mcParticle& p);
 
         //- Report info about name and total number of particles in cloud
         void info() const;

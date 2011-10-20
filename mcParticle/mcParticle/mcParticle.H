@@ -76,6 +76,9 @@ class mcParticle
        // (same time with Updf & UParticle)
        vector UFap_;
 
+       //- turbulent frequency of particle
+       scalar Omega_;
+
        //- density
        scalar rho_;
 
@@ -95,11 +98,6 @@ class mcParticle
        //- scalar properties
        scalarField Phi_;
 
-protected:
-
-       //- update the thermodynamic data
-       void updateThermo();
-
 public:
 
     friend class Cloud<mcParticle>;
@@ -115,8 +113,6 @@ public:
             const interpolationCellPoint<vector>& UInterp_;
             const interpolationCellPoint<vector>& gradPInterp_;
             const interpolationCellPoint<scalar>& kInterp_;
-            const interpolationCellPoint<scalar>& epsilonInterp_;
-            const PtrList<interpolationCellPoint<scalar> >& PhiInterp_;
             const interpolationCellPoint<vector>& gradRhoInterp_;
             const interpolationCellPoint<vector>& diffUInterp_;
 
@@ -133,8 +129,6 @@ public:
        const interpolationCellPoint<vector>& UInterp,
        const interpolationCellPoint<vector>& gradPInterp,
        const interpolationCellPoint<scalar>& kInterp,
-       const interpolationCellPoint<scalar>& epsilonInterp,
-       const PtrList<interpolationCellPoint<scalar> >& PhiInterp,
        const interpolationCellPoint<vector>& gradRhoInterp,
        const interpolationCellPoint<vector>& diffUInterp
        );
@@ -150,9 +144,7 @@ public:
 
       inline const interpolationCellPoint<scalar>& kInterp() const;
 
-      inline const interpolationCellPoint<scalar>& epsilonInterp() const;
 
-      inline const PtrList<interpolationCellPoint<scalar> >& PhiInterp() const;
 
       inline const interpolationCellPoint<vector>& gradRhoInterp() const;
 
@@ -163,9 +155,9 @@ public:
     // Constructors
 
         //- Construct from components
-        inline mcParticle
+        mcParticle
         (
-            const Cloud<mcParticle>& c,
+            mcParticleCloud& c,
             const vector& position,
             const label celli,
             const scalar m,
@@ -216,6 +208,12 @@ public:
 
             //- Fluid velocity @ particle location
             inline const vector& UFap() const;
+
+            //- Turbulent frequency
+            inline scalar Omega() const;
+
+            //- Turbulent frequency
+            inline scalar& Omega();
 
             //- scalar properties
             inline const scalarField& Phi() const;

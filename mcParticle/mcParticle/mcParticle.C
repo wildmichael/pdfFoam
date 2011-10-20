@@ -34,8 +34,6 @@ Foam::mcParticle::trackData::trackData
     const interpolationCellPoint<vector>& UInterp,
     const interpolationCellPoint<vector>& gradPInterp,
     const interpolationCellPoint<scalar>& kInterp,
-    const interpolationCellPoint<scalar>& epsilonInterp,
-    const PtrList<interpolationCellPoint<scalar> >& PhiInterp,
     const interpolationCellPoint<vector>& gradRhoInterp,
     const interpolationCellPoint<vector>& diffUInterp
 )
@@ -49,21 +47,46 @@ Foam::mcParticle::trackData::trackData
     diffUInterp_(diffUInterp)
 {}
 
-// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::mcParticle::updateThermo()
+Foam::mcParticle::mcParticle
+(
+    mcParticleCloud& c,
+    const vector& position,
+    const label   celli,
+    const scalar  m,
+    const vector& Updf,
+    const vector& UParticle,
+    const vector& UFap,
+    const scalarField&  Phi,
+    const scalar  dt,
+    const vector& shift,
+    const label   ghost
+)
+:
+    Particle<mcParticle>(c, position, celli),
+    m_(m),
+    Updf_(Updf),
+    UParticle_(UParticle),
+    UFap_(UFap),
+    Omega_(0.0),
+    rho_(0.0),
+    dt_(dt),
+    shift_(shift),
+    ghost_(ghost),
+    Phi_(Phi)
 {
-    // TODO move to reaction model
-    //rho_ = (1. - 3.2*z_*(1.-z_));
+    // call Omega and reaction models to initialize Omega and rho
+    c.applyOmegaModel(*this);
+    c.applyReactionModel(*this);
 }
+
+// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 bool Foam::mcParticle::move(mcParticle::trackData& td)
 {
   // SLM constant, temperarily put here C0 = 2.1
 
     scalar C0 = 2.1;
-    // TODO move mixing constants to mixing model
-    //scalar Cz = 2.0;
 
     td.switchProcessor = false;
     td.keepParticle = true;
@@ -118,13 +141,6 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         // fluid quantities @ particle position
         vector gradPFap = td.gradPInterp().interpolate(cpw);
         scalar kFap = td.kInterp().interpolate(cpw);
-        scalar epsilonFap = td.epsilonInterp().interpolate(cpw);
-        scalarField Phiap(Phi_.size());
-        const PtrList<interpolationCellPoint<scalar> >& pintl = td.PhiInterp();
-        forAll(Phi_, PhiI)
-        {
-            Phiap[PhiI] = pintl[PhiI].interpolate(cpw);
-        }
         vector diffUap = td.diffUInterp().interpolate(cpw);
 
         // interpolate fluid velocity to particle location This
@@ -144,19 +160,14 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
 
         // Update velocity
         UParticle_ += - gradPFap/rho_ * dt
-            - (0.5 + 0.75 * C0) * epsilonFap / kFap * (UParticle_- Updf_) * dt
-            + sqrt(C0 * epsilonFap) * dW
+            - (0.5 + 0.75 * C0) * Omega_ * (UParticle_- Updf_) * dt
+            + sqrt(C0 * kFap * Omega_) * dW
             + diffUap * dt;
 
         // Scale to ensure consistency on TKE
         UParticle_ +=
               (UParticle_ - Updf_)  * dt / mcpc.kRelaxTime().value()
             * (sqrt(mcpc.kfv()()[celli]/mcpc.kcPdf()[celli]) - 1.0);
-
-        // TODO Move mixing to mixing model
-        //z_ += -0.5 * Cz *  epsilonFap / kFap * (z_ - zCap) * dt;
-
-        updateThermo();
 
         if (onBoundary() && td.keepParticle)
         {
