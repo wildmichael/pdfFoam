@@ -141,7 +141,13 @@ inline const Foam::scalarField& Foam::mcParticle::Phi() const
   return Phi_;
 }
 
-inline const Foam::scalar& Foam::mcParticle::rho() const
+inline Foam::scalar Foam::mcParticle::rho() const
+{
+  return rho_;
+}
+
+
+inline Foam::scalar& Foam::mcParticle::rho()
 {
   return rho_;
 }

@@ -224,7 +224,10 @@ public:
             inline scalarField& Phi();
 
             //- density
-            inline const scalar& rho() const;
+            inline scalar rho() const;
+
+            //- density
+            inline scalar& rho();
 
             //- particle time step
             inline scalar& dt();
