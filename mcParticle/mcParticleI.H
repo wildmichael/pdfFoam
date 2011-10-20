@@ -32,7 +32,8 @@ inline Foam::mcParticle::trackData::trackData
     const interpolationCellPoint<vector>& UInterp,
     const interpolationCellPoint<vector>& gradPInterp,
     const interpolationCellPoint<scalar>& kInterp,
-    const interpolationCellPoint<scalar>& epsilonInterp
+    const interpolationCellPoint<scalar>& epsilonInterp,
+    const interpolationCellPoint<vector>& gradRhoInterp
 )
 :
     mcpc_(mcpc),
@@ -40,7 +41,8 @@ inline Foam::mcParticle::trackData::trackData
     UInterp_(UInterp),
     gradPInterp_(gradPInterp),
     kInterp_(kInterp),
-    epsilonInterp_(epsilonInterp)
+    epsilonInterp_(epsilonInterp),
+    gradRhoInterp_(gradRhoInterp)
 {}
 
 
@@ -52,6 +54,7 @@ inline Foam::mcParticle::mcParticle
  const scalar m,
  const vector& Updf,
  const vector& UParticle,
+ const vector& UFap,
  const scalar dt
 )
 :
@@ -59,7 +62,8 @@ inline Foam::mcParticle::mcParticle
   m_(m),
   Updf_(Updf),
   UParticle_(UParticle),
-  dt_(dt)
+  dt_(dt),
+  UFap_(UFap)
 {}
 
 
@@ -100,6 +104,11 @@ Foam::mcParticle::trackData::epsilonInterp() const
     return epsilonInterp_;
 }
 
+inline const Foam::interpolationCellPoint<Foam::vector>&
+Foam::mcParticle::trackData::gradRhoInterp() const
+{
+    return gradRhoInterp_;
+}
 
 inline Foam::scalar Foam::mcParticle::m() const
 {
@@ -120,17 +129,6 @@ inline Foam::vector& Foam::mcParticle::Updf()
 {
     return Updf_;
 }
-
-inline const Foam::symmTensor& Foam::mcParticle::Taupdf() const
-{
-    return Taupdf_;
-}
-
-inline Foam::symmTensor& Foam::mcParticle::Taupdf()
-{
-    return Taupdf_;
-}
-
 
 inline const Foam::vector& Foam::mcParticle::UParticle() const
 {

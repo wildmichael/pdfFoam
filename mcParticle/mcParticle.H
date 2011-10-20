@@ -69,7 +69,7 @@ class mcParticle
         //- mean velocity based on particles
         vector Updf_;
         //- Mean Reynolds stress based on partiles
-       symmTensor Taupdf_;
+        // symmTensor Taupdf_;
   
         //- particle velocity (mean + flutuation) (primary variable)
         vector UParticle_;
@@ -100,6 +100,7 @@ public:
             const interpolationCellPoint<vector>& gradPInterp_;
             const interpolationCellPoint<scalar>& kInterp_;
             const interpolationCellPoint<scalar>& epsilonInterp_;
+            const interpolationCellPoint<vector>& gradRhoInterp_;
 
 
     public:
@@ -116,7 +117,8 @@ public:
        const interpolationCellPoint<vector>& UInterp,
        const interpolationCellPoint<vector>& gradPInterp,
        const interpolationCellPoint<scalar>& kInterp,
-       const interpolationCellPoint<scalar>& epsilonInterp
+       const interpolationCellPoint<scalar>& epsilonInterp,
+       const interpolationCellPoint<vector>& gradRhoInterp_
        );
 
       // Member functions
@@ -132,6 +134,8 @@ public:
       inline const interpolationCellPoint<scalar>& kInterp() const;
       
       inline const interpolationCellPoint<scalar>& epsilonInterp() const;
+
+      inline const interpolationCellPoint<vector>& gradRhoInterp() const;
     };
 
 
@@ -145,7 +149,8 @@ public:
             const label celli,
             const scalar m,
             const vector& Updf,
-            const vector& u,
+            const vector& UParticle,
+            const vector& UFap,
             const scalar dt
         );
 
@@ -178,9 +183,8 @@ public:
 
             inline vector& Updf();
 
-            inline const symmTensor& Taupdf() const;
-
-            inline symmTensor& Taupdf();
+           // inline const symmTensor& Taupdf() const;
+           // inline symmTensor& Taupdf();
 
             //- Return total particle velocity;
             inline const vector& UParticle() const; 

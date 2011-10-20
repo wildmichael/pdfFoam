@@ -111,7 +111,7 @@ class mcParticleCloud
   label histNp_; 
 
   //- statistical moments (mass, momentum, energy)
-  //- needed to obtain Updf, and Taupdf fields
+  //- needed to obtain Updf (and later Taupdf) fields
   dimensionedScalar SMALL_MASS;
 
   labelIOField   PaNIC_; // Particle # in cell
@@ -223,6 +223,8 @@ public:
   //- Report Info
   void info() const;
   void particleInfo() const;
+  void oneParticleInfo(const mcParticle& p) const;
+  void assertPopulationHealth() const;
 };
 
 

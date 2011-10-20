@@ -66,11 +66,15 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         // FV interpolated velocity plus particle fluctuation
         // velocity. A particle number correction flux is needed as
         // well (to ensure consistency with FV density field).
-        
+
         vector correctedUp = UParticle_ - Updf_ + UFap_;
         meshTools::constrainDirection(mesh, mesh.solutionD(), correctedUp);
-        vector destParticle = position() + dt * correctedUp;
-          
+
+        cellPointWeight cpwx(mesh, position(), celli, face());
+        vector gradRhoFap = td.gradRhoInterp().interpolate(cpwx);
+
+        vector destParticle = position() + dt * (correctedUp + gradRhoFap);
+        vector prevPos = position();
         dt *= trackToFace(destParticle, td);
 
         tEnd -= dt;
@@ -86,7 +90,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         
         // interpolate fluid velocity to particle location This
         // quantity is a data member the class. 
-        // Note: if would be the best of UInterp is interpolating
+        // Note: if would be the best if UInterp is interpolating
         // velocities based on faces to get UFap instead of cell
         // center values. Will implemente later. 
         UFap_ = td.UInterp().interpolate(cpw);
@@ -103,8 +107,6 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         UParticle_ += gradPFap/rhoFap
           - (0.5 + 0.75 * C0) * epsilonFap / kFap * (UParticle_- Updf_) * dt
           + sqrt(C0 * epsilonFap) * dW;
-
-        
 
         if (onBoundary() && td.keepParticle)
         {

@@ -78,6 +78,9 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
     IOField<vector> UParticle(c.fieldIOobject("UParticle", IOobject::MUST_READ));
     c.checkFieldIOobject(c, UParticle);
 
+    IOField<vector> UFap(c.fieldIOobject("UFap", IOobject::MUST_READ));
+    c.checkFieldIOobject(c, UFap);
+
     label i = 0;
     forAllIter(Cloud<mcParticle>, c, iter)
     {
@@ -86,6 +89,7 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
         p.m_ = m[i];
         p.Updf_ = Updf[i];
         p.UParticle_ = UParticle[i];
+        p.UFap_ = UFap[i];
         i++;
     }
 }
@@ -98,8 +102,9 @@ void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
     label np = c.size();
 
     IOField<scalar> m(c.fieldIOobject("m", IOobject::NO_READ), np);
-    IOField<vector> UParticle(c.fieldIOobject("UParticle", IOobject::NO_READ), np);
     IOField<vector> Updf(c.fieldIOobject("Updf", IOobject::NO_READ), np);
+    IOField<vector> UParticle(c.fieldIOobject("UParticle", IOobject::NO_READ), np);
+    IOField<vector> UFap(c.fieldIOobject("UFap", IOobject::NO_READ), np);
 
     label i = 0;
     forAllConstIter(Cloud<mcParticle>, c, iter)
@@ -109,12 +114,14 @@ void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
         m[i] = p.m_;
         Updf[i] = p.Updf_;
         UParticle[i] = p.UParticle_;
+        UFap[i] = p.UFap_;
         i++;
     }
 
     m.write();
     Updf.write();
     UParticle.write();
+    UFap.write();
 }
 
 
