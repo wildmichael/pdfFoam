@@ -41,7 +41,6 @@ void Foam::mcThermo::calculate()
     mu_  = nu_ * rho_;
 }
 
-
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::mcThermo::mcThermo(const fvMesh& mesh)
@@ -86,12 +85,10 @@ Foam::mcThermo::mcThermo(const fvMesh& mesh)
     calculate();
 }
 
-
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
 
 Foam::mcThermo::~mcThermo()
 {}
-
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
@@ -124,13 +121,16 @@ void Foam::mcThermo::evolve()
         // Instantiate the cloud on first call
         if (!cloudP_.valid())
         {
-            cloudP_.reset(new mcParticleCloud
+            cloudP_.reset
+            (
+                new mcParticleCloud
                 (
                     mesh_,
                     subDict("cloudProperties"),
                     lookupOrDefault<word>("cloudName", "mcThermoCloud"),
                     0, 0, &rho_
-                ));
+                )
+            );
         }
         cloudP_().evolve();
 
@@ -142,6 +142,7 @@ void Foam::mcThermo::evolve()
     }
 }
 
+
 Foam::tmp<Foam::volScalarField> Foam::mcThermo::rho() const
 {
     return rho_;
@@ -152,6 +153,5 @@ Foam::volScalarField& Foam::mcThermo::rho()
 {
     return rho_;
 }
-
 
 // ************************************************************************* //

@@ -119,36 +119,33 @@ public:
 
     public:
 
+        // Constructors
 
-      // Constructors
+        trackData
+        (
+            mcParticleCloud& mcpc,
+            const interpolationCellPoint<scalar>& rhoInterp,
+            const interpolationCellPoint<vector>& UInterp,
+            const interpolationCellPoint<vector>& gradPInterp,
+            const interpolationCellPoint<scalar>& kInterp,
+            const interpolationCellPoint<vector>& gradRhoInterp,
+            const interpolationCellPoint<vector>& diffUInterp
+        );
 
-      trackData
-      (
-       mcParticleCloud& mcpc,
-       const interpolationCellPoint<scalar>& rhoInterp,
-       const interpolationCellPoint<vector>& UInterp,
-       const interpolationCellPoint<vector>& gradPInterp,
-       const interpolationCellPoint<scalar>& kInterp,
-       const interpolationCellPoint<vector>& gradRhoInterp,
-       const interpolationCellPoint<vector>& diffUInterp
-       );
+        // Member functions
 
-      // Member functions
+        inline const interpolationCellPoint<scalar>& rhoInterp() const;
 
+        inline const interpolationCellPoint<vector>& UInterp() const;
 
-      inline const interpolationCellPoint<scalar>& rhoInterp() const;
+        inline const interpolationCellPoint<vector>& gradPInterp() const;
 
-      inline const interpolationCellPoint<vector>& UInterp() const;
-
-      inline const interpolationCellPoint<vector>& gradPInterp() const;
-
-      inline const interpolationCellPoint<scalar>& kInterp() const;
+        inline const interpolationCellPoint<scalar>& kInterp() const;
 
 
+        inline const interpolationCellPoint<vector>& gradRhoInterp() const;
 
-      inline const interpolationCellPoint<vector>& gradRhoInterp() const;
-
-      inline const interpolationCellPoint<vector>& diffUInterp() const;
+        inline const interpolationCellPoint<vector>& diffUInterp() const;
     };
 
 

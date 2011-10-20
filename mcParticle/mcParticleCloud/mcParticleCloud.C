@@ -35,8 +35,9 @@ License
 
 // * * * * * * * * * * * * * Local Helper Functions  * * * * * * * * * * * * //
 
-namespace
+namespace // anonymous
 {
+
 const Foam::compressible::turbulenceModel* getTurbulenceModel
 (
     const Foam::objectRegistry& obr
@@ -44,11 +45,17 @@ const Foam::compressible::turbulenceModel* getTurbulenceModel
 {
     if (obr.foundObject<Foam::compressible::turbulenceModel>("RASProperties"))
     {
-        return &obr.lookupObject<Foam::compressible::RASModel>("RASProperties");
+        return &obr.lookupObject<Foam::compressible::RASModel>
+        (
+            "RASProperties"
+        );
     }
     else if (obr.foundObject<Foam::compressible::LESModel>("LESProperties"))
     {
-        return &obr.lookupObject<Foam::compressible::LESModel>("LESProperties");
+        return &obr.lookupObject<Foam::compressible::LESModel>
+        (
+            "LESProperties"
+        );
     }
     else
     {
@@ -60,9 +67,20 @@ const Foam::compressible::turbulenceModel* getTurbulenceModel
 }
 
 
-const Foam::dimensionedScalar SMALL_MASS("SMALL_MASS", Foam::dimMass, Foam::SMALL);
+const Foam::dimensionedScalar SMALL_MASS
+(
+    "SMALL_MASS",
+    Foam::dimMass,
+    Foam::SMALL
+);
 
-const Foam::dimensionedScalar SMALL_VOLUME("SMALL_VOLUME", Foam::dimVolume, Foam::SMALL);
+
+const Foam::dimensionedScalar SMALL_VOLUME
+(
+    "SMALL_VOLUME",
+    Foam::dimVolume,
+    Foam::SMALL
+);
 
 } // anonymous namespace
 
@@ -70,9 +88,11 @@ const Foam::dimensionedScalar SMALL_VOLUME("SMALL_VOLUME", Foam::dimVolume, Foam
 
 namespace Foam
 {
-defineParticleTypeNameAndDebug(mcParticle, 0);
-defineTemplateTypeNameAndDebug(Cloud<mcParticle>, 0);
-};
+
+    defineParticleTypeNameAndDebug(mcParticle, 0);
+    defineTemplateTypeNameAndDebug(Cloud<mcParticle>, 0);
+
+}  // namespace Foam
 
 
 inline bool Foam::mcParticleCloud::less::operator()
@@ -83,6 +103,7 @@ inline bool Foam::mcParticleCloud::less::operator()
 {
     return one->m() < two->m();
 }
+
 
 inline bool Foam::mcParticleCloud::more::operator()
 (
@@ -438,7 +459,7 @@ void Foam::mcParticleCloud::checkMoments()
     }
     else
     {
-        FatalErrorIn("Foam::mcParticleCloud::checkMoments()")
+        FatalErrorIn("mcParticleCloud::checkMoments()")
             << "Not all moment fields available and no particles present."
             << endl;
     }
@@ -491,7 +512,10 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
     forAll(PhiMom_, PhiI)
     {
         word name = PhiMom_[PhiI].name()+"Instant";
-        PhiMomInstant.set(PhiI, new DimensionedField<scalar, volMesh>
+        PhiMomInstant.set
+        (
+            PhiI,
+            new DimensionedField<scalar, volMesh>
             (
                 IOobject
                 (
@@ -503,7 +527,8 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
                 ),
                 mesh_,
                 dimensionedScalar(name, PhiMom_[PhiI].dimensions(), 0.0)
-            ));
+            )
+        );
     }
     DimensionedField<symmTensor, volMesh> uuMomInstant
     (
@@ -606,8 +631,8 @@ void Foam::mcParticleCloud::checkParticlePropertyDict()
 }
 
 
-// Update particle-cell addressing: for each cell, what are the addresses of the
-// particles I host?
+// Update particle-cell addressing: for each cell, what are the addresses of
+// the particles I host?
 void Foam::mcParticleCloud::particleNumberControl()
 {
     if (!particleNumberControl_) return;
@@ -643,7 +668,7 @@ void Foam::mcParticleCloud::particleNumberControl()
         mcParticle & p = pIter();
         label celli = p.cell();
         // If a mcParticleList is necessary for this cell, construct it.
-        if (cellPopFlag[celli] > NORMAL) // either too few or too many particles
+        if (cellPopFlag[celli] > NORMAL) // too few or too many particles
         {
             // according to ascending order of mass (if too many particles)
             // or descending order of mass (if too few particle)
@@ -671,29 +696,31 @@ void Foam::mcParticleCloud::particleNumberControl()
         }
     }
 
-    //// Debug only: check the list
-    //if (debug)
-    //{
-    //    forAll(cellPopFlag, celli)
-    //    {
-    //        if (cellPopFlag[celli] == TOOFEW || cellPopFlag[celli] == TOOMANY)
-    //        {
-    //            Info<< "size is " << cellParticleAddr_[celli].size()
-    //                << ", flag is " << cellPopFlag[celli]
-    //                << " := " << endl;
-    //            mcParticleList & cepl = cellParticleAddr_[celli];
+#if 0
+    // Debug only: check the list
+    if (debug)
+    {
+        forAll(cellPopFlag, celli)
+        {
+            if (cellPopFlag[celli] == TOOFEW || cellPopFlag[celli] == TOOMANY)
+            {
+                Info<< "size is " << cellParticleAddr_[celli].size()
+                    << ", flag is " << cellPopFlag[celli]
+                    << " := " << endl;
+                mcParticleList & cepl = cellParticleAddr_[celli];
 
-    //            forAll(cepl, pci)
-    //            {
-    //                if (cepl[pci])
-    //                {
-    //                    Info<< "ID= " << cepl[pci]->origId() << ", "
-    //                        << "m= " << cepl[pci]->m() << endl;
-    //                }
-    //            }
-    //        }
-    //    }
-    //}
+                forAll(cepl, pci)
+                {
+                    if (cepl[pci])
+                    {
+                        Info<< "ID= " << cepl[pci]->origId() << ", "
+                            << "m= " << cepl[pci]->m() << endl;
+                    }
+                }
+            }
+        }
+    }
+#endif
 }
 
 
@@ -736,7 +763,7 @@ void Foam::mcParticleCloud::eliminateParticles(label celli)
     for (label particleI=0; particleI < nPool; particleI++)
     {
         mcParticle& p = * cellParticleAddr_[celli][particleI];
-        if ( random().scalar01() > 0.5 )
+        if (random().scalar01() > 0.5)
         {
             massKilled += p.m();
             deleteParticle(p);
@@ -790,7 +817,7 @@ void Foam::mcParticleCloud::findGhostLayers()
         return;
     }
 
-    forAll (patchNames, nameI)
+    forAll(patchNames, nameI)
     {
         label patchI = patches.findPatchID(patchNames[nameI]);
 
@@ -835,7 +862,9 @@ void Foam::mcParticleCloud::findGhostLayers()
                 else
                 {
                     ghostFaceLayers_[nameI][j] =  oppositeFaceI;
-                    ghostCellShifts_[nameI][j] = mesh_.Cf()[oppositeFaceI] - mesh_.Cf().boundaryField()[patchI][facei];
+                    ghostCellShifts_[nameI][j] =
+                          mesh_.Cf()[oppositeFaceI]
+                        - mesh_.Cf().boundaryField()[patchI][facei];
                 }
 
                 //- Add face to hash set
@@ -847,16 +876,26 @@ void Foam::mcParticleCloud::findGhostLayers()
 
     // Check the faces found above
 
-    /* forAll(ghostFaceLayers_, patchI)
-       forAll(ghostFaceLayers_[patchI], facei)
-       {
-           Info<<  "face #: " << ghostFaceLayers_[patchI][facei] << endl;
-           Info<< faces[ghostFaceLayers_[patchI][facei]].normal(mesh_.points()) << endl;
-           Info<< faces[ghostFaceLayers_[patchI][facei]].centre(mesh_.points()) << endl;
-       }
+#if 0
+    forAll(ghostFaceLayers_, patchI)
+    {
+        forAll(ghostFaceLayers_[patchI], facei)
+        {
+            label ghostFaceI = ghostFaceLayers_[patchI][facei];
+            const face& f = faces[ghostFaceI];
+            Info<< "face #: " << ghostFaceI << endl
+                << "  normal: " << f.normal(mesh_.points()) << endl
+                << "  centre: " << f.centre(mesh_.points()) << endl
+                << endl;
+        }
        forAll(ghostCellShifts_, patchI)
+       {
            forAll(ghostCellShifts_[patchI], celli)
-           {Info<< ghostCellShifts_[patchI][celli] << endl;}   */
+           {
+               Info<< "shift: " << ghostCellShifts_[patchI][celli] << endl;
+           }
+       }
+#endif
 }
 
 
@@ -868,7 +907,8 @@ void Foam::mcParticleCloud::evolve()
     // lower bound for k
     kcPdf_ = max(kcPdf_, kMin_);
 
-    const volVectorField& gradP = mesh_.lookupObject<const volVectorField>("grad(p)");
+    const volVectorField& gradP =
+        mesh_.lookupObject<const volVectorField>("grad(p)");
 
     volScalarField diffRho
     (
@@ -919,8 +959,16 @@ void Foam::mcParticleCloud::evolve()
     //Impose boundary conditions via particles
     populateGhostCells();
 
-    mcParticle::trackData td(*this, rhoInterp, UInterp, gradPInterp, kInterp,
-                             gradRhoInterp, diffUInterp);
+    mcParticle::trackData td
+    (
+        *this,
+        rhoInterp,
+        UInterp,
+        gradPInterp,
+        kInterp,
+        gradRhoInterp,
+        diffUInterp
+    );
 
     Cloud<mcParticle>::move(td);
 
@@ -981,7 +1029,15 @@ void Foam::mcParticleCloud::particleGenInCell
     label  ghost
 )
 {
-    boundBox cellbb(pointField(mesh_.points(), mesh_.cellPoints()[celli]), false);
+    boundBox cellbb
+    (
+        pointField
+        (
+            mesh_.points(),
+            mesh_.cellPoints()[celli]
+        ),
+        false
+    );
 
     vector minb = cellbb.min();
     vector dimb = cellbb.max() - minb;
@@ -1016,21 +1072,30 @@ void Foam::mcParticleCloud::particleGenInCell
             vector UFap = Ufv_[celli];
 
             mcParticle* ptr = new mcParticle
-                (
-                    *this,  position, celli, m, Updf, UParticle, UFap, Phi,
-                    runTime_.deltaT().value(), shift, ghost
-                );
+            (
+                *this,
+                position,
+                celli,
+                m,
+                Updf,
+                UParticle,
+                UFap,
+                Phi,
+                runTime_.deltaT().value(),
+                shift,
+                ghost
+            );
 
             addParticle(ptr);
-            Npgen ++;
+            ++Npgen;
             prepareOmegaModel_ = false;
         }
 
         // until enough particles are generated.
-        if(Npgen >= N) break;
+        if (Npgen >= N) break;
     }
 
-    if(Npgen < N)
+    if (Npgen < N)
     {
         FatalErrorIn("mcParticleCloud::initReleaseParticles()")
             << "Only " << Npgen << " particles generated for cell "
@@ -1053,7 +1118,7 @@ void Foam::mcParticleCloud::populateGhostCells()
     {
         forAll(ghostCellLayers_[ghostPatchI], faceCelli)
         {
-            ++ ng;
+            ++ng;
             np += Npc_;
 
             label  celli = ghostCellLayers_[ghostPatchI][faceCelli];
@@ -1073,12 +1138,23 @@ void Foam::mcParticleCloud::populateGhostCells()
                 Phi[PhiI] = f.boundaryField()[patchId][faceCelli];
             }
 
-            particleGenInCell(celli, Npc_, m, Updf, uscales, Phi, shift, ghost);
+            particleGenInCell
+            (
+                celli,
+                Npc_,
+                m,
+                Updf,
+                uscales,
+                Phi,
+                shift,
+                ghost
+            );
         }
     }
     if (debug)
     {
-        Info<< np << " particles generated in " << ng << " ghost cells" << endl;
+        Info<< np << " particles generated in "
+            << ng << " ghost cells" << endl;
     }
 
 }
@@ -1122,7 +1198,7 @@ void Foam::mcParticleCloud::purgeGhostParticles()
                 }
                 if (newCelli < 0)
                 {
-                    Pout<< "*** Warning in mcParticleCloud::purgeGhostParticles()" << nl
+                    WarningIn("mcParticleCloud::purgeGhostParticles()")
                         << " Shifting of ghost particles caused loss."  << nl
                         << " Possible causes are: " << nl
                         << "  (1) Strange ghost cell shapes;" << nl
@@ -1218,7 +1294,9 @@ void Foam::mcParticleCloud::assertPopulationHealth() const
         if (p.ghost())
         {
             cloudHealthy = false;
-            reasons << "\tParticle " << p.origId() << " is a ghost particle" << nl;
+            reasons
+                << "\tParticle " << p.origId()
+                << " is a ghost particle" << nl;
         }
         if (mag(p.shift()) > 100*SMALL)
         {
@@ -1236,7 +1314,7 @@ void Foam::mcParticleCloud::assertPopulationHealth() const
             reasons << "\tCell " << cellI << " has no particles" << nl;
         }
     }
-    if(!cloudHealthy)
+    if (!cloudHealthy)
     {
         FatalErrorIn("mcParticleCloud::assertPopulationHealth()")
             << "Particle health check not passed:" << nl << reasons.str()

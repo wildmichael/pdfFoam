@@ -75,6 +75,7 @@ inline const Foam::dimensionedScalar& Foam::mcParticleCloud::kRelaxTime() const
     return kRelaxTime_;
 }
 
+
 inline Foam::label Foam::mcParticleCloud::Npc()
 {
     return Npc_;
@@ -85,5 +86,6 @@ inline const Foam::wordList& Foam::mcParticleCloud::scalarNames() const
 {
     return scalarNames_;
 }
+
 
 // ************************************************************************* //

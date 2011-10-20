@@ -84,8 +84,7 @@ Foam::mcParticle::mcParticle
 
 bool Foam::mcParticle::move(mcParticle::trackData& td)
 {
-  // SLM constant, temperarily put here C0 = 2.1
-
+    // SLM constant, temperarily put here C0 = 2.1
     scalar C0 = 2.1;
 
     td.switchProcessor = false;
@@ -106,9 +105,10 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         if (debug)
         {
            Info<< "Time = " << mesh.time().timeName()
-                << " deltaT = " << deltaT
-                << " tEnd = " << tEnd
-                << " steptFraction() = " << stepFraction() << endl;
+                << "  deltaT = " << deltaT
+                << "  tEnd = " << tEnd
+                << "  steptFraction() = " << stepFraction() << endl
+                << endl;
         }
 
         // set the lagrangian time-step
@@ -150,7 +150,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         // center values. Will implemente later.
         UFap_ = td.UInterp().interpolate(cpw);
 
-        //Wiener process (question mark)
+        // Wiener process (question mark)
         vector dW = sqrt(dt) * vector
         (
             mcpc.random().GaussNormal(),

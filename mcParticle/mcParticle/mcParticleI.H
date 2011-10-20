@@ -31,17 +31,20 @@ Foam::mcParticle::trackData::rhoInterp() const
     return rhoInterp_;
 }
 
+
 inline const Foam::interpolationCellPoint<Foam::vector>&
 Foam::mcParticle::trackData::UInterp() const
 {
     return UInterp_;
 }
 
+
 inline const Foam::interpolationCellPoint<Foam::vector>&
 Foam::mcParticle::trackData::gradPInterp() const
 {
     return gradPInterp_;
 }
+
 
 inline const Foam::interpolationCellPoint<Foam::scalar>&
 Foam::mcParticle::trackData::kInterp() const
@@ -56,36 +59,43 @@ Foam::mcParticle::trackData::gradRhoInterp() const
     return gradRhoInterp_;
 }
 
+
 inline const Foam::interpolationCellPoint<Foam::vector>&
 Foam::mcParticle::trackData::diffUInterp() const
 {
     return diffUInterp_;
 }
 
+
 inline Foam::scalar Foam::mcParticle::m() const
 {
     return m_;
 }
+
 
 inline Foam::scalar& Foam::mcParticle::m()
 {
     return m_;
 }
 
+
 inline const Foam::vector& Foam::mcParticle::Updf() const
 {
     return Updf_;
 }
+
 
 inline Foam::vector& Foam::mcParticle::Updf()
 {
     return Updf_;
 }
 
+
 inline const Foam::vector& Foam::mcParticle::UParticle() const
 {
     return UParticle_;
 }
+
 
 inline const Foam::vector& Foam::mcParticle::UFap() const
 {
@@ -128,6 +138,7 @@ inline Foam::scalar& Foam::mcParticle::rho()
   return rho_;
 }
 
+
 inline Foam::scalar& Foam::mcParticle::dt()
 {
     return dt_;
@@ -139,19 +150,23 @@ inline Foam::label Foam::mcParticle::ghost() const
     return ghost_;
 }
 
+
 inline Foam::label& Foam::mcParticle::ghost()
 {
     return ghost_;
 }
+
 
 inline const Foam::vector& Foam::mcParticle::shift() const
 {
     return shift_;
 }
 
+
 inline Foam::vector& Foam::mcParticle::shift()
 {
     return shift_;
 }
+
 
 // ************************************************************************* //
