@@ -114,7 +114,12 @@ void Foam::mcThermo::evolve()
         if (debug)
         {
             Info<< "executing mcThermo::cloudP_().evolve()" << endl;
-            Info<< tab << "cloudP_().size() = " << cloudP_().size() << endl;
+            Info<< tab << "cloudP_().size() = ";
+            if (cloudP_.valid())
+               Info << cloudP_().size();
+            else
+               Info << "empty";
+           Info << endl;
         }
 
         // Instantiate the cloud on first call
