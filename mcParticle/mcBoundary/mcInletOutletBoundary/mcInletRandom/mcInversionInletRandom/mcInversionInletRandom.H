@@ -22,34 +22,25 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::InletRandom
+    Foam::mcInversionInletRandom
 
 Description
-    Generate wall-normal particle-velocity for an inlet boundary
-
-    Generate random values from the PDF
-    \f[ f_x = \frac{X}{N} e^{-(X-a)^2 b^2} \f]
-    where
-    \f{eqnarray*}{
-        b &=& \frac{1}{\sqrt{2}u_\mathrm{rms}} \quad \text{and} \\
-        N &=& b^2 e^{-\frac{a^2}{2 b^2}} + a \sqrt{\frac{\pi b^2}{2}}
-              \left(1+\mathrm{erf}\left(\frac{a}{\sqrt{2 b^2}}\right)\right)
-    \f}
-    using numerical inversion of the CDF with Newton-Raphson.
+    Generate wall-normal particle-velocity for an inlet boundary using
+    numerical inversion of the CDF with Newton-Raphson.
 
 
 SourceFiles
-    InletRandom.C
+    mcInversionInletRandom.C
 
 Author
     Michael Wild
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef InletRandom_H
-#define InletRandom_H
+#ifndef mcInversionInletRandom_H
+#define mcInversionInletRandom_H
 
-#include "scalar.H"
+#include "mcInletRandom.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -59,17 +50,14 @@ namespace Foam
 class Random;
 
 /*---------------------------------------------------------------------------*\
-                         Class InletRandom Declaration
+                    Class mcInversionInletRandom Declaration
 \*---------------------------------------------------------------------------*/
 
-class InletRandom
+class mcInversionInletRandom
+    : public mcInletRandom
 {
     // Private data
 
-        //- Random number generator
-        Random& rnd_;
-        //- Mean
-        scalar a_;
         //- 1/sqrt(2*Variance)
         scalar b_;
         //- Commonly used, precomputed factors
@@ -82,31 +70,40 @@ class InletRandom
         //- Newton-Raphson root finding of the CDF
         scalar newton(scalar x0, scalar y, label& nIter);
 
-        // Disallow default bitwise copy construct and assignment
-        InletRandom(const InletRandom&);
-        void operator=(const InletRandom&);
-
-public:
-
-    // Constructors
-
-        //- Construct a random number generator given a Random object and
-        //the mean velocity and the RMS of the fluctuations
-        InletRandom(Random& rnd, scalar Umean, scalar urms);
-
-    // Public member functions
-
-        //- Generate one random number
-        scalar value();
-
-        //- Update the coefficients for changed Umean and urms
-        void updateCoeffs(scalar Umean, scalar urms);
-
         //- Cummulative distribution function (CDF)
         inline scalar CDF(scalar x);
 
         //- Probability density function (PDF)
         inline scalar PDF(scalar x);
+
+        // Disallow default bitwise copy construct and assignment
+        mcInversionInletRandom(const mcInversionInletRandom&);
+        void operator=(const mcInversionInletRandom&);
+
+public:
+
+    //- Runtime type information
+        TypeName("mcInversionInletRandom");
+
+    // Constructors
+
+        //- Construct a random number generator given a Random object and
+        //the mean velocity and the RMS of the fluctuations
+        mcInversionInletRandom
+        (
+            Random& rnd,
+            scalar Umean,
+            scalar urms,
+            const dictionary& dict
+        );
+
+    // Public member functions
+
+        //- Generate one random number
+        virtual scalar value();
+
+        //- Update the coefficients for changed Umean and urms
+        virtual void updateCoeffs(scalar Umean, scalar urms);
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -115,7 +112,7 @@ public:
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#include "InletRandomI.H"
+#include "mcInversionInletRandomI.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

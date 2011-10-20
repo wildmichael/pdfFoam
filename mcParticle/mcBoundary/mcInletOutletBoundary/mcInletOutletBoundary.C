@@ -132,7 +132,7 @@ const Foam::vectorField& Foam::mcInletOutletBoundary::geturms
 }
 
 
-Foam::PtrList<Foam::InletRandom>&
+Foam::PtrList<Foam::mcInletRandom>&
 Foam::mcInletOutletBoundary::getInRnd
 (
     Foam::mcParticleCloud& cloud
@@ -147,11 +147,12 @@ Foam::mcInletOutletBoundary::getInRnd
         Random& rnd = cloud.random();
         forAll(pp, faceI)
         {
-            inRnd_.set(faceI, new InletRandom
+            inRnd_.set(faceI, mcInletRandom::New
                 (
                     rnd,
                     U[faceI].x(),
-                    urms[faceI].x()
+                    urms[faceI].x(),
+                    subDict("randomGenerator")
                 ));
         }
     }

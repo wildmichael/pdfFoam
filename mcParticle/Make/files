@@ -17,6 +17,8 @@ mcBoundary/mcGhostInletOutletBoundary/mcGhostInletOutletBoundary.C
 mcBoundary/mcProcessorBoundary/mcProcessorBoundary.C
 mcBoundary/mcOpenBoundary/mcOpenBoundary.C
 mcBoundary/mcInletOutletBoundary/mcInletOutletBoundary.C
-mcBoundary/mcInletOutletBoundary/InletRandom.C
+mcBoundary/mcInletOutletBoundary/mcInletRandom/mcInletRandom/mcInletRandom.C
+mcBoundary/mcInletOutletBoundary/mcInletRandom/mcInversionInletRandom/mcInversionInletRandom.C
+mcBoundary/mcInletOutletBoundary/mcInletRandom/mcSamplingInletRandom/mcSamplingInletRandom.C
 
 LIB = $(FOAM_USER_LIBBIN)/libmcParticle

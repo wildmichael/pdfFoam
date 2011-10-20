@@ -23,53 +23,96 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "mcOpenBoundary.H"
+#include "mcSamplingInletRandom.H"
 
-#include "mcParticle.H"
-#include "mcParticleCloud.H"
-#include "surfaceMesh.H"
-#include "fvsPatchField.H"
+#include "addToRunTimeSelectionTable.H"
+#include "Random.H"
+#include "scalarList.H"
+
+namespace {
+
+// * * * * * * * * * * * * * Local Helper Functions * * * * * * * * * * * * //
+
+using namespace Foam;
+void fillBuf
+(
+    Random&            rnd,
+    scalar             Umean,
+    scalar             urms,
+    FIFOStack<scalar>& buf
+)
+{
+    static scalarList tmp(1e6);
+    static const scalar CFL = 0.1;
+    scalar m = -VGREAT;
+    forAll(tmp, i)
+    {
+        tmp[i] = rnd.GaussNormal()*urms + Umean;
+        m = max(m, fabs(tmp[i]));
+    }
+    forAll(tmp, i)
+    {
+        if (rnd.scalar01() + tmp[i]*CFL/m > 1.)
+        {
+            buf.push(tmp[i]);
+        }
+    }
+}
+
+} // End namespace (anonymous)
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
-    defineTypeNameAndDebug(mcOpenBoundary, 0);
+    defineTypeNameAndDebug(mcSamplingInletRandom, 0);
+    addNamedToRunTimeSelectionTable
+    (
+        mcInletRandom,
+        mcSamplingInletRandom,
+        mcInletRandom,
+        sampling
+    );
 
 } // namespace Foam
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::mcOpenBoundary::mcOpenBoundary
+Foam::mcSamplingInletRandom::mcSamplingInletRandom
 (
-    const Foam::fvMesh& mesh,
-    label patchID,
-    const Foam::dictionary& dict
+    Random& rnd,
+    scalar Umean,
+    scalar urms,
+    const dictionary& dict
 )
 :
-    mcBoundary(mesh, patchID, dict)
+    mcInletRandom(rnd, Umean, urms, dict)
 {}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::mcOpenBoundary::hitPatch
-(
-    Foam::mcParticle& p,
-    Foam::mcParticle::trackData& td
-)
+Foam::scalar Foam::mcSamplingInletRandom::value()
 {
-    // TODO moving-wall reflection
-    // (Meyer and Jenny 2007: doi:10.1016/j.jcp.2007.06.014)
-    td.keepParticle = false;
+    if (!buf_.size())
+    {
+        fillBuf(rnd(), Umean(), urms(), buf_);
+    }
+    return buf_.pop();
 }
 
 
-void Foam::mcOpenBoundary::hitPatch
+void Foam::mcSamplingInletRandom::updateCoeffs
 (
-    Foam::mcParticle& p,
-    int&
+    scalar U,
+    scalar up
 )
-{}
+{
+    if (fabs(Umean()-U)>VSMALL || fabs(urms()-up)>VSMALL)
+    {
+        buf_.clear();
+    }
+    mcInletRandom::updateCoeffs(U, up);
+}
 
 // ************************************************************************* //

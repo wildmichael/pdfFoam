@@ -23,31 +23,48 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "InletRandom.H"
-
+#include "mcInversionInletRandom.H"
+#include "addToRunTimeSelectionTable.H"
 #include "Random.H"
+
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
+
+namespace Foam
+{
+
+    defineTypeNameAndDebug(mcInversionInletRandom, 0);
+    addNamedToRunTimeSelectionTable
+    (
+        mcInletRandom,
+        mcInversionInletRandom,
+        mcInletRandom,
+        inversion
+    );
+
+} // namespace Foam
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::InletRandom::InletRandom
+Foam::mcInversionInletRandom::mcInversionInletRandom
 (
-    Foam::Random& rnd,
+    Random& rnd,
     scalar Umean,
-    scalar urms
+    scalar urms,
+    const dictionary& dict
 )
 :
-    rnd_(rnd)
+    mcInletRandom(rnd, Umean, urms, dict)
 {
     updateCoeffs(Umean, urms);
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-Foam::scalar Foam::InletRandom::newton
+Foam::scalar Foam::mcInversionInletRandom::newton
 (
-    Foam::scalar x0,
-    Foam::scalar y,
-    Foam::label& nIter
+    scalar x0,
+    scalar y,
+    label& nIter
 )
 {
     static const label nMaxIter = 50;
@@ -59,7 +76,7 @@ Foam::scalar Foam::InletRandom::newton
       scalar fder = PDF(x0);
       if (fabs(fder) < VSMALL)
       {
-          WarningIn("InletRandom::newton(scalar, scalar, label&)")
+          WarningIn("mcInversionInletRandom::newton(scalar, scalar, label&)")
               << "Derivative was zero (" << fder << ") after "
               << nIter << " iterations."
               << endl;
@@ -73,47 +90,39 @@ Foam::scalar Foam::InletRandom::newton
       x0 = x;
       ++nIter;
     } while (nIter < nMaxIter);
-    WarningIn("InletRandom::newton(scalar, scalar, label&)")
+    WarningIn("mcInversionInletRandom::newton(scalar, scalar, label&)")
         << "Exceeded maxinum number of iterations (" << nMaxIter << ")."
         << endl;
     return x0;
 }
 
 
-Foam::scalar Foam::InletRandom::value()
+Foam::scalar Foam::mcInversionInletRandom::value()
 {
-    scalar U = rnd_.scalar01();
+    scalar U = rnd().scalar01();
     // perturbation away from peak position
     scalar d = sign(U-CDF(m_))*SMALL;
     label nIter;
     scalar r = newton(m_+d, U, nIter);
-    //Info<< "# DEBUG: Created random scalar " << r << endl;
     return r;
 }
 
 
-void Foam::InletRandom::updateCoeffs
+void Foam::mcInversionInletRandom::updateCoeffs
 (
-    Foam::scalar Umean,
-    Foam::scalar urms
+    scalar U,
+    scalar up
 )
 {
-    scalar b = M_SQRT1_2/urms;
-#if 0
-    if (fabs(a_-Umean) < SMALL && fabs(b_-b) < SMALL)
-    {
-        return;
-    }
-#endif
-    a_ = Umean;
-    b_ = b;
+    mcInletRandom::updateCoeffs(U, up);
+    b_ = M_SQRT1_2/urms();
     b2_ = b_*b_;
-    expma2b2_ = exp(-a_*a_*b2_);
-    abSqrtPi_ = a_*b_*sqrt(M_PI);
-    erfab_ = erf(a_*b_);
+    expma2b2_ = exp(-Umean()*Umean()*b2_);
+    abSqrtPi_ = Umean()*b_*sqrt(M_PI);
+    erfab_ = erf(Umean()*b_);
     denom_ = expma2b2_+abSqrtPi_*(1.0+erfab_);
     b22denom_ = 2.0*b2_/denom_;
-    m_  = 0.5*(a_*b_+sqrt(2.0+a_*a_*b2_))/b_;
+    m_ = 0.5*(Umean()*b_+sqrt(2.0+Umean()*Umean()*b2_))/b_;
 }
 
 // ************************************************************************* //

@@ -49,7 +49,7 @@ Author
 
 #include "mcOpenBoundary.H"
 
-#include "InletRandom.H"
+#include "mcInletRandom.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -87,7 +87,7 @@ class mcInletOutletBoundary :
 
         //- Random number generators for the wall-normal velocity
         // Do not access directly, use getInRnd() instead.
-        PtrList<InletRandom> inRnd_;
+        PtrList<mcInletRandom> inRnd_;
 
 #ifdef FULLDEBUG
         //- Output for generated particle velocities
@@ -105,7 +105,7 @@ class mcInletOutletBoundary :
         const vectorField& geturms(const mcParticleCloud& cloud);
 
         //- Get the inRnd_ list and create it if necessary
-        PtrList<InletRandom>& getInRnd(mcParticleCloud& cloud);
+        PtrList<mcInletRandom>& getInRnd(mcParticleCloud& cloud);
 
         //- Generate random point on a face
         point randomPoint(mcParticleCloud& cloud, label faceI);
