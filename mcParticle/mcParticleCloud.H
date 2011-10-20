@@ -139,7 +139,8 @@ class mcParticleCloud
   volScalarField rhocPdf_;
   volVectorField UcPdf_;
   volScalarField psicPdf_;
-  volSymmTensorField TaucPdf_;
+  volSymmTensorField TaucPdf_; // turbulent stress
+  volScalarField kcPdf_;  // TKE
 
   //- constants
 

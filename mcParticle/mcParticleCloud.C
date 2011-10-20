@@ -239,7 +239,28 @@ Foam::mcParticleCloud::mcParticleCloud
        IOobject::READ_IF_PRESENT,
        IOobject::AUTO_WRITE
        ),
-     M2_/max(M0_, SMALL_MASS)
+      mesh_,
+      dimensionedSymmTensor
+          (
+              "TauCloudPDF", dimVelocity*dimVelocity, symmTensor::zero
+          ),
+      zeroGradientFvPatchScalarField::typeName
+     ),
+
+    kcPdf_
+    (
+      IOobject
+      (
+       "kCloudPDF",
+       mesh.time().timeName(),
+       mesh,
+       IOobject::READ_IF_PRESENT,
+       IOobject::AUTO_WRITE
+       ),
+      mesh_,
+      dimVelocity*dimVelocity,
+      0.5*tr(TaucPdf_),
+      kfv_.boundaryField()
      ),
 
   coeffRhoCorr_
@@ -337,16 +358,18 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
   Mpsi1_.internalField() = existWt * Mpsi1_.internalField() + (1.0 - existWt) * instantMpsi1;
   M2_.internalField()    = existWt * M2_.internalField()    + (1.0 - existWt) * instantM2;
 
-  // Compute U, psi, and tau
+  // Compute U, psi, tau, and k
   rhocPdf_.internalField()  = M0_/mesh_.V(); 
   UcPdf_.internalField()   = M1_/max(M0_, SMALL_MASS);
   psicPdf_  = Mpsi1_ / max(M0_, SMALL_MASS);
   TaucPdf_.internalField()  = M2_/max(M0_, SMALL_MASS);
+  kcPdf_.internalField()  = 0.5 * tr(TaucPdf_.internalField());
 
   rhocPdf_.correctBoundaryConditions();
   UcPdf_.correctBoundaryConditions();
   psicPdf_.correctBoundaryConditions();
   TaucPdf_.correctBoundaryConditions();
+  kcPdf_.correctBoundaryConditions();
 }
 
 
@@ -372,7 +395,7 @@ void Foam::mcParticleCloud::checkParticlePropertyDict()
   particleProperties_.set("clusterAt", clusterAt_);
   particleProperties_.set("cloneAt", cloneAt_);
     
-  Info << "Particle Properties Dict:" << nl << particleProperties_ << nl << endl; 
+  Info << "Particle Properties Dict:" << particleProperties_ << nl << endl; 
 }
 
 
