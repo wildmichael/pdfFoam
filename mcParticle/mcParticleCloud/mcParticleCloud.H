@@ -275,10 +275,14 @@ public:
         //- Access the turbulence model
         inline const compressible::turbulenceModel& turbulenceModel() const;
 
+        //- The FV velocity field
+        inline const volVectorField& Ufv() const;
         //- The TKE FV field
         inline const tmp<volScalarField> kfv() const;
         //- The turbulent dissipation field
         inline const tmp<volScalarField> epsilonfv() const;
+        //- The PDF density field
+        inline const volScalarField& rhocPdf() const;
         //- The TKE PDF field
         inline const volScalarField& kcPdf() const;
         //- The scalar PDF fields

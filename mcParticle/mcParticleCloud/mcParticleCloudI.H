@@ -43,6 +43,10 @@ inline const Foam::labelList& Foam::mcParticleCloud::mixedScalars() const
     return mixedScalars_;
 }
 
+inline const Foam::volVectorField& Foam::mcParticleCloud::Ufv() const
+{
+    return Ufv_;
+}
 
 inline const Foam::tmp<Foam::volScalarField> Foam::mcParticleCloud::kfv() const
 {
@@ -56,6 +60,10 @@ Foam::mcParticleCloud::epsilonfv() const
     return turbModel_.epsilon();
 }
 
+inline const Foam::volScalarField& Foam::mcParticleCloud::rhocPdf() const
+{
+    return rhocPdf_;
+}
 
 inline const Foam::volScalarField& Foam::mcParticleCloud::kcPdf() const
 {
