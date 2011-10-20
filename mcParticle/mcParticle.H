@@ -60,17 +60,6 @@ class mcParticle
 :
     public Particle<mcParticle>
 {
-  //- scalar comparison function used for sorting
-       class less
-       {
-       public:
-    
-         inline bool operator()
-         (
-          const mcParticle& one,
-          const mcParticle& two
-          ) const;
-       };
   
     // Private member data
 

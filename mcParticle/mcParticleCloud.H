@@ -42,7 +42,7 @@ SourceFiles
 #include "IOdictionary.H"
 #include "Random.H"
 #include "labelIOField.H"
-
+#include "SortableList.H"
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -51,7 +51,7 @@ namespace Foam
 // Forward declaration of classes
 class fvMesh;
 
-  typedef DLList<mcParticle*> mcParticleList;
+  typedef SortableList<mcParticle*> mcParticleList;
   typedef List <mcParticleList> mcParticleListList;
 
 /*---------------------------------------------------------------------------*\
@@ -62,21 +62,34 @@ class mcParticleCloud
 :
     public Cloud<mcParticle>
 {
+  
+  enum cellPopStatus {EMPTY, NORMAL, TOOFEW, TOOMANY};
   //- scalar comparison function used for sorting
-  class less
-  {
-  public:
+       class less
+       {
+       public:
     
-    inline bool operator()
-    (
-     const surfAndLabel& one,
-     const surfAndLabel& two
-     ) const;
-  };
+         inline bool operator()
+         (
+           mcParticle* one,
+           mcParticle* two
+          ) const;
+       };
 
+      class more
+      {
+      public:
+        
+        inline bool operator()
+        (
+         mcParticle* one,
+         mcParticle* two
+         ) const;
+      };
+  
 
   // Private data
-  
+  bool  debug_;
   const fvMesh& mesh_;
   
   const volVectorField& Ufv_;
@@ -102,6 +115,7 @@ class mcParticleCloud
   volScalarField M0_;
   volVectorField M1_;
   volSymmTensorField M2_;
+  volScalarField instantM0_;
 
   labelListList ghostCellLayers_;
   labelListList ghostFaceLayers_;

@@ -37,6 +37,26 @@ namespace Foam
     defineTemplateTypeNameAndDebug(Cloud<mcParticle>, 0);
 };
 
+
+inline bool Foam::mcParticleCloud::less::operator()
+(
+ mcParticle* one,
+ mcParticle* two
+) const
+{
+  return one->m() < two->m();
+}
+
+inline bool Foam::mcParticleCloud::more::operator()
+(
+ mcParticle* one,
+ mcParticle* two
+) const
+{
+  return one->m() > two->m();
+}
+
+
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::mcParticleCloud::mcParticleCloud
@@ -50,6 +70,7 @@ Foam::mcParticleCloud::mcParticleCloud
 )
 :
     Cloud<mcParticle>(mesh, cloudName, false),
+    debug_ (false),
     mesh_(mesh),
     Ufv_(U),
     rhofv_(rho),
@@ -124,6 +145,8 @@ Foam::mcParticleCloud::mcParticleCloud
         mesh,
         dimensionedSymmTensor("M2", dimEnergy, symmTensor:: zero)
         ),
+
+    instantM0_(M0_*1.0),
 
     UcPdf_
     (
@@ -225,7 +248,7 @@ void Foam::mcParticleCloud::checkMoments()
 // Perform particle averaging to obtained cell-based values.
 void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
 {
-  volScalarField instantM0 = M0_ * 0.0;
+  instantM0_ *= 0.0;
   volVectorField instantM1 = M1_ * 0.0;
   volSymmTensorField instantM2 = M2_ * 0.0;
 
@@ -241,12 +264,12 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
       mcParticle & p = pIter();
       vector u = p.UParticle() - p.Updf();
       PaNIC_[p.cell()] ++;
-      instantM0[p.cell()] += p.m();
+      instantM0_[p.cell()] += p.m();
       instantM1[p.cell()] += p.m() * p.UParticle();
       instantM2[p.cell()] += p.m() * symm(u * u);
     }
   
-  M0_ = existWt * M0_ + (1.0 - existWt) * instantM0;
+  M0_ = existWt * M0_ + (1.0 - existWt) * instantM0_;
   M1_ = existWt * M1_ + (1.0 - existWt) * instantM1;
   M2_ = existWt * M2_ + (1.0 - existWt) * instantM2;
   // Compute U and tau
@@ -259,27 +282,27 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
 // particles I host?
 void Foam::mcParticleCloud::updateCellParticleAddr()
 {
-
-  labelList flagCPAddr(mesh_.nCells(), 1);
-
+  
+  List<cellPopStatus> statusCellPop(mesh_.nCells(), NORMAL);
 
   forAll(PaNIC_, celli)
     {
       label np = PaNIC_[celli];
       // classify the particle # heath condition of each cell
       if (np < 1)
-        { flagCPAddr[celli] = 0; }
+        { statusCellPop[celli] = EMPTY; }
       else if ( np < (Npc_/2) )
-        { flagCPAddr[celli] = 2; }
-      else if (np > Npc_*3/2)
-        { flagCPAddr[celli] = 3; }
+        { statusCellPop[celli] = TOOFEW; }
+      else if (np > Npc_* 2)
+        { statusCellPop[celli] = TOOMANY; }
+      
       // clear old list
       cellParticleAddr_[celli].clear(); 
     }
 
-
-
-  for(iterator pIter=begin(); 
+    labelList ncpi(mesh_.nCells(), 0);
+  
+    for(mcParticleCloud::iterator pIter=begin(); 
       pIter != end();
       ++pIter
       )
@@ -287,71 +310,45 @@ void Foam::mcParticleCloud::updateCellParticleAddr()
       mcParticle & p = pIter();
       label celli = p.cell();
       // If a mcParticleList is necessary for this cell, construct it.
-      if(flagCPAddr[celli] > 2)
-        { // could do better: instert it in the correct place 
+      if(statusCellPop[celli] > NORMAL) // either two few or two many particles
+        { 
           // according to ascending order of mass (if too many particles)
           // or descending order of mass (if too few particle)
-          if (celli !=247) continue;
-          Info << "celli= " << celli << endl;
-          cellParticleAddr_[celli].insert(&p);
           mcParticleList & cepl = cellParticleAddr_[celli];
-          if (cepl.size() > 1)
-            {
-              scalar prevm = 0.0;
-              scalar currm = 0.0;
-              for(mcParticleList::iterator cepIter = cepl.begin(); 
-                  cepIter != cepl.end();
-                  ++cepIter) 
+          if(cepl.size() < 1)  cepl.setSize(PaNIC_[celli]);
+          cepl[ncpi[celli]++] = &p;
+        }
+    }
+  
+    // Sort the lists with particles
+    forAll(statusCellPop, celli)
+      { 
+        if (statusCellPop[celli] == TOOFEW)
+          sort(cellParticleAddr_[celli], more());
+        else if ( statusCellPop[celli] == TOOMANY )
+          sort(cellParticleAddr_[celli],  less());
+      }
+        
+  // Debug only: check the list
+    if(debug_)
+      forAll(statusCellPop, celli)
+        {
+          if (statusCellPop[celli] == TOOFEW || statusCellPop[celli] == TOOMANY )
+            { 
+              Info << "size is " << cellParticleAddr_[celli].size()
+                   << ", flag is " << statusCellPop[celli]
+                   << " := " << endl;
+              mcParticleList & cepl = cellParticleAddr_[celli];
+              
+              forAll(cepl, pci) 
                 {
-                  prevm = currm;
-                  currm = cepIter()->m();
-                  Info << "prevm = " << prevm 
-                       << "; currm = " << currm << endl;
-                  if (cepIter == cepl.begin())
-                    { 
-                      Info << "first element, passed" << endl;
-                      continue;
-                    }
-                  else if ( currm < prevm )
-                    { 
-                      Info << "swaped order" << endl;
-                      cepl.swapUp(cepIter()); 
-                    }
-                  else
-                    {
-                      Info << "done with order." << endl;
-                      break;
-                    }
-                  
+                  Info << "ID= " << cepl[pci]->origId() << ", " 
+                       << "m= " << cepl[pci]->m() << endl;
                 }
             }
         }
-    }
-  
-  
-  // Debug only: check the list
-  forAll(flagCPAddr, celli)
-    {
-      if (celli != 247) continue;
-      if (flagCPAddr[celli] == 2 || flagCPAddr[celli] == 3 )
-        { 
-          Info << "size is " << cellParticleAddr_[celli].size()
-               << ", flag is " << flagCPAddr[celli]
-               << " := " << endl;
-          
-          mcParticleList & cepl = cellParticleAddr_[celli];
-
-          for(mcParticleList::iterator pIter=cepl.begin(); 
-              pIter!=cepl.end();
-              ++pIter) 
-            {
-              Info << "ID= " << pIter()->origId() << ", " 
-                   << "m= " << pIter()->m() << endl;
-            }
-        }
-    }
-
 }
+
 
 
 // Find "ghost cells" (actually the first layer of cells of in/out-flow patch
@@ -483,7 +480,7 @@ void Foam::mcParticleCloud::initReleaseParticles()
   forAll(Ufv_, celli)
     {
       // &&& Should be a cloud property (class number)
-      scalar m = mesh_.V()[celli] * rhofv_[celli] / Npc_ * (1+random().scalar01());
+      scalar m = mesh_.V()[celli] * rhofv_[celli] / Npc_;
       vector Updf = UcPdf_[celli];
       vector uscales(sqrt(kfv_[celli]), sqrt(kfv_[celli]), sqrt(kfv_[celli]));
 
@@ -568,18 +565,19 @@ void Foam::mcParticleCloud::populateGhostCells()
           if(PaNIC_[celli] < Npc_ / 2)
             { 
               label N = Npc_- PaNIC_[celli];
-              scalar m = (mesh_.V()[celli] * rhofv_[celli] - M0_[celli])  / N;
+              scalar m = (mesh_.V()[celli] * rhofv_[celli] - instantM0_[celli])  / N;
               if (m <= 0) continue;
               vector Updf = Ufv_[celli];
               scalar ksqrt = sqrt(kfv_[celli]);
               vector uscales(ksqrt, ksqrt, ksqrt);
               //NOTE: the mass is not correct.
               particleGenInCell(celli,  N, m, Updf, uscales);
-              Info << N << " particles generated in cell " << celli
-                   << " m= " << m
-                   << " original total mass:" << M0_[celli] 
-                   << " oritinal avg mass: " <<  M0_[celli] / PaNIC_[celli]
-                   << " total mass now = " << m * N + M0_[celli] << endl;
+              if (debug_)
+                Info << N << " particles generated in cell " << celli
+                     << " m= " << m
+                     << " original total mass:" << M0_[celli] 
+                     << " oritinal avg mass: " <<  M0_[celli] / PaNIC_[celli]
+                     << " total mass now = " << m * N + M0_[celli] << endl;
               
             }
         }
