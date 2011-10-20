@@ -350,130 +350,7 @@ Foam::mcParticleCloud::mcParticleCloud
     ),
     lostParticles_(*this)
 {
-    // Find scalar fields
-    if (dict_.found("scalarFields"))
-    {
-        dict_.lookup("scalarFields") >> scalarNames_;
-        // Check for duplicates
-        labelList order;
-        uniqueOrder(scalarNames_, order);
-        if (scalarNames_.size() != order.size())
-        {
-            FatalErrorIn
-            (
-                "mcParticleCloud::mcParticleCloud\n"
-                "(\n"
-                "    const fvMesh&,\n"
-                "    const dictionary&,\n"
-                "    const word& cloudName,\n"
-                "    const compressible::turbulenceModel*,\n"
-                "    const volVectorField*,\n"
-                "    volScalarField* rho\n"
-                ")"
-            )
-                << "The list "
-                << dict_.lookupEntry("scalarFields", false, false).name()
-                << " contains duplicate entries.\n"
-                << exit(FatalError);
-        }
-    }
-    label nScalarFields = scalarNames_.size();
-    PhicPdf_.setSize(nScalarFields);
-    forAll(scalarNames_, fieldI)
-    {
-        if (mesh_.foundObject<volScalarField>(scalarNames_[fieldI]))
-        {
-            // Try to find that field
-            PhicPdf_[fieldI] =  &const_cast<volScalarField&>
-                (mesh_.lookupObject<volScalarField>(scalarNames_[fieldI]));
-        }
-        else
-        {
-            // Field doesn't exist already, so insert a new one into
-            // ownedScalarFields_
-            Info<< "Creating mcParticleCloud-owned field "
-                << scalarNames_[fieldI] << endl;
-            ownedScalarFields_.insert
-            (
-                new volScalarField
-                (
-                    IOobject
-                    (
-                        scalarNames_[fieldI],
-                        runTime_.timeName(),
-                        mesh,
-                        IOobject::MUST_READ,
-                        IOobject::AUTO_WRITE
-                    ),
-                    mesh
-                )
-            );
-            PhicPdf_[fieldI] = &ownedScalarFields_.first();
-        }
-    }
-
-    // Find labels of mixed scalars
-    scalarNames_.setSize(nScalarFields);
-    wordList mixedScalarNames;
-    if (dict_.found("mixedScalars"))
-    {
-        dict_.lookup("mixedScalars") >> mixedScalarNames;
-        // Check for duplicates
-        labelList order;
-        uniqueOrder(mixedScalarNames, order);
-        if (mixedScalarNames.size() != order.size())
-        {
-            FatalErrorIn
-            (
-                "mcParticleCloud::mcParticleCloud\n"
-                "(\n"
-                "    const fvMesh&,\n"
-                "    const dictionary&,\n"
-                "    const word& cloudName,\n"
-                "    const compressible::turbulenceModel*,\n"
-                "    const volVectorField*,\n"
-                "    volScalarField* rho\n"
-                ")"
-            )
-                << "The list "
-                << dict_.lookupEntry("mixedScalars", false, false).name()
-                << " contains duplicate entries.\n"
-                << exit(FatalError);
-        }
-    }
-    label nMixedScalarFields = mixedScalarNames.size();
-    mixedScalars_.setSize(nMixedScalarFields);
-    forAll(mixedScalarNames, mixedScalarI)
-    {
-        bool found = false;
-        forAll(scalarNames_, fieldI)
-        {
-            if (mixedScalarNames[mixedScalarI] == scalarNames_[fieldI])
-            {
-                mixedScalars_[mixedScalarI] = fieldI;
-                found = true;
-                break;
-            }
-        }
-        if (!found)
-        {
-            FatalErrorIn
-            (
-                "mcParticleCloud::mcParticleCloud\n"
-                "(\n"
-                "    const fvMesh&,\n"
-                "    const dictionary&,\n"
-                "    const word& cloudName,\n"
-                "    const compressible::turbulenceModel*,\n"
-                "    const volVectorField*,\n"
-                "    volScalarField* rho\n"
-                ")"
-            )
-                << "No such scalar field: " << mixedScalarNames[mixedScalarI] << "\n"
-                << "Available field names are:\n" << scalarNames_ << "\n"
-                << exit(FatalError);
-        }
-    }
+    initScalarFields();
 
     // Now that the fields exist, create the models
     OmegaModel_ = mcOmegaModel::New(mesh_, dict);
@@ -1340,6 +1217,111 @@ void Foam::mcParticleCloud::initMoments()
 
     kcPdf_.internalField()   = turbulenceModel().k()().internalField();
     kcPdf_.correctBoundaryConditions();
+}
+
+
+void Foam::mcParticleCloud::initScalarFields()
+{
+    // Find scalar fields
+    if (dict_.found("scalarFields"))
+    {
+        dict_.lookup("scalarFields") >> scalarNames_;
+        // Check for duplicates
+        labelList order;
+        uniqueOrder(scalarNames_, order);
+        if (scalarNames_.size() != order.size())
+        {
+            FatalErrorIn
+            (
+                "mcParticleCloud::initScalarFields()"
+            )
+                << "The list "
+                << dict_.lookupEntry("scalarFields", false, false).name()
+                << " contains duplicate entries.\n"
+                << exit(FatalError);
+        }
+    }
+    label nScalarFields = scalarNames_.size();
+    PhicPdf_.setSize(nScalarFields);
+    forAll(scalarNames_, fieldI)
+    {
+        if (mesh_.foundObject<volScalarField>(scalarNames_[fieldI]))
+        {
+            // Try to find that field
+            PhicPdf_[fieldI] =  &const_cast<volScalarField&>
+                (mesh_.lookupObject<volScalarField>(scalarNames_[fieldI]));
+        }
+        else
+        {
+            // Field doesn't exist already, so insert a new one into
+            // ownedScalarFields_
+            Info<< "Creating mcParticleCloud-owned field "
+                << scalarNames_[fieldI] << endl;
+            ownedScalarFields_.insert
+            (
+                new volScalarField
+                (
+                    IOobject
+                    (
+                        scalarNames_[fieldI],
+                        runTime_.timeName(),
+                        mesh_,
+                        IOobject::MUST_READ,
+                        IOobject::AUTO_WRITE
+                    ),
+                    mesh_
+                )
+            );
+            PhicPdf_[fieldI] = &ownedScalarFields_.first();
+        }
+    }
+
+    // Find labels of mixed scalars
+    scalarNames_.setSize(nScalarFields);
+    wordList mixedScalarNames;
+    if (dict_.found("mixedScalars"))
+    {
+        dict_.lookup("mixedScalars") >> mixedScalarNames;
+        // Check for duplicates
+        labelList order;
+        uniqueOrder(mixedScalarNames, order);
+        if (mixedScalarNames.size() != order.size())
+        {
+            FatalErrorIn
+            (
+                "mcParticleCloud::initScalarFields()"
+            )
+                << "The list "
+                << dict_.lookupEntry("mixedScalars", false, false).name()
+                << " contains duplicate entries.\n"
+                << exit(FatalError);
+        }
+    }
+    label nMixedScalarFields = mixedScalarNames.size();
+    mixedScalars_.setSize(nMixedScalarFields);
+    forAll(mixedScalarNames, mixedScalarI)
+    {
+        bool found = false;
+        forAll(scalarNames_, fieldI)
+        {
+            if (mixedScalarNames[mixedScalarI] == scalarNames_[fieldI])
+            {
+                mixedScalars_[mixedScalarI] = fieldI;
+                found = true;
+                break;
+            }
+        }
+        if (!found)
+        {
+            FatalErrorIn
+            (
+                "mcParticleCloud::initScalarFields()"
+            )
+                << "No such scalar field: " << mixedScalarNames[mixedScalarI] << "\n"
+                << "Available field names are:\n" << scalarNames_ << "\n"
+                << exit(FatalError);
+        }
+    }
 }
 
 

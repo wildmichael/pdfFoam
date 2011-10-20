@@ -243,6 +243,9 @@ class mcParticleCloud:
         //- Initialize statistical moments
         void initMoments();
 
+        //- Initialize scalar fields
+        void initScalarFields();
+
         //- Finds the ghost cell layers
         void findGhostLayers();
 
