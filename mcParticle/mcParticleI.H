@@ -106,6 +106,11 @@ inline Foam::scalar Foam::mcParticle::m() const
     return m_;
 }
 
+inline Foam::scalar& Foam::mcParticle::m()
+{
+    return m_;
+}
+
 inline const Foam::vector& Foam::mcParticle::Updf() const
 {
     return Updf_;

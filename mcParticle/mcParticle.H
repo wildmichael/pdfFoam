@@ -171,6 +171,8 @@ public:
             //- Return mass
             inline scalar m() const;
 
+            inline scalar& m();
+
             //- Return pdf velocity (particle velocity in this cell)
             inline const vector& Updf() const;
 

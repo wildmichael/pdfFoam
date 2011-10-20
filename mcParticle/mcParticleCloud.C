@@ -92,6 +92,7 @@ Foam::mcParticleCloud::mcParticleCloud
     AvgTimeScale_(mesh.time().endTime().value()),
     random_(55555+12345*Pstream::myProcNo()),
     Npc_(30),
+    histNp_(size()),
 
     SMALL_MASS("SMALL_MASS", dimMass, SMALL),
 
@@ -177,7 +178,8 @@ Foam::mcParticleCloud::mcParticleCloud
      )
 
 {
-  //&&& should be a property of cloud (read from dict)
+
+//&&& should be a property of cloud (read from dict)
   //  bool initialRelease = true;
   //  bool readParticles = true;; 
 
@@ -212,9 +214,7 @@ Foam::mcParticleCloud::mcParticleCloud
 
   // Ensure particles takes the updated PDF values
   updateParticlePDF();
-
-  updateCellParticleAddr();
-
+ 
   UcPdf_.writeOpt() = IOobject::AUTO_WRITE; 
   UcPdf_.rename("UcPdf");
   TaucPdf_.writeOpt() = IOobject::AUTO_WRITE; 
@@ -298,7 +298,7 @@ void Foam::mcParticleCloud::updateParticlePDF()
 
 // Update particle-cell addressing: for each cell, what are the IDs of the
 // particles I host?
-void Foam::mcParticleCloud::updateCellParticleAddr()
+void Foam::mcParticleCloud::particleNumberControl()
 {
   
   List<cellPopStatus> statusCellPop(mesh_.nCells(), NORMAL);
@@ -309,9 +309,9 @@ void Foam::mcParticleCloud::updateCellParticleAddr()
       // classify the particle # heath condition of each cell
       if (np < 1)
         { statusCellPop[celli] = EMPTY; }
-      else if ( np < (Npc_/2) )
+      else if ( np < (Npc_ * 2 / 3) )
         { statusCellPop[celli] = TOOFEW; }
-      else if (np > Npc_* 2)
+      else if (np > Npc_* 3)
         { statusCellPop[celli] = TOOMANY; }
       
       // clear old list
@@ -328,7 +328,7 @@ void Foam::mcParticleCloud::updateCellParticleAddr()
       mcParticle & p = pIter();
       label celli = p.cell();
       // If a mcParticleList is necessary for this cell, construct it.
-      if(statusCellPop[celli] > NORMAL) // either two few or two many particles
+      if(statusCellPop[celli] > NORMAL) // either too few or too many particles
         { 
           // according to ascending order of mass (if too many particles)
           // or descending order of mass (if too few particle)
@@ -338,13 +338,19 @@ void Foam::mcParticleCloud::updateCellParticleAddr()
         }
     }
   
-    // Sort the lists with particles
+    // Sort the lists with particles, and perform particle number control
     forAll(statusCellPop, celli)
       { 
         if (statusCellPop[celli] == TOOFEW)
-          sort(cellParticleAddr_[celli], more());
+          {
+            sort(cellParticleAddr_[celli], more());
+            cloneParticles(celli);
+          }
         else if ( statusCellPop[celli] == TOOMANY )
-          sort(cellParticleAddr_[celli],  less());
+          {
+            sort(cellParticleAddr_[celli],  less());
+            clusterParticles(celli);
+          }
       }
         
   // Debug only: check the list
@@ -367,6 +373,33 @@ void Foam::mcParticleCloud::updateCellParticleAddr()
         }
 }
 
+// Split the n heaviest particles
+void Foam::mcParticleCloud::cloneParticles(label celli)
+{
+  label n = Npc_ - PaNIC_[celli];
+
+  for(label particleI=0; particleI < n; particleI++)
+    {
+      mcParticle& p = *(cellParticleAddr_[celli][particleI]);
+      // Half my mass
+      p.m() /= 2.0;
+      // create a new particle like myself
+      // mcParticle* ptrNew = p.clone();
+      mcParticle* ptrNew = new mcParticle(p);
+      addParticle(ptrNew);
+      Info << "In cell # " << celli << ", particle # " << particleI << " cloned" << endl;
+    }
+
+  histNp_ += n;
+
+}
+
+
+// As name suggest
+void Foam::mcParticleCloud::clusterParticles(label celli)
+{
+
+}
 
 
 // Find "ghost cells" (actually the first layer of cells of in/out-flow patch
@@ -484,7 +517,7 @@ void Foam::mcParticleCloud::evolve()
     
     updateCloudPDF(existWt);
     updateParticlePDF();
-    updateCellParticleAddr();
+    particleNumberControl();
 
     // Correct boundary conditions:
     populateGhostCells();
@@ -518,9 +551,9 @@ void Foam::mcParticleCloud::particleGenInCell
 (
  label celli, 
  label N, 
- scalar m, 
+ scalarList masses, 
  vector Updf, 
- vector uscales
+ vectorList uscales
  )
 {
   boundBox cellbb(pointField(mesh_.points(), mesh_.cellPoints()[celli]));
@@ -544,9 +577,10 @@ void Foam::mcParticleCloud::particleGenInCell
         { 
           // What is the distribution of u?
           // How to enforce the component-wise correlations < u_i, u_j >?
-          vector u( random().GaussNormal() * uscales.x(),  
-                    random().GaussNormal() * uscales.y(),  
-                    random().GaussNormal() * uscales.z()
+          scalar m = masses[Npgen];
+          vector u( random().GaussNormal() * uscales[Npgen].x(),  
+                    random().GaussNormal() * uscales[Npgen].y(),  
+                    random().GaussNormal() * uscales[Npgen].z()
                     );
           vector UParticle = u + Updf;
           mcParticle* ptr =
@@ -563,14 +597,35 @@ void Foam::mcParticleCloud::particleGenInCell
       if(Npgen >= N) break;
     }
   
-  Info << Npgen << " particles are generated  in cell " << celli << endl;
+  //  Info << Npgen << " particles are generated  in cell " << celli << endl;
   if(Npgen < N) 
     {
       FatalErrorIn("mcParticleCloud::initReleaseParticles()")
         << "Only " << Npgen << " particles generated for cell "
         << celli << nl << "Something is wrong" << exit(FatalError);
     }
+  else // update count
+    {
+      histNp_ += Npgen;
+    }
   
+}
+
+
+// Generate a number of particle with the same properties 
+// (particularly: m and uscales), celli, Updf are always the same.
+void Foam::mcParticleCloud::particleGenInCell
+(
+ label celli, 
+ label N, 
+ scalar m, 
+ vector Updf, 
+ vector usc
+ )
+{
+  scalarList masses(N, m);
+  vectorList uscales(N, usc);
+  particleGenInCell(celli, N, masses, Updf, uscales);
 }
 
 
@@ -587,7 +642,7 @@ void Foam::mcParticleCloud::populateGhostCells()
             { 
               label N = Npc_- PaNIC_[celli];
               scalar m = (mesh_.V()[celli] * rhofv_[celli] - instantM0_[celli])  / N;
-              if (m <= 0) continue;
+              if (m <= 0) continue; // prevent negative mass
               vector Updf = Ufv_[celli];
               scalar ksqrt = sqrt(kfv_[celli]);
               vector uscales(ksqrt, ksqrt, ksqrt);
@@ -603,10 +658,9 @@ void Foam::mcParticleCloud::populateGhostCells()
             }
         }
     }
-
-  label globalNp = size();
-  reduce(globalNp, sumOp<label>());
 }
+
+
 
 //This serves as a template for looping through particles in the cloud
 void Foam::mcParticleCloud::updateParticleProperties()
@@ -618,15 +672,16 @@ void Foam::mcParticleCloud::updateParticleProperties()
       )
     {
       // mcParticle & p = pIter();
-    }
-  
+    }  
 }
 
 void Foam::mcParticleCloud::info() const
 {
   Info<< "Cloud: " << this->name() << nl
-      << "    Current number of particles       = "
-      << returnReduce(this->size(), sumOp<label>()) << nl;
+      << "    Current number of particles         = "
+      << returnReduce(this->size(), sumOp<label>()) << nl
+      << "    Totally number of particles existed = "
+      << returnReduce(histNp_,      sumOp<label>()) << nl;
 }
 
 

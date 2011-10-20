@@ -43,6 +43,7 @@ SourceFiles
 #include "Random.H"
 #include "labelIOField.H"
 #include "SortableList.H"
+#include "vectorList.H"
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -105,6 +106,9 @@ class mcParticleCloud
   Random random_;
   //- Number of particles per cell (initially)
   label Npc_;
+  // How many particle existed in history (including living ones)
+  // only include particles generated in this run.
+  label histNp_; 
 
   //- statistical moments (mass, momentum, energy)
   //- needed to obtain Updf, and Taupdf fields
@@ -133,7 +137,12 @@ class mcParticleCloud
   //- update moments and the quantities remembered by particles
   void updateCloudPDF(scalar existWt);
   void updateParticlePDF();
-  void updateCellParticleAddr(); // Question mark remains.
+
+  //Particle number control actions
+  void particleNumberControl();
+  void cloneParticles(label celli);
+  void clusterParticles(label celli);
+
 
   // Enforce in/out flow BCs by populating ghost cells
   void findGhostLayers();
@@ -187,9 +196,19 @@ public:
   (
    label celli, 
    label N, 
+   scalarList masses, 
+   vector Updf, 
+   vectorList uscales
+   );
+
+  // with the same properties
+  void particleGenInCell
+  (
+   label celli, 
+   label N, 
    scalar m, 
    vector Updf, 
-   vector uscales
+   vector usc
    );
 
 
