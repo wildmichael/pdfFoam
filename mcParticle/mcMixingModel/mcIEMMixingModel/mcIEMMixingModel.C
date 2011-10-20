@@ -62,33 +62,19 @@ Foam::mcIEMMixingModel::mcIEMMixingModel
 void Foam::mcIEMMixingModel::correct(Foam::mcParticleCloud& cloud)
 {
     const labelList& mixedScalars = cloud.mixedScalars();
-    label nMix = mixedScalars.size();
-    // prepare interpolators for mean fields
-    PtrList<interpolationCellPoint<scalar> > PhiInterp(nMix);
-    forAll(mixedScalars, mixedI)
-    {
-        interpolationCellPoint<scalar>* interp =
-            new interpolationCellPoint<scalar>
-            (
-                *cloud.PhicPdf()[mixedScalars[mixedI]]
-            );
-        PhiInterp.set(mixedI, interp);
-    }
-    const fvMesh& mesh = cloud.mesh();
-    scalar dt =  mesh.time().deltaT().value();
+    scalar dt =  cloud.mesh().time().deltaT().value();
     // loop over particles
     forAllIter(mcParticleCloud, cloud, pIter)
     {
         mcParticle& p = pIter();
-        cellPointWeight cpw(mesh, p.position(), p.cell(), p.face());
+        label cellI = p.cell();
         scalar Omega = p.Omega();
         // loop over mixed properties
         forAll(mixedScalars, mixedI)
         {
-            // interpolate property to particle location
-            scalar phiap = PhiInterp[mixedI].interpolate(cpw);
             // apply IEM mixing
             scalar& phi = p.Phi()[mixedScalars[mixedI]];
+            scalar& phiap = (*cloud.PhicPdf()[mixedScalars[mixedI]])[cellI];
             phi -= Cmix2_ * Omega * (phi - phiap) * dt;
         }
     }
