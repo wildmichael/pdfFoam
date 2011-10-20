@@ -29,6 +29,9 @@ cloudProperties
         upperInlet
         outlet
     );
+    OmegaModel RAS;
+    mixingModel IEM;
+    reactionModel Cold;
 }
 
 // ************************************************************************* //
