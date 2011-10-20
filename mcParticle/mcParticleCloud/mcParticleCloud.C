@@ -117,14 +117,14 @@ Foam::mcParticleCloud::mcParticleCloud
     ),
     Ufv_
     (
-        U ? *U : mesh.lookupObject<volVectorField>
-                     (dict_.lookupOrDefault<word>("U", "U"))
+        U ? *U : mesh_.lookupObject<volVectorField>
+                     (dict_.lookupOrDefault<word>("UName", "U"))
     ),
     rhofv_
     (
         rho ? *rho : const_cast<volScalarField&>(
-            mesh.lookupObject<volScalarField>(
-                dict_.lookupOrDefault<word>("rho", "rho")))
+            mesh_.lookupObject<volScalarField>(
+                dict_.lookupOrDefault<word>("rhoName", "rho")))
     ),
     AvgTimeScale_
     (
