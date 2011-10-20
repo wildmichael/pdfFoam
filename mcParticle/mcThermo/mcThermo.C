@@ -138,7 +138,7 @@ void Foam::mcThermo::evolve()
             );
             runTime.setTime(currTime, currIdx);
         }
-        for (label i=0; i < nPDFSubCycles_; i++)
+        for (label i=0; i < nPDFSubCycles_ && runTime.run(); i++)
         {
             if (i>0)
             {
@@ -148,6 +148,7 @@ void Foam::mcThermo::evolve()
                 << endl;
             runTime++;
             cloudP_().evolve();
+            runTime.write();
         }
     }
 }
