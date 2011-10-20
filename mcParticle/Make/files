@@ -12,5 +12,6 @@ mcReactionModel/mcColdReactionModel/mcColdReactionModel.C
 mcReactionModel/mcNaiveFlameletModel/mcNaiveFlameletModel.C
 mcBoundary/mcBoundary/mcBoundary.C
 mcBoundary/mcSlipBoundary/mcSlipBoundary.C
+mcBoundary/mcEmptyBoundary/mcEmptyBoundary.C
 
 LIB = $(FOAM_USER_LIBBIN)/libmcParticle
