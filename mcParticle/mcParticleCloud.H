@@ -124,6 +124,7 @@ class mcParticleCloud
   volScalarField instantM0_;
 
   labelListList   ghostCellLayers_;
+  labelList       ghostPatchId_;
   labelListList   ghostFaceLayers_;
   HashSet<label>  ghostCellHash_;
   HashSet<label>  ghostFaceHash_;

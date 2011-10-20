@@ -465,6 +465,7 @@ void Foam::mcParticleCloud::findGhostLayers()
     {
       ghostCellLayers_.setSize(ngPatchs);
       ghostFaceLayers_.setSize(ngPatchs);
+      ghostPatchId_.setSize(ngPatchs);
     }
   else
     { 
@@ -475,7 +476,7 @@ void Foam::mcParticleCloud::findGhostLayers()
   forAll(patchNames, nameI)
     {
       label patchI = patches.findPatchID(patchNames[nameI]);
-      
+
       if (patchI == -1)
         {
           FatalErrorIn("mcParticleCloud::findGhostLayers()")
@@ -491,7 +492,7 @@ void Foam::mcParticleCloud::findGhostLayers()
         {
           ghostCellLayers_[nameI].setSize(nf);
           ghostFaceLayers_[nameI].setSize(nf);
-          
+          ghostPatchId_[nameI] = patchI;
           // Find the ghost cells and faces
           const polyPatch& curPatch = patches[patchI];
           label j = 0;
@@ -541,18 +542,31 @@ void Foam::mcParticleCloud::findGhostLayers()
 
 void Foam::mcParticleCloud::evolve()
 {
-     dimensionedScalar coeffCorr("coeffCorr", dimLength*dimLength/dimTime, 1e-4);
+     dimensionedScalar coeffCorr("coeffCorr", dimLength*dimLength/dimTime, 1.0e-3);
     const volScalarField& rho = mesh_.lookupObject<const volScalarField>("rho");
     const volVectorField& U = mesh_.lookupObject<const volVectorField>("U");
     const volVectorField& gradP = mesh_.lookupObject<const volVectorField>("grad(p)");
     const volScalarField& k = mesh_.lookupObject<const volScalarField>("k");
     const volScalarField& epsilon = mesh_.lookupObject<const volScalarField>("epsilon");
 
-    volScalarField diffRho(M0_);
+    volScalarField diffRho
+        (
+            IOobject
+                (
+                 "diffRho",
+                 mesh_,
+                 IOobject::NO_READ,
+                 IOobject::NO_WRITE
+                 ),
+            mesh_,
+            dimensionedScalar("diffRho", dimless, 0.0),
+            zeroGradientFvPatchScalarField::typeName
+         );
+
     diffRho.internalField() = -(M0_.internalField()/mesh_.V() - rho)/rho;
+    diffRho.correctBoundaryConditions();
     volVectorField gradRho = fvc::grad(diffRho) * coeffCorr;
 
-    //    Info << "current time index: " << mesh_.time().timeIndex() << endl;
 
     interpolationCellPoint<scalar> rhoInterp(rho);
     //interpolationCellPointFaceFlux UInterp(U);
@@ -698,29 +712,38 @@ void Foam::mcParticleCloud::particleGenInCell
 // Enforce in/out flow BCs by populating ghost cells
 void Foam::mcParticleCloud::populateGhostCells()
 {
-  forAll(ghostCellLayers_, patchi)
+  forAll(ghostCellLayers_, ghostPatchI)
     {
-      forAll(ghostCellLayers_[patchi], faceCelli)
+      forAll(ghostCellLayers_[ghostPatchI], faceCelli)
         {
-          label celli = ghostCellLayers_[patchi][faceCelli];
 
-          if(PaNIC_[celli] < Npc_ / 2)
+          label celli = ghostCellLayers_[ghostPatchI][faceCelli];
+
+          if(PaNIC_[celli] < Npc_ * 2 / 3)
             { 
               label N = Npc_- PaNIC_[celli];
+
               scalar m = (mesh_.V()[celli] * rhofv_[celli] - instantM0_[celli])  / N;
               if (m <= 0) 
                 {
                   Info << "populateGhostCells::warning: negative mass"
-                       << "patch " << patchi << "; "
+                       << "patch " << ghostPatchI << "; "
                        << "cell " << celli << endl;
                   continue; // prevent negative mass
                 }
+
               vector Updf = Ufv_[celli];
+
               scalar ksqrt = sqrt(kfv_[celli]);
+
               vector uscales(ksqrt, ksqrt, ksqrt);
               // psi: from patch value (boundary condition)
-              scalar psi = psifv_.boundaryField()[patchi][faceCelli];
+              //Info << " ghostPatchI =  " << ghostPatchI << endl;
+              //Info << "psifv field: " << psifv_.boundaryField() << endl;
+              scalar psi = psifv_.boundaryField()[ghostPatchId_[ghostPatchI]][faceCelli];
+
               particleGenInCell(celli, N, m, Updf, uscales, psi);
+
               if (debug_)
                 Info << N << " particles generated in cell " << celli
                      << " m= " << m
