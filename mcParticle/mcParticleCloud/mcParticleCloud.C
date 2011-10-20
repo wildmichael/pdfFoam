@@ -78,7 +78,7 @@ const Foam::dimensionedScalar SMALL_MASS
 const Foam::dimensionedScalar SMALL_VOLUME
 (
     "SMALL_VOLUME",
-    Foam::dimensionSet(1.,-3.,0.,0.,0.,0.,0.),
+    Foam::dimensionSet(0.,3.,0.,0.,0.,0.,0.),
     Foam::SMALL
 );
 
