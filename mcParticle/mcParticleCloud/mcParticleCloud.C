@@ -868,9 +868,8 @@ void Foam::mcParticleCloud::initReleaseParticles()
         scalar ksqrt = sqrt(kfv()()[celli]);
         vector uscales(ksqrt, ksqrt, ksqrt);
         scalar z = zfv_[celli];
-        scalar rho = rhofv_[celli];
 
-        particleGenInCell(celli, Npc_, m, Updf, uscales, z, rho);
+        particleGenInCell(celli, Npc_, m, Updf, uscales, z);
     }
     // writeFields();
 }
@@ -886,7 +885,6 @@ void Foam::mcParticleCloud::particleGenInCell
     const vector& Updf,
     const vector& uscales,
     scalar z,
-    scalar rho,
     const vector& shift,
     label  ghost
 )
@@ -926,7 +924,7 @@ void Foam::mcParticleCloud::particleGenInCell
 
             mcParticle* ptr = new mcParticle
                 (
-                    *this,  position, celli, m, Updf, UParticle, UFap, z, rho,
+                    *this,  position, celli, m, Updf, UParticle, UFap, z,
                     runTime_.deltaT().value(), shift, ghost
                 );
 
@@ -974,9 +972,8 @@ void Foam::mcParticleCloud::populateGhostCells()
             vector shift = ghostCellShifts_[ghostPatchI][faceCelli];
             // z: from patch value (boundary condition)
             scalar z = zfv_.boundaryField()[ghostPatchId_[ghostPatchI]][faceCelli];
-            scalar rho = rhofv_.boundaryField()[ghostPatchId_[ghostPatchI]][faceCelli];
 
-            particleGenInCell(celli, Npc_, m, Updf, uscales, z, rho, shift, ghost);
+            particleGenInCell(celli, Npc_, m, Updf, uscales, z, shift, ghost);
         }
     }
     if (debug)

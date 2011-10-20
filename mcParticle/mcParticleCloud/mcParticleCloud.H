@@ -271,7 +271,6 @@ public:
             const vector& Updf,
             const vector& uscales,
             scalar z,
-            scalar rho,
             const vector& shift = vector::zero,
             label  ghost = 0
         );

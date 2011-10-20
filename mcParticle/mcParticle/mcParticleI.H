@@ -60,7 +60,6 @@ inline Foam::mcParticle::mcParticle
  const vector& UParticle,
  const vector& UFap,
  const scalar  z,
- const scalar  rho,
  const scalar  dt,
  const vector& shift,
  const label   ghost
@@ -72,7 +71,7 @@ inline Foam::mcParticle::mcParticle
   UParticle_(UParticle),
   UFap_(UFap),
   z_(z),
-  rho_(rho),
+  rho_(0.0),
   dt_(dt),
   shift_(shift),
   ghost_(ghost)

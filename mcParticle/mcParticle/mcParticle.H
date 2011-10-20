@@ -175,7 +175,6 @@ public:
             const vector& UParticle,
             const vector& UFap,
             const scalar z,
-            const scalar rho,
             const scalar dt,
             const vector& shift = vector::zero,
             const label  ghost = 0
