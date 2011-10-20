@@ -122,7 +122,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         mcParticleCloud& mcpc = td.mcpc();
         UParticle_ +=
               (UParticle_ - Updf_)  * dt / mcpc.kRelaxTime().value()
-            * (sqrt(mcpc.kfv()[celli]/mcpc.kcPdf()[celli]) - 1.0);
+            * (sqrt(mcpc.kfv()()[celli]/mcpc.kcPdf()[celli]) - 1.0);
 
         // Evolve concentration
         z_ += -0.5 * Cz *  epsilonFap / kFap * (z_ - zCap) * dt;

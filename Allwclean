@@ -3,10 +3,7 @@ cd ${0%/*} || exit 1    # run from this directory
 set -x
 
 wclean  mcParticle
-wclean  pdfUncoupledFoam
+#wclean  pdfUncoupledFoam
 wclean  pdfSimpleFoam
-
-
-
 
 # ----------------------------------------------------------------- end-of-file

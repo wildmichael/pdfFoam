@@ -44,6 +44,8 @@ SourceFiles
 #include "labelIOField.H"
 #include "SortableList.H"
 #include "vectorList.H"
+#include "compressible/turbulenceModel/turbulenceModel.H"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -52,8 +54,8 @@ namespace Foam
 // Forward declaration of classes
 class fvMesh;
 
-  typedef SortableList<mcParticle*> mcParticleList;
-  typedef List <mcParticleList> mcParticleListList;
+typedef SortableList<mcParticle*> mcParticleList;
+typedef List <mcParticleList> mcParticleListList;
 
 /*---------------------------------------------------------------------------*\
                            Class mcParticleCloud Declaration
@@ -106,13 +108,13 @@ class mcParticleCloud:
         dictionary particleProperties_;
         //- The time object
         const Time& runTime_;
+        //- The RAS model object
+        const compressible::turbulenceModel& turbModel_;
 
         //- The FV velocity field
         const volVectorField& Ufv_;
         //- The FV density field
         volScalarField& rhofv_;
-        //- The FV TKE field
-        const volScalarField* kfvPtr_;
         //- The FV mixture fraction field
         volScalarField zfv_;
 
@@ -186,8 +188,6 @@ class mcParticleCloud:
 
         Switch particleNumberControl_;
 
-        bool finishedInit_;
-
     // Private Member Functions
 
         //- Ensure moments are cnosistently read
@@ -219,12 +219,6 @@ class mcParticleCloud:
         //- Remove all ghost particles from cloud
         void purgeGhostParticles();
 
-#if 0
-        //- Boundary Fields for cloudPDF
-        void setCloudPDFBoundary();
-        void correctCloudPDFBoundaryConditions();
-#endif
-
         //- Disallow default bitwise copy construct
         mcParticleCloud(const mcParticleCloud&);
 
@@ -237,18 +231,18 @@ public:
     // Constructors
 
         //- Construct from components
-        // If any of the field pointers happens to be 0, the corresponding
-        // field will be looked up from the @a mesh. The names of the fields
-        // can be overriden in the dictionary @a dict.
+        // If any of the field/object pointers happens to be 0, the
+        // corresponding field will be looked up from the @a mesh. The names of
+        // the fields can be overriden in the dictionary @a dict.
         mcParticleCloud
         (
             const fvMesh& mesh,
             const dictionary& dict,
+            const word& cloudName = "defaultCloud",
+            const compressible::turbulenceModel* turbModel = 0,
             const volVectorField* U = 0,
             volScalarField* rho = 0,
-            const volScalarField* k = 0,
-            volScalarField* z = 0,
-            const word& cloudName = "defaultCloud"
+            volScalarField* z = 0
         );
 
     // Member Functions
@@ -257,8 +251,9 @@ public:
         inline const fvMesh& mesh() const;
 
         //- The TKE FV field
-        // NOTE Only safe to call inside evolve().
-        inline const volScalarField& kfv() const;
+        inline const tmp<volScalarField> kfv() const;
+        //- The turbulent dissipation field
+        inline const tmp<volScalarField> epsilonfv() const;
         //- The TKE PDF field
         inline const volScalarField& kcPdf() const;
         //- The TKE relaxation time

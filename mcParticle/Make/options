@@ -11,7 +11,5 @@ LIB_LIBS = \
     -llagrangian \
     -lmeshTools  \
     -lfiniteVolume \
-    -lincompressibleRASModels \
-    -lincompressibleLESModels \
     -lcompressibleRASModels \
     -lcompressibleLESModels

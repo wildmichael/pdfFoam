@@ -48,15 +48,7 @@ Foam::basicPdfThermo::basicPdfThermo(const fvMesh& mesh)
 :
     basicRhoThermo(mesh),
 
-    cloud_
-    (
-        mesh,
-        subDict("cloudProperties"),
-        0,
-        0,
-        0,
-        lookupOrDefault<word>("cloudName", "pdfThermoCloud")
-    ),
+    cloudP_(0),
 
     nu_
     (
@@ -108,16 +100,26 @@ void Foam::basicPdfThermo::evolve()
     {
         if (debug)
         {
-            Info<< "executing basicPdfThermod::cloud_.evolve()" << endl;
-            Info<< tab << "cloud_.size() = " << cloud_.size() << endl;
+            Info<< "executing basicPdfThermo::cloudP_().evolve()" << endl;
+            Info<< tab << "cloudP_().size() = " << cloudP_().size() << endl;
         }
 
-        cloud_.evolve();
+        // Instantiate the cloud on first call
+        if (!cloudP_.valid())
+        {
+            cloudP_.reset(new mcParticleCloud
+                (
+                    rho_.mesh(),
+                    subDict("cloudProperties"),
+                    lookupOrDefault<word>("cloudName", "pdfThermoCloud")
+                ));
+        }
+        cloudP_().evolve();
 
         if (debug)
         {
-            Info<< "done executing basicPdfThermod::cloud_.evolve()" << endl;
-            Info<< tab << "cloud_.size() = " << cloud_.size() << endl;
+            Info<< "done executing basicPdfThermo::cloudP_().evolve()" << endl;
+            Info<< tab << "cloudP_().size() = " << cloudP_().size() << endl;
         }
     }
 }

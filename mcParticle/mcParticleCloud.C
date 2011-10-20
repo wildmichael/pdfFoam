@@ -30,8 +30,6 @@ License
 #include "fixedValueFvPatchField.H"
 #include "boundBox.H"
 #include "fvc.H"
-#include "incompressible/RAS/RASModel/RASModel.H"
-#include "incompressible/LES/LESModel/LESModel.H"
 #include "compressible/RAS/RASModel/RASModel.H"
 #include "compressible/LES/LESModel/LESModel.H"
 
@@ -39,38 +37,25 @@ License
 
 namespace
 {
-Foam::tmp<Foam::volScalarField> getkfv(const Foam::objectRegistry& obr)
+const Foam::compressible::turbulenceModel* getTurbulenceModel
+(
+    const Foam::objectRegistry& obr
+)
 {
-    if (obr.foundObject<Foam::compressible::RASModel>("RASProperties"))
+    if (obr.foundObject<Foam::compressible::turbulenceModel>("RASProperties"))
     {
-        const Foam::compressible::RASModel& ras
-            = obr.lookupObject<Foam::compressible::RASModel>("RASProperties");
-        return ras.k();
-    }
-    else if (obr.foundObject<Foam::incompressible::RASModel>("RASProperties"))
-    {
-        const Foam::incompressible::RASModel& ras
-            = obr.lookupObject<Foam::incompressible::RASModel>("RASProperties");
-        return ras.k();
+        return &obr.lookupObject<Foam::compressible::RASModel>("RASProperties");
     }
     else if (obr.foundObject<Foam::compressible::LESModel>("LESProperties"))
     {
-        const Foam::compressible::LESModel& les =
-        obr.lookupObject<Foam::compressible::LESModel>("LESProperties");
-        return les.k();
-    }
-    else if (obr.foundObject<Foam::incompressible::LESModel>("LESProperties"))
-    {
-        const Foam::incompressible::LESModel& les
-            = obr.lookupObject<Foam::incompressible::LESModel>("LESProperties");
-        return les.k();
+        return &obr.lookupObject<Foam::compressible::LESModel>("LESProperties");
     }
     else
     {
-        Foam::FatalErrorIn("getkfv()")
+        Foam::FatalErrorIn("getTurbulenceModel(const Foam::objectRegistry&)")
             << "No valid model for TKE calculation."
             << Foam::exit(Foam::FatalError);
-        return Foam::volScalarField::null();
+        return 0;
     }
 }
 }
@@ -79,9 +64,9 @@ Foam::tmp<Foam::volScalarField> getkfv(const Foam::objectRegistry& obr)
 
 namespace Foam
 {
-    defineParticleTypeNameAndDebug(mcParticle, 0);
-    defineTemplateTypeNameAndDebug(Cloud<mcParticle>, 0);
-    const dimensionedScalar mcParticleCloud::SMALL_MASS("SMALL_MASS", dimMass, SMALL);
+defineParticleTypeNameAndDebug(mcParticle, 0);
+defineTemplateTypeNameAndDebug(Cloud<mcParticle>, 0);
+const dimensionedScalar mcParticleCloud::SMALL_MASS("SMALL_MASS", dimMass, SMALL);
 };
 
 
@@ -110,17 +95,21 @@ Foam::mcParticleCloud::mcParticleCloud
 (
     const fvMesh& mesh,
     const dictionary& dict,
+    const word& cloudName,
+    const compressible::turbulenceModel* turbModel,
     const volVectorField* U,
     volScalarField* rho,
-    const volScalarField* k,
-    volScalarField* z,
-    const word& cloudName
+    volScalarField* z
 )
 :
     Cloud<mcParticle>(mesh, cloudName, false),
     mesh_(mesh),
     particleProperties_(dict),
     runTime_(mesh.time()),
+    turbModel_
+    (
+        turbModel ? *turbModel : *getTurbulenceModel(mesh)
+    ),
     Ufv_
     (
         U ? *U : mesh.lookupObject<volVectorField>
@@ -304,8 +293,9 @@ Foam::mcParticleCloud::mcParticleCloud
             IOobject::AUTO_WRITE
         ),
         mesh_,
-        dimensionedScalar("kCloudPDF", dimVelocity*dimVelocity, 0),
-        zeroGradientFvPatchScalarField::typeName
+        dimVelocity*dimVelocity,
+        kfv(),
+        kfv()().boundaryField()
     ),
 
     coeffRhoCorr_
@@ -340,14 +330,24 @@ Foam::mcParticleCloud::mcParticleCloud
     (
         particleProperties_.lookupOrAddDefault<Switch>
                 ("particleNumberControl", true)
-    ),
-    finishedInit_(false)
+    )
 {
+    findGhostLayers();
+    checkParticlePropertyDict();
     if (size() > 0) // if particle data found
     {
         mcParticle::readFields(*this);
     }
-    checkParticlePropertyDict();
+    else
+    {
+        Info<< "I am releasing particles initially!" << endl;
+        initReleaseParticles();
+    }
+    // Take care of statistical moments (make sure they are consistent)
+    checkMoments();
+
+    // Ensure particles takes the updated PDF values
+    updateParticlePDF();
 }
 
 
@@ -776,40 +776,11 @@ void Foam::mcParticleCloud::findGhostLayers()
 
 void Foam::mcParticleCloud::evolve()
 {
-    // fetch k and impose its boundaryField on kcPdf_
-    tmp<volScalarField> tmpkfv = getkfv(mesh_); // KEEP tmpkfv!
-    kfvPtr_ = &tmpkfv();
-    kcPdf_.boundaryField() = kfvPtr_->boundaryField(); // TODO dangerous?
-
-    // finish initialization if needed
-    if (!finishedInit_)
-    {
-        finishedInit_ = true;
-
-        findGhostLayers();
-
-        // initialize particle cloud if that didn't happen so far
-        if (!size())
-        {
-            Info<< "I am releasing particles initially! size = " << size() << endl;
-            initReleaseParticles();
-            Info<< "Done releasing particles. size = " << size() << endl;
-        }
-        // Take care of statistical moments (make sure they are consistent)
-        checkMoments();
-
-        // Ensure particles takes the updated PDF values
-        updateParticlePDF();
-    }
 
     // lower bound for k
     kcPdf_ = max(kcPdf_, kMin_);
 
-    // const volScalarField& rho = mesh_.lookupObject<const volScalarField>("rho");
-    // const volVectorField& U = mesh_.lookupObject<const volVectorField>("U");
     const volVectorField& gradP = mesh_.lookupObject<const volVectorField>("grad(p)");
-    //    const volScalarField& k = mesh_.lookupObject<const volScalarField>("k");
-    const volScalarField& epsilon = mesh_.lookupObject<const volScalarField>("epsilon");
 
     volScalarField diffRho
     (
@@ -852,9 +823,8 @@ void Foam::mcParticleCloud::evolve()
     //interpolationCellPointFaceFlux UInterp(U);
     interpolationCellPoint<vector> UInterp(Ufv_);
     interpolationCellPoint<vector> gradPInterp(gradP);
-    interpolationCellPoint<scalar> kInterp(*kfvPtr_);
-    interpolationCellPoint<scalar> epsilonInterp(epsilon);
-    interpolationCellPoint<scalar> zInterp(zcPdf_);
+    interpolationCellPoint<scalar> kInterp(kfv());
+    interpolationCellPoint<scalar> epsilonInterp(epsilonfv());
     interpolationCellPoint<scalar> zInterp(zfv_);
     interpolationCellPoint<vector> gradRhoInterp(gradRho);
     interpolationCellPoint<vector> diffUInterp(diffU);
@@ -881,9 +851,6 @@ void Foam::mcParticleCloud::evolve()
     particleNumberControl();
 
     assertPopulationHealth();
-
-    // clean up
-    kfvPtr_ = 0;
 }
 
 
@@ -897,9 +864,8 @@ void Foam::mcParticleCloud::initReleaseParticles()
         // TODO fv or pdf?
         vector Updf = Ufv_[celli];
         // TODO shouldn't this be multiplied with 2/3?
-        vector uscales(sqrt((*kfvPtr_)[celli]),
-                       sqrt((*kfvPtr_)[celli]),
-                       sqrt((*kfvPtr_)[celli]));
+        scalar ksqrt = sqrt(kfv()()[celli]);
+        vector uscales(ksqrt, ksqrt, ksqrt);
         scalar z = zfv_[celli];
         scalar rho = rhofv_[celli];
 
@@ -1001,7 +967,7 @@ void Foam::mcParticleCloud::populateGhostCells()
             scalar m = mesh_.V()[celli] * rhofv_[celli] / Npc_;
             vector Updf = Ufv_[celli];
             // TODO shouldn't this be multiplied with 2/3?
-            scalar ksqrt = sqrt((*kfvPtr_)[celli]);
+            scalar ksqrt = sqrt(kfv()()[celli]);
             vector uscales(ksqrt, ksqrt, ksqrt);
             label  ghost = 1;
             vector shift = ghostCellShifts_[ghostPatchI][faceCelli];

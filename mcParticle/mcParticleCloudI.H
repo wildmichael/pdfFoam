@@ -31,14 +31,16 @@ inline const Foam::fvMesh& Foam::mcParticleCloud::mesh() const
 }
 
 
-inline const Foam::volScalarField& Foam::mcParticleCloud::kfv() const
+inline const Foam::tmp<Foam::volScalarField> Foam::mcParticleCloud::kfv() const
 {
-    if (!kfvPtr_)
-    {
-        FatalErrorIn("Foam::mcParticleCloud::kfv(")
-            << "No k field available" << exit(FatalError);
-    }
-    return *kfvPtr_;
+    return turbModel_.k();
+}
+
+
+inline const Foam::tmp<Foam::volScalarField>
+Foam::mcParticleCloud::epsilonfv() const
+{
+    return turbModel_.epsilon();
 }
 
 

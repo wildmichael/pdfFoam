@@ -54,7 +54,7 @@ class basicPdfThermo
     // Private data
 
         //- Particle cloud
-        mcParticleCloud cloud_;
+        autoPtr<mcParticleCloud> cloudP_;
 
         //- Viscosity
         dimensionedScalar nu_;
