@@ -64,7 +64,7 @@ Foam::mcInletOutletBoundary::mcInletOutletBoundary
     fwdTrans_(patch().size()),
     revTrans_(patch().size()),
     U_(),
-    urms_("urms", *this, patch().size()),
+    urms_(),
     inRnd_()
 {
     // compute triangle probability vector (normalized, cummulative sum of
@@ -96,7 +96,6 @@ Foam::mcInletOutletBoundary::mcInletOutletBoundary
         }
         fwdTrans_[faceI] = rotationTensor(ex, -Sf[faceI]/magSf[faceI]);
         revTrans_[faceI] = fwdTrans_[faceI].T();
-        urms_[faceI] = transform(fwdTrans_[faceI], urms_[faceI]);
     }
 }
 
@@ -116,6 +115,23 @@ const Foam::vectorField& Foam::mcInletOutletBoundary::getU
 }
 
 
+const Foam::vectorField& Foam::mcInletOutletBoundary::geturms
+(
+    const Foam::mcParticleCloud& cloud
+)
+{
+    if (urms_.empty())
+    {
+        const symmTensorField& tau = cloud.TaucPdf().boundaryField()[patchID()];
+        vectorField urms = vector(1., 0., 0.)*sqrt(tau.component(symmTensor::XX))
+                         + vector(0., 1., 0.)*sqrt(tau.component(symmTensor::YY))
+                         + vector(0., 0., 1.)*sqrt(tau.component(symmTensor::ZZ));
+        urms_ = transform(fwdTrans_, urms)();
+    }
+    return urms_;
+}
+
+
 Foam::PtrList<Foam::InletRandom>&
 Foam::mcInletOutletBoundary::getInRnd
 (
@@ -127,6 +143,7 @@ Foam::mcInletOutletBoundary::getInRnd
         const polyPatch& pp = patch();
         inRnd_.setSize(pp.size());
         const vectorField& U = getU(cloud);
+        const vectorField& urms = geturms(cloud);
         Random& rnd = cloud.random();
         forAll(pp, faceI)
         {
@@ -134,7 +151,7 @@ Foam::mcInletOutletBoundary::getInRnd
                 (
                     rnd,
                     U[faceI].x(),
-                    urms_[faceI].x()
+                    urms[faceI].x()
                 ));
         }
     }
@@ -182,7 +199,7 @@ Foam::vector Foam::mcInletOutletBoundary::randomVelocity
 {
     Random& rnd = cloud.random();
     const vector& U = getU(cloud)[faceI];
-    const vector& urms = urms_[faceI];
+    const vector& urms = geturms(cloud)[faceI];
     // Normal component has a special distributions, other components are Gaussian
     vector Up = vector
     (
@@ -240,7 +257,7 @@ void Foam::mcInletOutletBoundary::correct
             continue;
         }
         getInRnd(cloud)[faceI].updateCoeffs(getU(cloud)[faceI].x(),
-                                            urms_[faceI].x());
+                                            geturms(cloud)[faceI].x());
         // number of particles to generate
         scalar Nf = vol / mesh().V()[cellI] * Npc;
         label N = floor(Nf);
