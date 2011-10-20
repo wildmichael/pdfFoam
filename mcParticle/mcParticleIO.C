@@ -67,6 +67,8 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
     {
         return;
     }
+    Particle <mcParticle> :: readFields(c);
+
     IOField<scalar> m(c.fieldIOobject("m", IOobject::MUST_READ));
     c.checkFieldIOobject(c, m);
 

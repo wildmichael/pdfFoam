@@ -69,7 +69,7 @@ Foam::mcParticleCloud::mcParticleCloud
     bool readFields
 )
 :
-    Cloud<mcParticle>(mesh, cloudName, false),
+  Cloud<mcParticle>(mesh, cloudName, false),
     debug_ (false),
     mesh_(mesh),
     Ufv_(U),
@@ -84,14 +84,14 @@ Foam::mcParticleCloud::mcParticleCloud
             mesh_.time().constant(),
             mesh_,
             IOobject::MUST_READ,
-            IOobject::AUTO_WRITE
+            IOobject::NO_WRITE
         )
      ),
 
     dtCloud_(mesh.time().deltaT().value()),
     AvgTimeScale_(mesh.time().endTime().value()),
     random_(55555+12345*Pstream::myProcNo()),
-    Npc_(10),
+    Npc_(3),
 
     SMALL_MASS("SMALL_MASS", dimMass, SMALL),
 
@@ -178,19 +178,34 @@ Foam::mcParticleCloud::mcParticleCloud
 
 {
   //&&& should be a property of cloud (read from dict)
-  bool initialRelease = true;
-  bool readParticles = false; 
+  //  bool initialRelease = true;
+  //  bool readParticles = true;; 
 
-  if(initialRelease)
-    {
-      initReleaseParticles();
-      readParticles = false;
-    }
-  
-  if (readParticles)
+  Info << "Before: I have " << size() << " particles now, they are:"  << endl;
+
+  if (size() > 0) // if particle data not found
     {
       mcParticle::readFields(*this);
     }
+  else
+    {
+      Info << "I am releasing particles initially!" << endl;
+      initReleaseParticles();
+    }
+
+  Info << "After: I have " << size() << " particles now, they are:"  << endl;
+
+  for(iterator pIter=begin(); 
+      pIter != end();
+      ++pIter
+      )
+    {
+      mcParticle & p = pIter();
+      Info << "Particle # " << p.origId() 
+           << "; m = " << p.m()
+           << "; Up = " << p.UParticle() << endl;
+    }
+
  
   // Take care of statistical moments (make sure they are consistent)
   checkMoments();
@@ -208,21 +223,6 @@ Foam::mcParticleCloud::mcParticleCloud
 
   findGhostLayers();
 
-}
-
-
-//- update Updf & Taupdf in the particle side.
-void Foam::mcParticleCloud::updateParticlePDF()
-{
-  for(iterator pIter=begin(); 
-      pIter != end();
-      ++pIter
-      )
-    {
-      mcParticle & p = pIter();
-      p.Updf() = UcPdf_[p.cell()];
-      p.Taupdf() = TaucPdf_[p.cell()];
-    }
 }
 
 
@@ -254,6 +254,7 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
 
   PaNIC_ *= 0;
 
+
   // Loop through particles to accumulate moments (0, 1, 2 order)
   // as well as particle number
   for(iterator pIter=begin(); 
@@ -263,18 +264,35 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
     {
       mcParticle & p = pIter();
       vector u = p.UParticle() - p.Updf();
+
       PaNIC_[p.cell()] ++;
+
       instantM0_[p.cell()] += p.m();
       instantM1[p.cell()] += p.m() * p.UParticle();
       instantM2[p.cell()] += p.m() * symm(u * u);
     }
-  
+
   M0_ = existWt * M0_ + (1.0 - existWt) * instantM0_;
   M1_ = existWt * M1_ + (1.0 - existWt) * instantM1;
   M2_ = existWt * M2_ + (1.0 - existWt) * instantM2;
   // Compute U and tau
   UcPdf_  = M1_/max(M0_, SMALL_MASS);
   TaucPdf_  = M2_/max(M0_, SMALL_MASS);
+}
+
+
+//- update Updf & Taupdf in the particle side.
+void Foam::mcParticleCloud::updateParticlePDF()
+{
+  for(iterator pIter=begin(); 
+      pIter != end();
+      ++pIter
+      )
+    {
+      mcParticle & p = pIter();
+      p.Updf() = UcPdf_[p.cell()];
+      p.Taupdf() = TaucPdf_[p.cell()];
+    }
 }
 
 
@@ -479,6 +497,8 @@ void Foam::mcParticleCloud::initReleaseParticles()
   // Populate each cell with partilces
   forAll(Ufv_, celli)
     {
+      if(celli > 0) continue;
+      
       // &&& Should be a cloud property (class number)
       scalar m = mesh_.V()[celli] * rhofv_[celli] / Npc_;
       vector Updf = UcPdf_[celli];
@@ -537,12 +557,12 @@ void Foam::mcParticleCloud::particleGenInCell
           addParticle(ptr);
           Npgen ++;
         }
-      
+
       // until enough particles are generated.
       if(Npgen >= N) break;
     }
   
-
+  Info << Npgen << " particles are generated  in cell " << celli << endl;
   if(Npgen < N) 
     {
       FatalErrorIn("mcParticleCloud::initReleaseParticles()")
@@ -561,7 +581,7 @@ void Foam::mcParticleCloud::populateGhostCells()
       forAll(ghostCellLayers_[patchi], faceCelli)
         {
           label celli = ghostCellLayers_[patchi][faceCelli];
-          
+          if (celli > 0) return;
           if(PaNIC_[celli] < Npc_ / 2)
             { 
               label N = Npc_- PaNIC_[celli];

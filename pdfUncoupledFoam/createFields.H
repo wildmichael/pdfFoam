@@ -27,7 +27,7 @@
             runTime.timeName(),
             mesh,
             IOobject::MUST_READ,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
         ),
         mesh
     );
@@ -41,7 +41,7 @@
             runTime.timeName(),
             mesh,
             IOobject::MUST_READ,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
         ),
         mesh
     );
@@ -56,7 +56,7 @@
             runTime.timeName(),
             mesh,
             IOobject::MUST_READ,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
         ),
         mesh
     );
@@ -70,7 +70,7 @@
             runTime.timeName(),
             mesh,
             IOobject::MUST_READ,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
         ),
         mesh
     );
@@ -88,5 +88,5 @@
      rho,
      k,
      mcParticleCloudName,
-     false
+     true
     );
