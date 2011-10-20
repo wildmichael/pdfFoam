@@ -841,7 +841,7 @@ void Foam::mcParticleCloud::purgeGhostParticles()
             }
           else
             { 
-              // shift and accept this particle as normal member
+              // shift and admit this particle as normal member
               p.position() -= p.shift();
               label newCelli = mesh_.findCell(p.position());
               if (newCelli < 0) 
