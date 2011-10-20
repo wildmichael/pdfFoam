@@ -32,6 +32,7 @@ License
 #include "fvc.H"
 #include "compressible/RAS/RASModel/RASModel.H"
 #include "compressible/LES/LESModel/LESModel.H"
+#include "mcProcessorBoundary.H"
 
 // * * * * * * * * * * * * * Local Helper Functions  * * * * * * * * * * * * //
 
@@ -1227,15 +1228,29 @@ void Foam::mcParticleCloud::initBCHandlers()
     const dictionary& bd = dict_.subDict("boundaryHandlers");
     forAll(mesh_.boundaryMesh(), patchI)
     {
-        boundaryHandlers_.set
-        (
-            patchI,
-            mcBoundary::New
+        const polyPatch& pp = mesh_.boundaryMesh()[patchI];
+        autoPtr<mcBoundary> bcHandler;
+        if (isA<processorPolyPatch>(pp))
+        {
+            bcHandler.reset(new mcProcessorBoundary
+            (
+                mesh_,
+                patchI
+            ));
+        }
+        else
+        {
+            bcHandler = mcBoundary::New
             (
                 mesh_,
                 patchI,
-                bd.subDict(mesh_.boundaryMesh()[patchI].name())
-            )
+                bd.subDict(pp.name())
+            );
+        }
+        boundaryHandlers_.set
+        (
+            patchI,
+            bcHandler
         );
     }
 }

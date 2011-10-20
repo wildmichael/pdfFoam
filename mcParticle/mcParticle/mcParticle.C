@@ -287,10 +287,6 @@ bool Foam::mcParticle::hitPatch                                               \
             << "A mcParticle should never hit a wedge patch!" << endl         \
             << abort(FatalError);                                             \
     }                                                                         \
-    else if (isA<processorPolyPatch>(patch))                                  \
-    {                                                                         \
-        hitProcessorPatch(static_cast<const processorPolyPatch&>(patch), td); \
-    }                                                                         \
     else                                                                      \
     {                                                                         \
         mcParticleCloud& c = const_cast<mcParticleCloud&>                     \

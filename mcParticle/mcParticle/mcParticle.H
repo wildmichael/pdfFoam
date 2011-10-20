@@ -284,22 +284,6 @@ public:
                 const label      patchI
             );
 
-            //- Overridable function to handle the particle hitting a
-            //  processorPatch
-            inline void hitProcessorPatch
-            (
-                const processorPolyPatch&,
-                mcParticle::trackData& td
-            );
-
-            //- Overridable function to handle the particle hitting a
-            //  processorPatch without trackData
-            inline void hitProcessorPatch
-            (
-                const processorPolyPatch&,
-                int&
-            );
-
             //- Overridable function to handle the particle hitting a polyPatch
             void hitPatch
             (

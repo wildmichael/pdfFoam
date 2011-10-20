@@ -192,22 +192,4 @@ inline Foam::scalar Foam::mcParticle::Co() const
     return Co_;
 }
 
-
-void Foam::mcParticle::hitProcessorPatch
-(
-    const processorPolyPatch&,
-    mcParticle::trackData& td
-)
-{
-    td.switchProcessor = true;
-}
-
-
-void Foam::mcParticle::hitProcessorPatch
-(
-    const processorPolyPatch&,
-    int&
-)
-{}
-
 // ************************************************************************* //
