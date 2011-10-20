@@ -111,7 +111,7 @@ Foam::mcParticleCloud::mcParticleCloud
     const fvMesh& mesh,
     const dictionary& dict,
     const volVectorField* U,
-    const volScalarField* rho,
+    volScalarField* rho,
     const volScalarField* k,
     const word& cloudName
 )
@@ -127,8 +127,8 @@ Foam::mcParticleCloud::mcParticleCloud
     ),
     rhofv_
     (
-        rho ? *rho : mesh.lookupObject<volScalarField>
-                         (dict.lookupOrDefault<word>("rho", "rho"))
+        rho ? *rho : const_cast<volScalarField&>(mesh.lookupObject<volScalarField>
+                         (dict.lookupOrDefault<word>("rho", "rho")))
     ),
     zfv_
     (
@@ -245,11 +245,11 @@ Foam::mcParticleCloud::mcParticleCloud
     ghostCellHash_(256),
     ghostFaceHash_(256),
 
-    rhocPdf_
+    pndcPdf_
     (
         IOobject
         (
-            "rhoCloudPDF",
+            "pndCloudPdf",
             runTime_.timeName(),
             mesh,
             IOobject::READ_IF_PRESENT,
@@ -257,7 +257,7 @@ Foam::mcParticleCloud::mcParticleCloud
         ),
         mesh_,
         dimDensity,
-        mMean_/VMean_,
+        mMean_/mesh_.V(),
         rhofv_.boundaryField()
     ),
 
@@ -498,14 +498,15 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
     uuMean_ = existWt * uuMean_ + newWt * uuMeanInstant;
 
     // Compute mean fields
-    rhocPdf_.internalField() = mMean_/VMean_;
+    rhofv_.internalField() = mMean_/VMean_;
+    pndcPdf_.internalField() = mMean_/mesh_.V();
     UcPdf_.internalField()   = UMean_/max(mMean_, SMALL_MASS);
     zcPdf_.internalField()   = zMean_ / max(mMean_, SMALL_MASS);
     TaucPdf_.internalField() = uuMean_/max(mMean_, SMALL_MASS);
     kcPdf_.internalField()   = 0.5 * tr(TaucPdf_.internalField());
 
     // Update boundary conditions
-    rhocPdf_.correctBoundaryConditions();
+    rhofv_.correctBoundaryConditions();
     UcPdf_.correctBoundaryConditions();
     zcPdf_.correctBoundaryConditions();
     TaucPdf_.correctBoundaryConditions();
@@ -829,7 +830,7 @@ void Foam::mcParticleCloud::evolve()
     );
 
 
-    diffRho.internalField() = (rhocPdf_ - rhofv_)/rhofv_;
+    diffRho.internalField() = (pndcPdf_ - rhofv_)/rhofv_;
     diffRho.correctBoundaryConditions();
 
     volVectorField gradRho = fvc::grad(diffRho) * coeffRhoCorr_;
@@ -896,13 +897,14 @@ void Foam::mcParticleCloud::initReleaseParticles()
     forAll(Ufv_, celli)
     {
         scalar m = mesh_.V()[celli] * rhofv_[celli] / Npc_;
-        vector Updf = UcPdf_[celli];
+        // TODO fv or pdf?
+        vector Updf = Ufv_[celli];
         // TODO shouldn't this be multiplied with 2/3?
         vector uscales(sqrt((*kfvPtr_)[celli]),
                        sqrt((*kfvPtr_)[celli]),
                        sqrt((*kfvPtr_)[celli]));
-        scalar z = zcPdf_[celli];
-        scalar rho = rhocPdf_[celli];
+        scalar z = zfv_[celli];
+        scalar rho = rhofv_[celli];
 
         particleGenInCell(celli, Npc_, m, Updf, uscales, z, rho);
     }

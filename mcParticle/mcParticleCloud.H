@@ -110,7 +110,7 @@ class mcParticleCloud:
         //- The FV velocity field
         const volVectorField& Ufv_;
         //- The FV density field
-        const volScalarField& rhofv_;
+        volScalarField& rhofv_;
         //- The FV TKE field
         const volScalarField* kfvPtr_;
         //- The FV mixture fraction field
@@ -164,8 +164,8 @@ class mcParticleCloud:
         //- Hash of ghost face indices
         HashSet<label>   ghostFaceHash_;
 
-        //- Extracted, time-averaged density
-        volScalarField rhocPdf_;
+        //- Extracted, time-averaged particle-number density
+        volScalarField pndcPdf_;
         //- Extracted, time-averaged velocity
         volVectorField UcPdf_;
         //- Extracted, time-averaged mixture fraction
@@ -245,7 +245,7 @@ public:
             const fvMesh& mesh,
             const dictionary& dict,
             const volVectorField* U = 0,
-            const volScalarField* rho = 0,
+            volScalarField* rho = 0,
             const volScalarField* k = 0,
             const word& cloudName = "defaultCloud"
         );
