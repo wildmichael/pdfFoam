@@ -78,6 +78,7 @@ class mcParticleCloud
 
   //- statistical moments (mass, momentum, energy)
   //- needed to obtain Updf, and Taupdf fields
+  dimensionedScalar SMALL_MASS;
   volScalarField M0_;
   volVectorField M1_;
   volSymmTensorField M2_;

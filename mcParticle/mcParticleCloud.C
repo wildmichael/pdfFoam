@@ -62,7 +62,7 @@ Foam::mcParticleCloud::mcParticleCloud
             mesh_.time().constant(),
             mesh_,
             IOobject::MUST_READ,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
         )
      ),
 
@@ -71,45 +71,73 @@ Foam::mcParticleCloud::mcParticleCloud
     random_(55555+12345*Pstream::myProcNo()),
     Npc_(10),
 
+    SMALL_MASS("SMALL_MASS", dimMass, SMALL),
+
     M0_(
         IOobject
         (
             "M0",
-            mesh_.time().constant(),
+            mesh.time().timeName(),
             mesh_,
             IOobject::READ_IF_PRESENT,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
          ),
-        mesh_,
+        mesh,
         dimensionedScalar("M0", dimMass, 0.0)
        ),
     M1_(
         IOobject
         (
             "M1",
-            mesh_.time().constant(),
-            mesh_,
+            mesh.time().timeName(),
+            mesh,
             IOobject::READ_IF_PRESENT,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
          ),
-        mesh_,
+        mesh,
         dimensionedVector("M1", dimMass*dimVelocity, vector::zero)
         ),
     M2_(
         IOobject
           (
             "M2",
-            mesh_.time().constant(),
-            mesh_,
+            mesh.time().timeName(),
+            mesh,
             IOobject::READ_IF_PRESENT,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
            ),
-        mesh_,
+        mesh,
         dimensionedSymmTensor("M2", dimEnergy, symmTensor:: zero)
         ),
 
-    UcPdf_(M1_/max(M0_, SMALL)),
-    TaucPdf_(M2_/max(M0_, SMALL))
+    UcPdf_
+    (
+     // IOobject
+     // (
+     //  "UcloudPDF",
+     //  mesh.time().timeName(),
+     //  mesh,
+     //  IOobject::READ_IF_PRESENT,
+     //  IOobject::AUTO_WRITE
+     //  ),
+     // mesh,
+     M1_/max(M0_, SMALL_MASS)
+     ),
+    
+    TaucPdf_
+    (
+     // IOobject
+     // (
+     //  "TauCloudPDF",
+     //  mesh.time().timeName(),
+     //  mesh,
+     //  IOobject::READ_IF_PRESENT,
+     //  IOobject::AUTO_WRITE
+     //  ),
+     // mesh,
+     M2_/max(M0_, SMALL_MASS)
+     )
+
 {
   //&&& should be a property of cloud (read from dict)
   bool initialRelease = true;
@@ -131,6 +159,11 @@ Foam::mcParticleCloud::mcParticleCloud
 
   // Ensure particles takes the updated PDF values
   updateParticlePDF();
+
+  UcPdf_.writeOpt() = IOobject::AUTO_WRITE; 
+  UcPdf_.rename("UcPdf");
+  TaucPdf_.writeOpt() = IOobject::AUTO_WRITE; 
+  TaucPdf_.rename("TauPdf");
  
 }
 
@@ -192,8 +225,8 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
       M1_ = existWt * M1_ + (1.0 - existWt) * instantM1;
       M2_ = existWt * M2_ + (1.0 - existWt) * instantM2;
       // Compute U and tau
-      UcPdf_  = M1_/max(M0_, SMALL);
-      TaucPdf_  = M2_/max(M0_, SMALL);
+      UcPdf_  = M1_/max(M0_, SMALL_MASS);
+      TaucPdf_  = M2_/max(M0_, SMALL_MASS);
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
@@ -217,8 +250,8 @@ void Foam::mcParticleCloud::evolve()
     Cloud<mcParticle>::move(td);
 
     // AvgTimeScale is a class member (should be read from dictionary).
-    scalar existWt = 
-      1.0/(1.0 + (mesh_.time().deltaT()/AvgTimeScale_).value());
+    scalar existWt = 0.8;
+      // 1.0/(1.0 + (mesh_.time().deltaT()/AvgTimeScale_).value());
     
     updateCloudPDF(existWt);
     updateParticlePDF();
@@ -268,7 +301,7 @@ void Foam::mcParticleCloud::particleGenInCell
         {
           // Relative coordinate [0, 1] in this cell
           vector xi = random().vector01();
-          // Random offset from min
+          // Random offset from min point
           vector offsetRnd(xi.x()*dimb.x(), xi.y()*dimb.y(), xi.z()*dimb.z());
           
           // Generate a particle position
@@ -298,6 +331,8 @@ void Foam::mcParticleCloud::particleGenInCell
               addParticle(ptr);
               Npgen ++;
             }
+
+          // until enough particles are generated.
           if(Npgen >= Npc_) break;
         }
       

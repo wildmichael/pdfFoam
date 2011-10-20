@@ -1,68 +1,100 @@
 
-mcParticle.C,496
+mcParticle.C,497
 bool Foam::mcParticle::move(30,1262
-bool Foam::mcParticle::hitPatch97,3083
-bool Foam::mcParticle::hitPatch108,3209
-void Foam::mcParticle::hitProcessorPatch119,3317
-void Foam::mcParticle::hitProcessorPatch129,3460
-void Foam::mcParticle::hitWallPatch137,3550
-void Foam::mcParticle::hitWallPatch158,3885
-void Foam::mcParticle::hitPatch166,3965
-void Foam::mcParticle::hitPatch174,4058
-void Foam::mcParticle::transformProperties 182,4130
-void Foam::mcParticle::transformProperties(189,4274
+bool Foam::mcParticle::hitPatch123,4226
+bool Foam::mcParticle::hitPatch134,4353
+void Foam::mcParticle::hitProcessorPatch145,4459
+void Foam::mcParticle::hitProcessorPatch155,4602
+void Foam::mcParticle::hitWallPatch163,4692
+void Foam::mcParticle::hitWallPatch187,5290
+void Foam::mcParticle::hitPatch195,5370
+void Foam::mcParticle::hitPatch205,5491
+void Foam::mcParticle::transformProperties 213,5563
+void Foam::mcParticle::transformProperties(220,5723
 
-mcParticleCloud.C,112
-namespace Foam33,1341
-Foam::mcParticleCloud::mcParticleCloud41,1552
-void Foam::mcParticleCloud::move(74,2329
+mcParticleCloud.C,550
+namespace Foam33,1362
+Foam::mcParticleCloud::mcParticleCloud41,1573
+void Foam::mcParticleCloud::updateParticlePDF(141,3734
+void Foam::mcParticleCloud::checkMoments(156,4036
+void Foam::mcParticleCloud::updateCloudPDF(174,4397
+void Foam::mcParticleCloud::evolve(203,5366
+void Foam::mcParticleCloud::initReleaseParticles(233,6509
+void Foam::mcParticleCloud::particleGenInCell253,7137
+void Foam::mcParticleCloud::updateParticleProperties(318,9276
+void Foam::mcParticleCloud::info(331,9480
+void Foam::mcParticleCloud::allParticlesInfo(339,9679
 
-mcParticleCloud.H,435
+mcParticleCloud.H,1137
 #define mcParticleCloud_H38,1355
-namespace Foam46,1533
-class mcParticleCloudFoam::mcParticleCloud56,1822
-        const fvMesh& mesh_;Foam::mcParticleCloud::mesh_62,1898
-        IOdictionary particleProperties_;Foam::mcParticleCloud::particleProperties_64,1928
-        scalar rhop_;Foam::mcParticleCloud::rhop_66,1971
-        scalar e_;Foam::mcParticleCloud::e_67,1993
-        scalar mu_;Foam::mcParticleCloud::mu_68,2012
+namespace Foam47,1553
+class mcParticleCloudFoam::mcParticleCloud57,1842
+  const fvMesh& mesh_;Foam::mcParticleCloud::mesh_63,1918
+  const volVectorField& Ufv_;Foam::mcParticleCloud::Ufv_65,1944
+  const volScalarField& rhofv_;Foam::mcParticleCloud::rhofv_66,1974
+  const volScalarField& kfv_;Foam::mcParticleCloud::kfv_67,2006
+  IOdictionary particleProperties_;Foam::mcParticleCloud::particleProperties_68,2036
+  scalar dtCloud_;Foam::mcParticleCloud::dtCloud_70,2075
+  scalar AvgTimeScale_;Foam::mcParticleCloud::AvgTimeScale_71,2094
+  Random random_;Foam::mcParticleCloud::random_75,2172
+  label Npc_;Foam::mcParticleCloud::Npc_77,2237
+  dimensionedScalar SMALL_MASS;Foam::mcParticleCloud::SMALL_MASS81,2350
+  volScalarField M0_;Foam::mcParticleCloud::M0_82,2382
+  volVectorField M1_;Foam::mcParticleCloud::M1_83,2404
+  volSymmTensorField M2_;Foam::mcParticleCloud::M2_84,2426
+  volVectorField UcPdf_;Foam::mcParticleCloud::UcPdf_88,2539
+  volSymmTensorField TaucPdf_;Foam::mcParticleCloud::TaucPdf_89,2564
+      Random &random(Foam::mcParticleCloud::random134,3557
 
-mcParticleCloudI.H,230
+mcParticleCloudI.H,288
 inline const Foam::fvMesh& Foam::mcParticleCloud::mesh(28,1232
-inline Foam::scalar Foam::mcParticleCloud::rhop(34,1319
-inline Foam::scalar Foam::mcParticleCloud::e(40,1399
-inline Foam::scalar Foam::mcParticleCloud::mu(46,1473
+inline Foam::scalar Foam::mcParticleCloud::e(34,1319
+inline Foam::scalar Foam::mcParticleCloud::mu(41,1410
+inline Foam::scalar Foam::mcParticleCloud::dtCloud(47,1503
+inline Foam::label Foam::mcParticleCloud::Npc(52,1580
 
-mcParticle.H,969
+mcParticle.H,1380
 #define mcParticle_H40,1375
-namespace Foam50,1604
-class mcParticleFoam::mcParticle59,1863
-        scalar m_;Foam::mcParticle::m_66,1982
-        vector Updf_;Foam::mcParticle::Updf_69,2041
-        vector u_;Foam::mcParticle::u_72,2099
-    class trackDataFoam::mcParticle::trackData80,2235
-        mcParticleCloud& mcpc_;Foam::mcParticle::trackData::mcpc_83,2321
-            const interpolationCellPoint<scalar>& rhoInterp_;Foam::mcParticle::trackData::rhoInterp_87,2408
-            const interpolationCellPoint<vector>& UInterp_;Foam::mcParticle::trackData::UInterp_88,2470
-            const interpolationCellPoint<scalar>& kInterp_;Foam::mcParticle::trackData::kInterp_89,2530
-        bool switchProcessor;Foam::mcParticle::trackData::switchProcessor94,2605
-        bool keepParticle;Foam::mcParticle::trackData::keepParticle95,2635
-        autoPtr<mcParticle> clone(Foam::mcParticle::clone144,3807
-inline bool contiguous<contiguous264,7015
+namespace Foam50,1626
+class mcParticleFoam::mcParticle59,1885
+        scalar m_;Foam::mcParticle::m_66,2004
+        vector Updf_;Foam::mcParticle::Updf_69,2069
+       symmTensor Taupdf_;Foam::mcParticle::Taupdf_71,2142
+        vector UParticle_;Foam::mcParticle::UParticle_74,2241
+       scalar dt_;Foam::mcParticle::dt_79,2365
+       vector UFap_;Foam::mcParticle::UFap_83,2517
+    class trackDataFoam::mcParticle::trackData90,2654
+        mcParticleCloud& mcpc_;Foam::mcParticle::trackData::mcpc_93,2740
+            const interpolationCellPoint<scalar>& rhoInterp_;Foam::mcParticle::trackData::rhoInterp_97,2827
+            const interpolationCellPoint<vector>& UInterp_;Foam::mcParticle::trackData::UInterp_98,2889
+            const interpolationCellPoint<vector>& gradPInterp_;Foam::mcParticle::trackData::gradPInterp_99,2949
+            const interpolationCellPoint<scalar>& kInterp_;Foam::mcParticle::trackData::kInterp_100,3013
+            const interpolationCellPoint<scalar>& epsilonInterp_;Foam::mcParticle::trackData::epsilonInterp_101,3073
+      bool switchProcessor;Foam::mcParticle::trackData::switchProcessor106,3154
+      bool keepParticle;Foam::mcParticle::trackData::keepParticle107,3182
+        autoPtr<mcParticle> clone(Foam::mcParticle::clone160,4599
+inline bool contiguous<contiguous292,8174
 
-mcParticleI.H,475
+mcParticleI.H,880
 inline Foam::mcParticle::trackData::trackData28,1232
-inline Foam::mcParticle::mcParticle43,1560
-inline Foam::mcParticleCloud& Foam::mcParticle::trackData::mcpc(62,1893
-Foam::mcParticle::trackData::rhoInterp(68,2039
-Foam::mcParticle::trackData::UInterp(74,2171
-Foam::mcParticle::trackData::kInterp(80,2299
-inline Foam::scalar Foam::mcParticle::m(86,2371
-inline const Foam::vector& Foam::mcParticle::Updf(91,2439
-inline const Foam::vector& Foam::mcParticle::u(96,2520
+inline Foam::mcParticle::mcParticle47,1737
+inline Foam::mcParticleCloud& Foam::mcParticle::trackData::mcpc(68,2123
+Foam::mcParticle::trackData::rhoInterp(74,2269
+Foam::mcParticle::trackData::UInterp(80,2401
+Foam::mcParticle::trackData::gradPInterp(86,2529
+Foam::mcParticle::trackData::kInterp(92,2665
+Foam::mcParticle::trackData::epsilonInterp(98,2793
+inline Foam::scalar Foam::mcParticle::m(104,2877
+inline const Foam::vector& Foam::mcParticle::Updf(109,2945
+inline Foam::vector& Foam::mcParticle::Updf(114,3026
+inline const Foam::symmTensor& Foam::mcParticle::Taupdf(119,3095
+inline Foam::symmTensor& Foam::mcParticle::Taupdf(124,3184
+inline const Foam::vector& Foam::mcParticle::UParticle(130,3262
+inline const Foam::vector& Foam::mcParticle::UFap(135,3353
+inline Foam::scalar& Foam::mcParticle::dt(141,3435
 
 mcParticleIO.C,166
 Foam::mcParticle::mcParticle31,1280
-void Foam::mcParticle::readFields(62,1842
-void Foam::mcParticle::writeFields(86,2309
-Foam::Ostream& Foam::operator<<(112,2867
+void Foam::mcParticle::readFields(64,1915
+void Foam::mcParticle::writeFields(92,2557
+Foam::Ostream& Foam::operator<<(121,3274
