@@ -652,7 +652,7 @@ void Foam::mcParticleCloud::findGhostLayers()
                 else
                 {
                     ghostFaceLayers_[nameI][j] =  oppositeFaceI;
-                    ghostCellShifts_[nameI][j] = mesh_.Cf()[oppositeFaceI] - mesh_.Cf()[gFaceI];
+                    ghostCellShifts_[nameI][j] = mesh_.Cf()[oppositeFaceI] - mesh_.Cf().boundaryField()[patchI][facei];
                 }
 
                 //- Add face to hash set
