@@ -25,31 +25,6 @@ License
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-inline Foam::mcParticle::trackData::trackData
-(
-    mcParticleCloud& mcpc,
-    const interpolationCellPoint<scalar>& rhoInterp,
-    const interpolationCellPoint<vector>& UInterp,
-    const interpolationCellPoint<vector>& gradPInterp,
-    const interpolationCellPoint<scalar>& kInterp,
-    const interpolationCellPoint<scalar>& epsilonInterp,
-    const PtrList<interpolationCellPoint<scalar> >& PhiInterp,
-    const interpolationCellPoint<vector>& gradRhoInterp,
-    const interpolationCellPoint<vector>& diffUInterp
-)
-:
-    mcpc_(mcpc),
-    rhoInterp_(rhoInterp),
-    UInterp_(UInterp),
-    gradPInterp_(gradPInterp),
-    kInterp_(kInterp),
-    epsilonInterp_(epsilonInterp),
-    PhiInterp_(PhiInterp),
-    gradRhoInterp_(gradRhoInterp),
-    diffUInterp_(diffUInterp)
-{}
-
-
 inline Foam::mcParticle::mcParticle
 (
  const Cloud<mcParticle>& c,
@@ -81,11 +56,6 @@ inline Foam::mcParticle::mcParticle
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
-
-inline Foam::mcParticleCloud& Foam::mcParticle::trackData::mcpc()
-{
-    return mcpc_;
-}
 
 inline const Foam::interpolationCellPoint<Foam::scalar>&
 Foam::mcParticle::trackData::rhoInterp() const

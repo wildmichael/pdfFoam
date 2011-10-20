@@ -25,6 +25,30 @@ License
 
 #include "mcParticleCloud.H"
 
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
+
+Foam::mcParticle::trackData::trackData
+(
+    mcParticleCloud& mcpc,
+    const interpolationCellPoint<scalar>& rhoInterp,
+    const interpolationCellPoint<vector>& UInterp,
+    const interpolationCellPoint<vector>& gradPInterp,
+    const interpolationCellPoint<scalar>& kInterp,
+    const interpolationCellPoint<scalar>& epsilonInterp,
+    const PtrList<interpolationCellPoint<scalar> >& PhiInterp,
+    const interpolationCellPoint<vector>& gradRhoInterp,
+    const interpolationCellPoint<vector>& diffUInterp
+)
+:
+    Particle<mcParticle>::trackData(mcpc),
+    rhoInterp_(rhoInterp),
+    UInterp_(UInterp),
+    gradPInterp_(gradPInterp),
+    kInterp_(kInterp),
+    gradRhoInterp_(gradRhoInterp),
+    diffUInterp_(diffUInterp)
+{}
+
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 void Foam::mcParticle::updateThermo()
@@ -44,7 +68,9 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
     td.switchProcessor = false;
     td.keepParticle = true;
 
-    const polyMesh& mesh = cloud().pMesh();
+    mcParticleCloud& mcpc = refCast<mcParticleCloud>(td.cloud());
+
+    const polyMesh& mesh = mcpc.pMesh();
     const polyBoundaryMesh& pbMesh = mesh.boundaryMesh();
 
     scalar deltaT = mesh.time().deltaT().value();
@@ -110,11 +136,11 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
 
         //Wiener process (question mark)
         vector dW = sqrt(dt) * vector
-            (
-                td.mcpc().random().GaussNormal(),
-                td.mcpc().random().GaussNormal(),
-                td.mcpc().random().GaussNormal()
-            );
+        (
+            mcpc.random().GaussNormal(),
+            mcpc.random().GaussNormal(),
+            mcpc.random().GaussNormal()
+        );
 
         // Update velocity
         UParticle_ += - gradPFap/rho_ * dt
@@ -123,7 +149,6 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
             + diffUap * dt;
 
         // Scale to ensure consistency on TKE
-        mcParticleCloud& mcpc = td.mcpc();
         UParticle_ +=
               (UParticle_ - Updf_)  * dt / mcpc.kRelaxTime().value()
             * (sqrt(mcpc.kfv()()[celli]/mcpc.kcPdf()[celli]) - 1.0);

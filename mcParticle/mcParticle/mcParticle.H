@@ -105,10 +105,9 @@ public:
     friend class Cloud<mcParticle>;
 
     //- Class used to pass tracking data to the trackToFace function
-    class trackData
+    class trackData:
+        public Particle<mcParticle>::trackData
     {
-        //- Reference to the cloud containing this particle
-        mcParticleCloud& mcpc_;
 
         // Interpolators for continuous phase fields
 
@@ -124,12 +123,10 @@ public:
 
     public:
 
-      bool switchProcessor;
-      bool keepParticle;
 
       // Constructors
 
-      inline trackData
+      trackData
       (
        mcParticleCloud& mcpc,
        const interpolationCellPoint<scalar>& rhoInterp,
@@ -144,7 +141,6 @@ public:
 
       // Member functions
 
-      inline mcParticleCloud& mcpc();
 
       inline const interpolationCellPoint<scalar>& rhoInterp() const;
 
