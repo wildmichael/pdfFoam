@@ -23,8 +23,9 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "mcParticleCloud.H"
+#include "mcParticle.H"
 
+#include "mcParticleCloud.H"
 #include "OStringStream.H"
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
