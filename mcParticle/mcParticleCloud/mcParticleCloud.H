@@ -54,9 +54,6 @@ namespace Foam
 // Forward declaration of classes
 class fvMesh;
 
-typedef SortableList<mcParticle*> mcParticleList;
-typedef List <mcParticleList> mcParticleListList;
-
 /*---------------------------------------------------------------------------*\
                            Class mcParticleCloud Declaration
 \*---------------------------------------------------------------------------*/
@@ -64,6 +61,9 @@ typedef List <mcParticleList> mcParticleListList;
 class mcParticleCloud:
     public Cloud<mcParticle>
 {
+
+    typedef SortableList<mcParticle*> mcParticleList;
+    typedef List <mcParticleList> mcParticleListList;
 
     //- Particle population status flag
     enum cellPopStatus {EMPTY, NORMAL, TOOFEW, TOOMANY};
