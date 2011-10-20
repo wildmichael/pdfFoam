@@ -393,7 +393,7 @@ Foam::mcParticleCloud::mcParticleCloud
                     IOobject
                     (
                         scalarNames_[fieldI],
-                        mesh_.time().timeName(),
+                        mesh_.time().startTime().name(),
                         mesh,
                         IOobject::MUST_READ,
                         IOobject::AUTO_WRITE
