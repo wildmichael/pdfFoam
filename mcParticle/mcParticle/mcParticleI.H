@@ -178,8 +178,8 @@ void Foam::mcParticle::hitWedgePatch
 {
     FatalErrorIn("template<class TrackData> mcParticle::hitWedgePatch"
         "(const wedgePolyPatch&, TrackData&)")
-        << "A mcParticle should never hit a wedge patch!" << endl <<
-        exit(FatalError);
+        << "A mcParticle should never hit a wedge patch!" << nl
+        << info() << endl << exit(FatalError);
 }
 
 

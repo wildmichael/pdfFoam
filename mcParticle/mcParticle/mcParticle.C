@@ -25,6 +25,8 @@ License
 
 #include "mcParticleCloud.H"
 
+#include "OStringStream.H"
+
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::mcParticle::trackData::trackData
@@ -297,6 +299,24 @@ void Foam::mcParticle::transformProperties (const tensor& T)
 void Foam::mcParticle::transformProperties(const vector& separation)
 {
     Particle<mcParticle>::transformProperties(separation);
+}
+
+
+Foam::string Foam::mcParticle::info() const
+{
+    OStringStream oss;
+    oss << "Particle Id: " << origId() << ": "
+        << "X     = " << position() << ", "
+        << "cell  = " << cell() << ", "
+        << "m     = " << m() << nl
+        << "U     = " << UParticle()  << ", "
+        << "UFap  = " << UFap() << ", "
+        << "Updf  = " << Updf() << nl
+        << "Phi   = " << Phi() << ", "
+        << "ghost = " << ghost() << ", "
+        << "shift = " << shift()
+        << endl;
+    return oss.str();
 }
 
 

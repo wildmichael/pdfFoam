@@ -322,10 +322,6 @@ public:
 
         //- Report info about name and total number of particles in cloud
         void info() const;
-        //- Report info about all particles in cloud
-        void particleInfo() const;
-        //- Report info about a single particle
-        void oneParticleInfo(const mcParticle& p) const;
         //- Asserts that all particles are in domain, none of them is a
         // ghost particle and that its shift is small
         void assertPopulationHealth() const;

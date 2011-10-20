@@ -338,6 +338,9 @@ public:
                 const vector& separation
             );
 
+            //- Info string about this particle and its properties
+            string info() const;
+
 
     // I-O
 

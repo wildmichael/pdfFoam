@@ -1329,8 +1329,8 @@ void Foam::mcParticleCloud::purgeGhostParticles()
                         << " Possible causes are: " << nl
                         << "  (1) Strange ghost cell shapes;" << nl
                         << "  (2) parallel computing + large time steps" << nl
-                        << " Info for the lost particle: " << endl;
-                    oneParticleInfo(p);
+                        << " Info for the lost particle: " << nl
+                        << p.info() << endl;
                     deleteParticle(p);
                     ++nDelete;
                 }
@@ -1353,33 +1353,6 @@ void Foam::mcParticleCloud::info() const
         << returnReduce(this->size(), sumOp<label>()) << nl;
 //      << "    Totally number of particles existed = "
 //      << returnReduce(histNp_,      sumOp<label>()) << nl;
-}
-
-
-void Foam::mcParticleCloud::particleInfo() const
-{
-    forAllConstIter(mcParticleCloud, *this, pIter)
-    {
-        const mcParticle & p = pIter();
-        oneParticleInfo(p);
-    }
-}
-
-
-void Foam::mcParticleCloud::oneParticleInfo(const mcParticle& p) const
-{
-    Pout<< "Particle Id: " << p.origId() << ": "
-        << "X     = " << p.position() << ", "
-        << "cell  = " << p.cell() << ", "
-        << "m     = " << p.m() << nl
-        << "U     = " << p.UParticle()  << ", "
-        << "Ufv   = " << Ufv_[p.cell()] << ", "
-        << "UFap  = " << p.UFap() << ", "
-        << "Updf  = " << p.Updf() << nl
-        << "Phi   = " << p.Phi() << ", "
-        << "ghost = " << p.ghost() << ", "
-        << "shift = " << p.shift()
-        << endl;
 }
 
 
