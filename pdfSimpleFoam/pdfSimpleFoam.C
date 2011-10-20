@@ -48,28 +48,44 @@ int main(int argc, char *argv[])
 
     Info<< "\nStarting time loop\n" << endl;
 
+    bool prevCycleWasFV = false;
+    volVectorField gradP = fvc::grad(p);
+
     while (runTime.loop())
     {
         Info<< "Time = " << runTime.timeName() << nl << endl;
 
+        #include "readThermoControls.H"
         #include "readSIMPLEControls.H"
         #include "initConvergenceCheck.H"
 
-        p.storePrevIter();
-        rho.storePrevIter();
 
-        // Pressure-velocity SIMPLE corrector
+        if (FVCycle)
         {
-            // TODO bound rho?
-            rho.relax();
-            Info<< "rho max/min : " << max(rho).value() << " " << min(rho).value() << endl;
+            p.storePrevIter();
+            rho.storePrevIter();
 
-            #include "UEqn.H"
-            #include "pEqn.H"
-            thermo.evolve();
+            // Pressure-velocity SIMPLE corrector
+            {
+                // TODO bound rho?
+                rho.relax();
+                Info<< "rho max/min : " << max(rho).value() << " " << min(rho).value() << endl;
+
+                #include "UEqn.H"
+                #include "pEqn.H"
+            }
+            turbulence->correct();
+            prevCycleWasFV = true;
         }
-
-        turbulence->correct();
+        else
+        {
+            if (prevCycleWasFV)
+            {
+                gradP = fvc::grad(p);
+            }
+            thermo.evolve();
+            prevCycleWasFV = false;
+        }
 
         runTime.write();
 

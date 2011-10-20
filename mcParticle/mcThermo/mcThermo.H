@@ -65,12 +65,6 @@ class mcThermo
         //- Viscosity
         dimensionedScalar nu_;
 
-        //- FV evolution frequency
-        label nFVSubCycles_;
-
-        //- FV evolution frequency
-        label nPDFSubCycles_;
-
     // Private member functions
 
         //- Calculate the thermo variables

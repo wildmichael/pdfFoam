@@ -77,10 +77,7 @@ Foam::mcThermo::mcThermo(const fvMesh& mesh)
                 IOobject::NO_WRITE
             )
         ).lookup("nu")
-    ),
-
-    nFVSubCycles_(lookupOrDefault<label>("nFVSubCycles", 1)),
-    nPDFSubCycles_(lookupOrDefault<label>("nPDFSubCycles", 1))
+    )
 {
     calculate();
 }
@@ -110,47 +107,35 @@ void Foam::mcThermo::correct()
 
 void Foam::mcThermo::evolve()
 {
-    Time& runTime = const_cast<Time&>(mesh_.time());
-    if ((runTime.timeIndex()-runTime.startTimeIndex()) % (nPDFSubCycles_ + nFVSubCycles_) + 1 > nFVSubCycles_)
+    // Instantiate the cloud on first call
+    if (!cloudP_.valid())
     {
-        // Instantiate the cloud on first call
-        if (!cloudP_.valid())
+        // Fiddle with the time object (instantiate at startTime)
+        Time& runTime = const_cast<Time&>(mesh_.time());
+        scalar currTime = runTime.value();
+        label currIdx = runTime.timeIndex();
+        runTime.setTime(runTime.startTime().value(), runTime.startTimeIndex());
+        if (debug)
         {
-            // Fiddle with the time object
-            Time& runTime = const_cast<Time&>(mesh_.time());
-            scalar currTime = runTime.value();
-            label currIdx = runTime.timeIndex();
-            runTime.setTime(runTime.startTime().value(), runTime.startTimeIndex());
-            if (debug)
-            {
-                Info<< "\nCreate mcThermo for time = " << runTime.timeName()
-                    << nl << endl;
-            }
-            cloudP_.reset
+            Info<< "\nCreate mcThermo for time = " << runTime.timeName()
+                << nl << endl;
+        }
+        cloudP_.reset
+        (
+            new mcParticleCloud
             (
-                new mcParticleCloud
-                (
-                    mesh_,
-                    subDict("cloudProperties"),
-                    lookupOrDefault<word>("cloudName", "mcThermoCloud"),
-                    0, 0, &rho_
-                )
-            );
-            runTime.setTime(currTime, currIdx);
-        }
-        for (label i=0; i < nPDFSubCycles_ && runTime.run(); i++)
-        {
-            if (i>0)
-            {
-                Info<< "Time = " << runTime.timeName() << nl << endl;
-            }
-            Info<< "Evolving Monte Carlo particle cloud " << cloudP_().name() << nl
-                << endl;
-            runTime++;
-            cloudP_().evolve();
-            runTime.write();
-        }
+                mesh_,
+                subDict("cloudProperties"),
+                lookupOrDefault<word>("cloudName", "mcThermoCloud"),
+                0, 0, &rho_
+            )
+        );
+        // Reset the time object to the correct time
+        runTime.setTime(currTime, currIdx);
     }
+    Info<< "Evolving Monte Carlo particle cloud " << cloudP_().name() << nl
+        << endl;
+    cloudP_().evolve();
 }
 
 
