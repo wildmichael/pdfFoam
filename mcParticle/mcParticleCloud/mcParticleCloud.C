@@ -166,70 +166,70 @@ Foam::mcParticleCloud::mcParticleCloud
     (
         IOobject
         (
-            "mMom",
+            "mMoment",
             runTime_.timeName(),
             mesh_,
             IOobject::READ_IF_PRESENT,
             IOobject::AUTO_WRITE
         ),
         mesh,
-        dimensionedScalar("mMom", dimMass, 0)
+        dimensionedScalar("mMoment", dimMass, 0)
     ),
 
     VMom_
     (
         IOobject
         (
-            "VMom",
+            "VMoment",
             runTime_.timeName(),
             mesh_,
             IOobject::READ_IF_PRESENT,
             IOobject::AUTO_WRITE
         ),
         mesh,
-        dimensionedScalar("VMom", dimVolume, 0)
+        dimensionedScalar("VMoment", dimVolume, 0)
     ),
 
     UMom_
     (
         IOobject
         (
-            "UMom",
+            "UMoment",
             runTime_.timeName(),
             mesh,
             IOobject::READ_IF_PRESENT,
             IOobject::AUTO_WRITE
         ),
         mesh,
-        dimensionedVector("UMom", dimMass*dimVelocity, vector::zero)
+        dimensionedVector("UMoment", dimMass*dimVelocity, vector::zero)
     ),
 
     zMom_
     (
         IOobject
         (
-            "zMom",
+            "zMoment",
             runTime_.timeName(),
             mesh,
             IOobject::READ_IF_PRESENT,
             IOobject::AUTO_WRITE
         ),
         mesh,
-        dimensionedScalar("zMom", dimMass, 0.0)
+        dimensionedScalar("zMoment", dimMass, 0.0)
     ),
 
     uuMom_
     (
         IOobject
         (
-            "uuMom",
+            "uuMoment",
             runTime_.timeName(),
             mesh,
             IOobject::READ_IF_PRESENT,
             IOobject::AUTO_WRITE
         ),
         mesh,
-        dimensionedSymmTensor("uuMom", dimEnergy, symmTensor::zero)
+        dimensionedSymmTensor("uuMoment", dimEnergy, symmTensor::zero)
     ),
 
     ghostCellHash_(256),
