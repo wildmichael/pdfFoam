@@ -473,6 +473,49 @@ Foam::mcParticleCloud::mcParticleCloud
     mixingModel_ = mcMixingModel::New(mesh_, dict);
     reactionModel_ = mcReactionModel::New(mesh_, dict);
 
+    // Now determine whether this is an axi-symmetric case
+    bool isReducedDimensional_ = mesh_.nGeometricD() <= 2;
+    bool isAxiSymmetric_ = false;
+    label nAxiSymmetric = 0;
+    if (isReducedDimensional_)
+    {
+        forAll(mesh_.boundaryMesh(), patchi)
+        {
+            const polyPatch& patch = mesh_.boundaryMesh()[patchi];
+            if (isA<wedgePolyPatch>(patch))
+            {
+                if (!isAxiSymmetric_)
+                {
+                    isAxiSymmetric_ = true;
+                    const wedgePolyPatch& wpp = static_cast<const wedgePolyPatch&>(patch);
+                    axis_ = wpp.axis();
+                    centrePlaneNormal_ = wpp.centreNormal();
+                }
+                ++nAxiSymmetric;
+            }
+        }
+        if (isAxiSymmetric_ && nAxiSymmetric != 2)
+        {
+            FatalErrorIn
+            (
+                "mcParticleCloud::mcParticleCloud"
+                "("
+                "    const fvMesh&,"
+                "    const dictionary&,"
+                "    const word&,"
+                "    const compressible::turbulenceModel*,"
+                "    const volVectorField*,"
+                "    volScalarField*"
+                ")"
+            )  << "Only one pair of wedge patches allowed" << endl
+               << exit(FatalError);
+        }
+        for (label dimi=0; dimi<vector::nComponents; ++dimi)
+        {
+            dimMask_[dimi] = mesh_.geometricD()[dimi] > 0;
+        }
+    }
+
     findGhostLayers();
     checkParticlePropertyDict();
 
@@ -1138,6 +1181,13 @@ void Foam::mcParticleCloud::particleGenInCell
 
         // Generate a particle position
         vector position = minb + offsetRnd;
+
+        // If the case has reduced dimensionality, put the coordinate of the
+        // reduced dimension onto the coordinate plane
+        if (isReducedDimensional_)
+        {
+            position = cmptMultiply(dimMask_, position);
+        }
 
         // Initially put $N particle per cell
         if (mesh_.pointInCell(position, celli))

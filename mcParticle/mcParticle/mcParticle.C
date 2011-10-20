@@ -99,44 +99,13 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
     scalar tEnd = (1.0 - stepFraction())*deltaT;
     scalar dtMax = tEnd;
 
-
-    while (td.keepParticle && !td.switchProcessor && tEnd > SMALL)
+    if (stepFraction() < SMALL)
     {
         if (debug)
         {
-           Info<< "Time = " << mesh.time().timeName()
-                << "  deltaT = " << deltaT
-                << "  tEnd = " << tEnd
-                << "  steptFraction() = " << stepFraction() << endl
-                << endl;
+            Info<< "Updating fluctuating velocity" << endl;
         }
-
-        // set the lagrangian time-step
-        scalar dt = min(dtMax, tEnd);
-
-        // remember which cell the particle is in
-        // since this will change if a face is hit
-        label celli = cell();
-
-        // Particle does not move with its actual velocity, but with
-        // FV interpolated velocity plus particle fluctuation
-        // velocity. A particle number correction flux is needed as
-        // well (to ensure consistency with FV density field).
-
-        vector correctedUp = UParticle_ - Updf_ + UFap_;
-        meshTools::constrainDirection(mesh, mesh.solutionD(), correctedUp);
-
-        cellPointWeight cpwx(mesh, position(), celli, face());
-        vector gradRhoFap = td.gradRhoInterp().interpolate(cpwx);
-
-        vector prevPos = position();
-        vector destPos = prevPos + dt * (correctedUp - gradRhoFap);
-        dt *= trackToFace(destPos, td);
-
-        tEnd -= dt;
-        stepFraction() = 1.0 - tEnd/deltaT;
-
-        cellPointWeight cpw(mesh, position(), celli, face());
+        cellPointWeight cpw(mesh, position(), cell(), face());
 
         // fluid quantities @ particle position
         vector gradPFap = td.gradPInterp().interpolate(cpw);
@@ -151,7 +120,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         UFap_ = td.UInterp().interpolate(cpw);
 
         // Wiener process (question mark)
-        vector dW = sqrt(dt) * vector
+        vector dW = sqrt(deltaT) * vector
         (
             mcpc.random().GaussNormal(),
             mcpc.random().GaussNormal(),
@@ -159,15 +128,64 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         );
 
         // Update velocity
-        UParticle_ += - gradPFap/rho_ * dt
-            - (0.5 + 0.75 * C0) * Omega_ * (UParticle_- Updf_) * dt
+        UParticle_ += - gradPFap/rho_ * deltaT
+            - (0.5 + 0.75 * C0) * Omega_ * (UParticle_- Updf_) * deltaT
             + sqrt(C0 * kFap * Omega_) * dW
-            + diffUap * dt;
+            + diffUap * deltaT;
 
         // Scale to ensure consistency on TKE
         UParticle_ +=
-              (UParticle_ - Updf_)  * dt / mcpc.kRelaxTime().value()
-            * (sqrt(mcpc.kfv()()[celli]/mcpc.kcPdf()[celli]) - 1.0);
+              (UParticle_ - Updf_)  * deltaT / mcpc.kRelaxTime().value()
+            * (sqrt(mcpc.kfv()()[cell()]/mcpc.kcPdf()[cell()]) - 1.0);
+    }
+
+    vector correctedUp = UParticle_ - Updf_ + UFap_;
+    meshTools::constrainDirection(mesh, mesh.solutionD(), correctedUp);
+
+    cellPointWeight cpwx(mesh, position(), cell(), face());
+    vector gradRhoFap = td.gradRhoInterp().interpolate(cpwx);
+
+    point destPos = position() + tEnd * (correctedUp - gradRhoFap);
+
+    if (mcpc.isAxiSymmetric())
+    {
+        vector rotatedCentreNormal = mcpc.axis() ^ destPos;
+        rotatedCentreNormal /= mag(rotatedCentreNormal);
+        tensor T = rotationTensor(rotatedCentreNormal, mcpc.centrePlaneNormal());
+        transformProperties(T);
+        destPos = transform(T, destPos);
+    }
+
+    while (td.keepParticle && !td.switchProcessor && tEnd > SMALL)
+    {
+        if (debug)
+        {
+            Info<< "Time = " << mesh.time().timeName()
+                << "  deltaT = " << deltaT
+                << "  tEnd = " << tEnd
+                << "  stepFraction() = " << stepFraction()
+                << "  origId() = " << origId()
+                << "  position() = " << position();
+        }
+
+        // set the lagrangian time-step
+        scalar dt = min(dtMax, tEnd);
+
+        // Particle does not move with its actual velocity, but with
+        // FV interpolated velocity plus particle fluctuation
+        // velocity. A particle number correction flux is needed as
+        // well (to ensure consistency with FV density field).
+
+        scalar tf = trackToFace(destPos, td);
+        dt *= tf;
+        if (debug)
+        {
+            Info<< "  trackFraction = " << tf
+                << endl;
+        }
+
+        tEnd -= dt;
+        stepFraction() = 1.0 - tEnd/deltaT;
 
         if (onBoundary() && td.keepParticle)
         {
@@ -272,7 +290,8 @@ void Foam::mcParticle::hitPatch
 void Foam::mcParticle::transformProperties (const tensor& T)
 {
     Particle<mcParticle>::transformProperties(T);
-    UParticle_ = transform(T, UParticle_);
+    // Only transform fluctuating velocity
+    UParticle_ = transform(T, UParticle_-Updf_)+Updf_;
 }
 
 

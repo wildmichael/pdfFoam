@@ -169,4 +169,18 @@ inline Foam::vector& Foam::mcParticle::shift()
 }
 
 
+template<class TrackData>
+void Foam::mcParticle::hitWedgePatch
+(
+    const wedgePolyPatch& wpp,
+    TrackData&
+)
+{
+    FatalErrorIn("template<class TrackData> mcParticle::hitWedgePatch"
+        "(const wedgePolyPatch&, TrackData&)")
+        << "A mcParticle should never hit a wedge patch!" << endl <<
+        exit(FatalError);
+}
+
+
 // ************************************************************************* //

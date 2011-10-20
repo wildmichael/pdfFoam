@@ -88,4 +88,34 @@ inline const Foam::wordList& Foam::mcParticleCloud::scalarNames() const
 }
 
 
+inline bool Foam::mcParticleCloud::isReducedDimensional() const
+{
+    return isReducedDimensional_;
+}
+
+
+inline bool Foam::mcParticleCloud::isAxiSymmetric() const
+{
+    return isAxiSymmetric_;
+}
+
+
+inline const Foam::vector& Foam::mcParticleCloud::axis() const
+{
+    return axis_;
+}
+
+
+inline const Foam::vector& Foam::mcParticleCloud::centrePlaneNormal() const
+{
+    return centrePlaneNormal_;
+}
+
+
+inline const Foam::vector& Foam::mcParticleCloud::dimMask() const
+{
+    return dimMask_;
+}
+
+
 // ************************************************************************* //

@@ -266,6 +266,15 @@ public:
                 const label patchI
             );
 
+            //- Overridable function to handle the particle hitting a wedge patch
+            //  Executed before other patch-hitting functions without trackData
+            template<class TrackData>
+            void hitWedgePatch
+            (
+                const wedgePolyPatch&,
+                TrackData&
+            );
+
             //- Overridable function to handle the particle hitting a
             //  processorPatch
             void hitProcessorPatch
