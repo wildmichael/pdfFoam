@@ -405,6 +405,11 @@ Foam::mcParticleCloud::mcParticleCloud
         Info<< "I am releasing particles initially!" << endl;
         initReleaseParticles();
     }
+    m0_ = 0.;
+    forAllConstIter(mcParticleCloud, *this, pIter)
+    {
+        m0_ += pIter().m();
+    }
     // Take care of statistical moments (make sure they are consistent)
     checkMoments();
 
@@ -966,6 +971,19 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     deltaU.write();
     Info<< "DEBUG: maximum deltaU = " << gMax(deltaU) << endl;
 #endif
+    // Mass after the evolution done
+    scalar m1 = 0;
+    forAllConstIter(mcParticleCloud, *this, pIter)
+    {
+        m1 += pIter().m();
+    }
+    // Difference of the masses
+    scalar diffM = m1-m0_;
+    Info<< "    m0 is "<< m0_ << endl;
+    Info<< "    m1 is "<< m1 << endl;
+    Info<< "    The difference of the mass is "<< diffM << endl;
+    Info<< "    The relative difference of the mass (in percent) is "
+        << diffM/m0_*100  << endl;
     return rhoRes/*+URes+kRes*/;
 }
 

@@ -208,6 +208,9 @@ class mcParticleCloud:
         //- Keeps track of the lost particles
         IOLostParticles<mcParticle> lostParticles_;
 
+        //- Original, total mass
+        scalar m0_;
+
     // Private Member Functions
 
         //- Ensure moments are cnosistently read
