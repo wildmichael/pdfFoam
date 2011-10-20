@@ -88,6 +88,7 @@ class mcParticleCloud
   volSymmTensorField M2_;
 
   labelListList ghostCellLayers_;
+  labelListList ghostFaceLayers_;
 
   // Mesh based velocity and Reynolds stress, obtained from particle
   // quantities.
@@ -105,7 +106,7 @@ class mcParticleCloud
   void updateCellParticleAddr(); // Question mark remains.
 
   // Enforce in/out flow BCs by populating ghost cells
-  void findGhostCellLayers();
+  void findGhostLayers();
   void populateGhostCells();
 
   //- Disallow default bitwise copy construct

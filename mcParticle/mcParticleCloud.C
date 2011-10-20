@@ -183,7 +183,7 @@ Foam::mcParticleCloud::mcParticleCloud
   TaucPdf_.rename("TauPdf");
   mesh_.time().write();
 
-  findGhostCellLayers();
+  findGhostLayers();
 
 }
 
@@ -288,10 +288,11 @@ void Foam::mcParticleCloud::updateCellParticleAddr()
 
 
 // Find "ghost cells" (actually the first layer of cells of in/out-flow patch
-void Foam::mcParticleCloud::findGhostCellLayers()
+void Foam::mcParticleCloud::findGhostLayers()
 {
+  const cellList& cells = mesh_.cells();
+  const faceList& faces = mesh_.faces();
   const polyBoundaryMesh& patches = mesh_.boundaryMesh();
-  
   // in/out-flow patches (should read from dictionary)
   const wordList patchNames(particleProperties_.lookup("inoutPatches"));
 
@@ -301,6 +302,7 @@ void Foam::mcParticleCloud::findGhostCellLayers()
   if(ngPatchs > 0)
     {
       ghostCellLayers_.setSize(ngPatchs);
+      ghostFaceLayers_.setSize(ngPatchs);
     }
   else
     { 
@@ -314,7 +316,7 @@ void Foam::mcParticleCloud::findGhostCellLayers()
       
       if (patchI == -1)
         {
-          FatalErrorIn("mcParticleCloud::findGhostCellLayers()")
+          FatalErrorIn("mcParticleCloud::findGhostLayers()")
             << "Illegal patch " << patchNames[nameI]
             << ". Valid patches are " << patches.name()
             << exit(FatalError);
@@ -326,14 +328,34 @@ void Foam::mcParticleCloud::findGhostCellLayers()
       if (nf > 0)
         {
           ghostCellLayers_[nameI].setSize(nf);
+          ghostFaceLayers_[nameI].setSize(nf);
           
-          // Find the ghost cells
+          // Find the ghost cells and faces
           const polyPatch& curPatch = patches[patchI];
           label j = 0;
           forAll(curPatch, facei)
             {
+              // ghost cell
               label faceCelli = curPatch.faceCells()[facei];
+              label gFaceI = curPatch.start() + facei;
               ghostCellLayers_[nameI][j++] =  faceCelli;
+
+              // opposite face
+              // const cell& ownCell = cells[faceCelli];
+              const cell& ownCell = cells[mesh_.faceOwner()[gFaceI]];
+              Info << "cell = " << ownCell << "gFaceI = " << gFaceI << endl;
+              label oppositeFaceI = ownCell.opposingFaceLabel(gFaceI, faces);
+              if (oppositeFaceI == -1)
+                {
+                  FatalErrorIn("mcParticleCloud::findGhostLayers()")
+                    << "Face:" << facei << " owner cell:" << faceCelli
+                    << " is not a hex?" << abort(FatalError);
+                }
+              else
+                {
+                  ghostFaceLayers_[nameI][j++] =  oppositeFaceI;
+                }
+
             }
         }
     }
