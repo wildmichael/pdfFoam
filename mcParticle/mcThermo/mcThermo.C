@@ -61,8 +61,7 @@ Foam::mcThermo::mcThermo(const fvMesh& mesh)
             IOobject::MUST_READ,
             IOobject::AUTO_WRITE
         ),
-        mesh,
-        dimDensity
+        mesh
     ),
 
     nu_
