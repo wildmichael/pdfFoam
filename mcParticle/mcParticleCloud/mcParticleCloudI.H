@@ -70,6 +70,13 @@ Foam::mcParticleCloud::PhicPdf() const
 }
 
 
+inline const Foam::volSymmTensorField&
+Foam::mcParticleCloud::TaucPdf() const
+{
+    return TaucPdf_;
+}
+
+
 inline const Foam::dimensionedScalar& Foam::mcParticleCloud::kRelaxTime() const
 {
     return kRelaxTime_;

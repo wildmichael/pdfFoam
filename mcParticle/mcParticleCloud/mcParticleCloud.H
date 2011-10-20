@@ -290,6 +290,8 @@ public:
         inline const volScalarField& kcPdf() const;
         //- The scalar PDF fields
         inline const List<volScalarField*>& PhicPdf() const;
+        //- The turbulent stress tensor PDF field
+        inline const volSymmTensorField& TaucPdf() const;
         //- The TKE relaxation time
         inline const dimensionedScalar& kRelaxTime() const;
         //- The desired number of particles per cell

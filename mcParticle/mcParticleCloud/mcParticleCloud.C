@@ -243,7 +243,7 @@ Foam::mcParticleCloud::mcParticleCloud
     (
         IOobject
         (
-            "pndCloudPdf",
+            "pndCloudPDF",
             runTime_.timeName(),
             mesh,
             IOobject::READ_IF_PRESENT,
@@ -282,12 +282,7 @@ Foam::mcParticleCloud::mcParticleCloud
             IOobject::READ_IF_PRESENT,
             IOobject::AUTO_WRITE
         ),
-        mesh_,
-        dimensionedSymmTensor
-        (
-            "TauCloudPDF", dimVelocity*dimVelocity, symmTensor::zero
-        ),
-        zeroGradientFvPatchScalarField::typeName
+        turbModel_.R()
     ),
 
     kcPdf_
@@ -302,7 +297,8 @@ Foam::mcParticleCloud::mcParticleCloud
         ),
         mesh_,
         dimVelocity*dimVelocity,
-        kfv(),
+        0.5*tr(TaucPdf_.dimensionedInternalField()),
+        // Use the boundary conditions for k (FV)
         kfv()().boundaryField()
     ),
 
