@@ -25,6 +25,7 @@ License
 
 #include "mcParticle.H"
 #include "IOstreams.H"
+#include "mcParticleCloud.H"
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -78,6 +79,7 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
     {
         return;
     }
+    mcParticleCloud& mcpc = refCast<mcParticleCloud>(c);
     Particle <mcParticle> :: readFields(c);
 
     IOField<scalar> m(c.fieldIOobject("m", IOobject::MUST_READ));
@@ -98,8 +100,23 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
     IOField<scalar> Omega(c.fieldIOobject("Omega", IOobject::MUST_READ));
     c.checkFieldIOobject(c, Omega);
 
-    IOField<scalarField> Phi(c.fieldIOobject("Phi", IOobject::MUST_READ));
-    c.checkFieldIOobject(c, Phi);
+    PtrList<IOField<scalar> > PhiFields(mcpc.scalarNames().size());
+    forAll(mcpc.scalarNames(), PhiI)
+    {
+        PhiFields.set
+        (
+            PhiI,
+            new IOField<scalar>
+            (
+                c.fieldIOobject
+                (
+                    "Phi_"+mcpc.scalarNames()[PhiI],
+                    IOobject::MUST_READ
+                )
+            )
+        );
+        c.checkFieldIOobject(c, PhiFields[PhiI]);
+    }
 
     IOField<scalar> rho(c.fieldIOobject("rho", IOobject::MUST_READ));
     c.checkFieldIOobject(c, rho);
@@ -114,7 +131,10 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
         p.UParticle_ = UParticle[i];
         p.UFap_ = UFap[i];
         p.Omega_ = Omega[i];
-        p.Phi_ = Phi[i];
+        forAll(PhiFields, PhiI)
+        {
+            p.Phi_[PhiI] = PhiFields[PhiI][i];
+        }
         p.rho_ = rho[i];
         p.shift_ = vector::zero;
         p.ghost_ = 0;
@@ -125,6 +145,7 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
 
 void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
 {
+    const mcParticleCloud& mcpc = refCast<const mcParticleCloud>(c);
     Particle<mcParticle>::writeFields(c);
 
     label np = c.size();
@@ -138,7 +159,23 @@ void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
     );
     IOField<vector> UFap(c.fieldIOobject("UFap", IOobject::NO_READ), np);
     IOField<scalar> Omega(c.fieldIOobject("Omega", IOobject::NO_READ), np);
-    IOField<scalarField> Phi(c.fieldIOobject("Phi", IOobject::NO_READ), np);
+    PtrList<IOField<scalar> > PhiFields(mcpc.scalarNames().size());
+    forAll(mcpc.scalarNames(), PhiI)
+    {
+        PhiFields.set
+        (
+            PhiI,
+            new IOField<scalar>
+            (
+                c.fieldIOobject
+                (
+                    "Phi_"+mcpc.scalarNames()[PhiI],
+                    IOobject::NO_READ
+                ),
+                np
+            )
+        );
+    }
     IOField<scalar> rho(c.fieldIOobject("rho", IOobject::NO_READ), np);
 
     label i = 0;
@@ -151,7 +188,10 @@ void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
         UParticle[i] = p.UParticle_;
         UFap[i] = p.UFap_;
         Omega[i] = p.Omega_;
-        Phi[i] = p.Phi_;
+        forAll(PhiFields, PhiI)
+        {
+            PhiFields[PhiI][i] = p.Phi_[PhiI];
+        }
         rho[i] = p.rho_;
         i++;
     }
@@ -161,7 +201,10 @@ void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
     UParticle.write();
     UFap.write();
     Omega.write();
-    Phi.write();
+    forAll(PhiFields, PhiI)
+    {
+        PhiFields[PhiI].write();
+    }
     rho.write();
 }
 
