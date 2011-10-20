@@ -1066,7 +1066,10 @@ void Foam::mcParticleCloud::evolve()
 
     particleNumberControl();
 
-    assertPopulationHealth();
+    if (debug)
+    {
+        assertPopulationHealth();
+    }
 }
 
 
@@ -1350,6 +1353,7 @@ void Foam::mcParticleCloud::oneParticleInfo(const mcParticle& p) const
 
 void Foam::mcParticleCloud::assertPopulationHealth() const
 {
+    Info<< "Asserting particle population health" << endl;
     bool cloudHealthy = size() > 0;
     OStringStream reasons;
     if (!cloudHealthy)
