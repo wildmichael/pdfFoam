@@ -80,9 +80,9 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         cellPointWeight cpwx(mesh, position(), celli, face());
         vector gradRhoFap = td.gradRhoInterp().interpolate(cpwx);
 
-        vector destParticle = position() + dt * (correctedUp - gradRhoFap);
         vector prevPos = position();
-        dt *= trackToFace(destParticle, td);
+        vector destPos = prevPos + dt * (correctedUp - gradRhoFap);
+        dt *= trackToFace(destPos, td);
 
         tEnd -= dt;
         stepFraction() = 1.0 - tEnd/deltaT;

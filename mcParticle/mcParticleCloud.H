@@ -139,17 +139,17 @@ class mcParticleCloud:
         // Statistical moments (mass, momentum, energy)
 
             //- Number of particles in cell
-            volScalarField      PaNIC_;
+            DimensionedField<scalar, volMesh>  PaNIC_;
             //- Averaged mass
-            volScalarField mMean_;
+            DimensionedField<scalar, volMesh> mMean_;
             //- Averaged volume
-            volScalarField VMean_;
+            DimensionedField<scalar, volMesh> VMean_;
             //- Averaged velocity
-            volVectorField UMean_;
+            DimensionedField<vector, volMesh> UMean_;
             //- Averaged mixture fraction
-            volScalarField zMean_;
+            DimensionedField<scalar, volMesh> zMean_;
             //- Averaged Reynolds stress
-            volSymmTensorField uuMean_;
+            DimensionedField<symmTensor, volMesh> uuMean_;
 
         //- List of cell-indices for each ghost patch
         labelListList    ghostCellLayers_;

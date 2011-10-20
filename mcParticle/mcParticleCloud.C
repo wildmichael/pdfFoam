@@ -169,8 +169,7 @@ Foam::mcParticleCloud::mcParticleCloud
             IOobject::AUTO_WRITE
         ),
         mesh_,
-        dimensionedScalar("PaNIC", dimless, 0),
-        zeroGradientFvPatchScalarField::typeName
+        dimensionedScalar("PaNIC", dimless, 0)
     ),
 
     mMean_
@@ -184,9 +183,7 @@ Foam::mcParticleCloud::mcParticleCloud
             IOobject::AUTO_WRITE
         ),
         mesh,
-        dimMass,
-        rhofv_*mesh.V(),
-        rhofv_.boundaryField()
+        dimensionedScalar("mMean", dimMass, 0)
     ),
 
     VMean_
@@ -200,10 +197,7 @@ Foam::mcParticleCloud::mcParticleCloud
             IOobject::AUTO_WRITE
         ),
         mesh,
-        dimVolume,
-        mesh.V(),
-        // TODO what BC?
-        rhofv_.boundaryField()
+        dimensionedScalar("VMean", dimVolume, 0)
     ),
 
     UMean_
@@ -219,6 +213,7 @@ Foam::mcParticleCloud::mcParticleCloud
         mesh,
         dimensionedVector("UMean", dimMass*dimVelocity, vector::zero)
     ),
+
     zMean_
     (
         IOobject
@@ -232,6 +227,7 @@ Foam::mcParticleCloud::mcParticleCloud
         mesh,
         dimensionedScalar("zMean", dimMass, 0.0)
     ),
+
     uuMean_
     (
         IOobject
@@ -243,7 +239,7 @@ Foam::mcParticleCloud::mcParticleCloud
             IOobject::AUTO_WRITE
         ),
         mesh,
-        dimensionedSymmTensor("uuMean", dimEnergy, symmTensor:: zero)
+        dimensionedSymmTensor("uuMean", dimEnergy, symmTensor::zero)
     ),
 
     ghostCellHash_(256),
@@ -328,10 +324,8 @@ Foam::mcParticleCloud::mcParticleCloud
             IOobject::AUTO_WRITE
         ),
         mesh_,
-        dimVelocity*dimVelocity,
-        0.5*tr(TaucPdf_),
-        // Use the TaucPdf_ boundary field only initially
-        0.5*tr(TaucPdf_.boundaryField())
+        dimensionedScalar("kCloudPDF", dimVelocity*dimVelocity, 0),
+        zeroGradientFvPatchScalarField::typeName
     ),
 
     coeffRhoCorr_
@@ -409,11 +403,71 @@ void Foam::mcParticleCloud::checkMoments()
 // Perform particle averaging to obtained cell-based values.
 void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
 {
-    scalarField      mMeanInstant(Nc_, 0.0);
-    scalarField      VMeanInstant(Nc_, 0.0);
-    vectorField      UMeanInstant(Nc_, vector::zero);
-    scalarField      zMeanInstant(Nc_, 0.0);
-    symmTensorField  uuMeanInstant(Nc_, symmTensor::zero);
+    DimensionedField<scalar, volMesh> mMeanInstant
+    (
+        IOobject
+        (
+            "mMeanInstant",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("mMeanInstant", dimMass, 0.0)
+    );
+    DimensionedField<scalar, volMesh> VMeanInstant
+    (
+        IOobject
+        (
+            "VMeanInstant",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("VMeanInstant", dimVolume, 0.0)
+    );
+    DimensionedField<vector, volMesh> UMeanInstant
+    (
+        IOobject
+        (
+            "UMeanInstant",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedVector("UMeanInstant", dimMass*dimVelocity, vector::zero)
+    );
+    DimensionedField<scalar, volMesh> zMeanInstant
+    (
+        IOobject
+        (
+            "zMeanInstant",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("zMeanInstant", dimMass, 0.0)
+    );
+    DimensionedField<symmTensor, volMesh> uuMeanInstant
+    (
+        IOobject
+        (
+            "uuMeanInstant",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedSymmTensor("uuMeanInstant", dimEnergy, symmTensor::zero)
+    );
 
     PaNIC_ *= 0;
 
@@ -437,16 +491,16 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
 
     // Do time-averaging of moments
     scalar newWt = 1.0 - existWt;
-    mMean_.internalField() =existWt*mMean_.internalField() +newWt*mMeanInstant;
-    VMean_.internalField() =existWt*VMean_.internalField() +newWt*VMeanInstant;
-    UMean_.internalField() =existWt*UMean_.internalField() +newWt*UMeanInstant;
-    zMean_.internalField() =existWt*zMean_.internalField() +newWt*zMeanInstant;
-    uuMean_.internalField()=existWt*uuMean_.internalField()+newWt*uuMeanInstant;
+    mMean_  = existWt * mMean_  + newWt * mMeanInstant;
+    VMean_  = existWt * VMean_  + newWt * VMeanInstant;
+    UMean_  = existWt * UMean_  + newWt * UMeanInstant;
+    zMean_  = existWt * zMean_  + newWt * zMeanInstant;
+    uuMean_ = existWt * uuMean_ + newWt * uuMeanInstant;
 
     // Compute mean fields
     rhocPdf_.internalField() = mMean_/VMean_;
     UcPdf_.internalField()   = UMean_/max(mMean_, SMALL_MASS);
-    zcPdf_                   = zMean_ / max(mMean_, SMALL_MASS);
+    zcPdf_.internalField()   = zMean_ / max(mMean_, SMALL_MASS);
     TaucPdf_.internalField() = uuMean_/max(mMean_, SMALL_MASS);
     kcPdf_.internalField()   = 0.5 * tr(TaucPdf_.internalField());
 
