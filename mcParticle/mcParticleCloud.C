@@ -70,7 +70,7 @@ Foam::mcParticleCloud::mcParticleCloud
     dtCloud_(mesh.time().deltaT().value()),
     AvgTimeScale_(mesh.time().endTime().value()),
     random_(55555+12345*Pstream::myProcNo()),
-    Npc_(10),
+    Npc_(50),
 
     SMALL_MASS("SMALL_MASS", dimMass, SMALL),
 
@@ -371,7 +371,7 @@ void Foam::mcParticleCloud::evolve()
     // Correct boundary conditions:
     populateGhostCells();
 
-    allParticlesInfo();
+    //  allParticlesInfo();
 }
 
 
@@ -404,59 +404,53 @@ void Foam::mcParticleCloud::particleGenInCell
  vector uscales
  )
 {
-      // Generate $Npc_  particles randomly in celli
-      // should be put in a function particleGenInCell(celli, Npc_)
-      boundBox cellbb(pointField(mesh_.points(), mesh_.cellPoints()[celli]));
+  boundBox cellbb(pointField(mesh_.points(), mesh_.cellPoints()[celli]));
 
-      vector minb = cellbb.min();
-      vector dimb = cellbb.max()-minb;
+  vector minb = cellbb.min();
+  vector dimb = cellbb.max()-minb;
 
-      label Npgen = 0;
-      for(int i = 0; i < 100 * Npc_; i++)
-        {
-          // Relative coordinate [0, 1] in this cell
-          vector xi = random().vector01();
-          // Random offset from min point
-          vector offsetRnd(xi.x()*dimb.x(), xi.y()*dimb.y(), xi.z()*dimb.z());
+  label Npgen = 0;
+  for(int i = 0; i < 100 * N; i++)
+    {
+      // Relative coordinate [0, 1] in this cell
+      vector xi = random().vector01();
+      // Random offset from min point
+      vector offsetRnd(xi.x()*dimb.x(), xi.y()*dimb.y(), xi.z()*dimb.z());
+      
+      // Generate a particle position
+      vector position = minb + offsetRnd;
+      
+      // Initially put $N particle per cell
+      if(mesh_.pointInCell(position, celli))
+        { 
+          // What is the distribution of u?
+          // How to enforce the component-wise correlations < u_i, u_j >?
+          vector u( random().GaussNormal() * uscales.x(),  
+                    random().GaussNormal() * uscales.y(),  
+                    random().GaussNormal() * uscales.z()
+                    );
+          vector UParticle = u + Updf;
+          mcParticle* ptr =
+            new mcParticle 
+            (
+             *this,  position, celli, m, Updf, UParticle, dtCloud_
+             );
           
-          // Generate a particle position
-          vector position = minb + offsetRnd;
-          
-          /* Info << "cell #" << celli <<"; bb=  " << cellbb 
-               << "particle generated: " << position
-               << " In cell? " << mesh_.pointInCell(position, celli)  
-               << endl; */
-          
-          // Initially put $Npc_ particle per cell
-          if(mesh_.pointInCell(position, celli))
-            { 
-              // What is the distribution of u?
-              // How to enforce the component-wise correlations < u_i, u_j >?
-              vector u( random().GaussNormal() * uscales.x(),  
-                        random().GaussNormal() * uscales.y(),  
-                        random().GaussNormal() * uscales.z()
-                       );
-              vector UParticle = u + Updf;
-              mcParticle* ptr =
-                new mcParticle 
-                (
-                 *this,  position, celli, m, Updf, UParticle, dtCloud_
-                 );
-
-              addParticle(ptr);
-              Npgen ++;
-            }
-
-          // until enough particles are generated.
-          if(Npgen >= Npc_) break;
+          addParticle(ptr);
+          Npgen ++;
         }
       
-      if(Npgen < Npc_) 
-        {
-          FatalErrorIn("mcParticleCloud::initReleaseParticles()")
-            << "Only " << Npgen << " particles generated for cell "
-            << celli << nl << "Something is wrong" << exit(FatalError);
-        }
+      // until enough particles are generated.
+      if(Npgen >= N) break;
+    }
+  
+
+  if(Npgen < N) 
+    {
+      FatalErrorIn("mcParticleCloud::initReleaseParticles()")
+        << "Only " << Npgen << " particles generated for cell "
+        << celli << nl << "Something is wrong" << exit(FatalError);
+    }
   
 }
 
@@ -464,7 +458,36 @@ void Foam::mcParticleCloud::particleGenInCell
 // Enforce in/out flow BCs by populating ghost cells
 void Foam::mcParticleCloud::populateGhostCells()
 {
-  
+  forAll(ghostCellLayers_, patchi)
+    {
+      forAll(ghostCellLayers_[patchi], faceCelli)
+        {
+          label celli = ghostCellLayers_[patchi][faceCelli];
+          
+          if(PaNIC_[celli] < Npc_ / 2)
+            { 
+              label N = Npc_- PaNIC_[celli];
+              scalar m = (mesh_.V()[celli] * rhofv_[celli] - M0_[celli])  / N;
+              if (m <= 0) continue;
+              vector Updf = Ufv_[celli];
+              scalar ksqrt = sqrt(kfv_[celli]);
+              vector uscales(ksqrt, ksqrt, ksqrt);
+              //NOTE: the mass is not correct.
+              particleGenInCell(celli,  N, m, Updf, uscales);
+              Info << N << " particles generated in cell " << celli
+                   << " m= " << m
+                   << " original total mass:" << M0_[celli] 
+                   << " oritinal avg mass: " <<  M0_[celli] / PaNIC_[celli]
+                   << " total mass now = " << m * N + M0_[celli] << endl;
+              
+            }
+        }
+    }
+
+  label globalNp = size();
+  reduce(globalNp, sumOp<label>());
+  Info << " Current particle number in the system: " << size()
+       << "sum of all processors: " << globalNp << endl;
 }
 
 //This serves as a template for looping through particles in the cloud
