@@ -1430,7 +1430,6 @@ void Foam::mcParticleCloud::printParticleCo()
 
     if (mesh_.nInternalFaces() && size())
     {
-        scalar dt = runTime_.deltaT().value();
         forAllConstIter(mcParticleCloud, *this, pIter)
         {
             meanPartCoNum += pIter().Co();
