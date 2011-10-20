@@ -362,7 +362,7 @@ void Foam::mcParticle::transformProperties (const tensor& T)
 {
     Particle<mcParticle>::transformProperties(T);
     // Only transform fluctuating velocity
-    UParticle_ = transform(T, UParticle_-Updf_)+Updf_;
+    UParticle_ = transform(T, UParticle_);
     Utracking_ = transform(T, Utracking_);
 }
 
