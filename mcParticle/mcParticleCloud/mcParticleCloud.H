@@ -141,7 +141,7 @@ class mcParticleCloud:
         // Statistical moments (mass, momentum, energy)
 
             //- Number of particles in cell
-            DimensionedField<scalar, volMesh>  PaNIC_;
+            volScalarField PaNIC_;
             //- Averaged 0th statistical moment
             DimensionedField<scalar, volMesh> mMom_;
             //- Averaged 1st statistical moment of inverse-density (volume)

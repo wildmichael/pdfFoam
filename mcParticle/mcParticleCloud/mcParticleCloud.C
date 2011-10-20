@@ -866,6 +866,7 @@ void Foam::mcParticleCloud::cloneParticles(label celli)
 
         addParticle(ptrNew.ptr());
     }
+    PaNIC_[celli] += n;
 
     histNp_ += n;
     if (debug)
@@ -898,6 +899,7 @@ void Foam::mcParticleCloud::eliminateParticles(label celli)
         }
         if (nKilled >= nx) break;
     }
+    PaNIC_[celli] -= nKilled;
 
     scalar massCompensate = massKilled / (ncur - nKilled);
 
