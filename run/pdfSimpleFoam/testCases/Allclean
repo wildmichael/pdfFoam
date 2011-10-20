@@ -1,0 +1,23 @@
+#!/bin/sh
+
+cd ${0%/*} || exit 1    # run from this directory
+
+# Source tutorial clean functions¬
+. $WM_PROJECT_DIR/bin/tools/CleanFunctions
+
+set -e
+
+KEEPCASES="channel1DNoDiss"
+LOSECASES="channel1DWithDiss"
+
+for c in $KEEPCASES; do
+   case=$c # avoid syntax highlighting confusion
+   (cd $case && foamCleanTutorials)
+   rm -f $case/constant/polyMesh/boundary
+   rm -rf $case/0
+done
+
+for c in $LOSECASES; do
+   case=$c
+   removeCase $case
+done

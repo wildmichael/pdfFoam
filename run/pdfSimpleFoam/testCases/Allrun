@@ -1,0 +1,106 @@
+#!/bin/sh
+
+cd ${0%/*} || exit 1    # run from this directory
+
+# Source tutorial run functions¬
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+
+set -e
+
+CASES="channel1DNoDiss channel1DWithDiss"
+
+runApplicationNum ()
+{
+   APP_NUM=$1; shift
+   APP_RUN=$1; shift
+   APP_NAME=${APP_RUN##*/}
+   if [ -f log.$APP_NAME.$APP_NUM ] ; then
+      echo "$APP_NAME.$APP_NUM already run on $PWD: remove log file to run"
+   else
+      [ -e log.$APP_NAME.$APP_NUM ] && mv log.$APP_NAME.$APP_NUM log.$APP_NAME
+      runApplication $APP_RUN $*
+      mv log.$APP_NAME log.$APP_NAME.$APP_NUM
+   fi
+}
+
+setChannel1DWithDiss1 ()
+{
+   thermophysicalProperties="$case/constant/thermophysicalProperties"
+   fvSolution="$case/system/fvSolution"
+   controlDict="$case/system/controlDict"
+
+   sed \
+      -e "s#// No dissipation#// With dissipation#" \
+      -e "s/\(C1[ \t]*\) 0;/\1 1;/" \
+      -e "s/\(kRelaxTime[ \t]*\) .*;/\1 0.05;/" \
+      -e "s/\(URelaxTime[ \t]*\) .*;/\1 0.05;/" \
+      $thermophysicalProperties > temp.$$
+   mv temp.$$ $thermophysicalProperties
+
+   sed \
+      -e "s/\(nFVSubCycles[ \t]*\) 0;/\1 1;/" \
+      -e "s/\(nPDFSubCycles[ \t]*\) 1;/\1 0;/" \
+      $fvSolution > temp.$$
+   mv temp.$$ $fvSolution
+
+   sed \
+      -e "s/\(purgeWrite[ \t]*\) 0;/\1 1;/" \
+      $fvSolution > temp.$$
+   mv temp.$$ $fvSolution
+}
+
+setChannel1DWithDiss2 ()
+{
+   fvSolution="$case/system/fvSolution"
+   controlDict="$case/system/controlDict"
+
+   sed \
+      -e "s/\(nFVSubCycles[ \t]*\) 1;/\1 0;/" \
+      -e "s/\(nPDFSubCycles[ \t]*\) 0;/\1 1;/" \
+      $fvSolution > temp.$$
+   mv temp.$$ $fvSolution
+
+   sed \
+      -e "s/\(purgeWrite[ \t]*\) 1;/\1 0;/" \
+      $fvSolution > temp.$$
+   mv temp.$$ $fvSolution
+
+   (
+      cd $case
+      latestTime=$(printf "%s\n" [0-9]* | sort -n | tail -n1)
+      rm -rf 0
+      mv $latestTime 0
+   )
+
+}
+
+
+for c in $CASES; do
+   case=$c # avoid syntax highlighting confusion...
+   if [ "$case" = "channel1DNoDiss" ]; then
+      rm -rf $case/0
+      cp -r $case/0.org $case/0
+   fi
+   if [ "$case" = "channel1DWithDiss" ]; then
+      cloneCase channel1DNoDiss $case
+      setChannel1DWithDiss1
+   fi
+   (cd $case; runApplication blockMesh)
+   (cd $case; runApplicationNum 1 pdfSimpleFoam)
+   if [ "$case" = "channel1DWithDiss" ]; then
+      setChannel1DWithDiss2
+      (cd $case; runApplicationNum 2 pdfSimpleFoam)
+   fi
+   case "$case" in
+      channel1D*)
+	 (
+	    cd $case
+	    runApplicationNum 1 foamCalc components U -latestTime
+	    runApplicationNum 2 foamCalc components UCloudPDF -latestTime
+	    runApplication sample -latestTime
+	    export PATH=$PWD/..:$PATH
+	    runApplication plotChannel
+	 )
+	 ;;
+   esac
+done

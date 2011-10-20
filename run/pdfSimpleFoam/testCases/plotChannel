@@ -1,0 +1,115 @@
+#!/usr/bin/env python
+
+import matplotlib as mp
+mp.use('Agg')
+import matplotlib.mlab as ml
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+import numpy as np
+import sys, glob, subprocess, shutil, os, re
+import os.path as op
+from itertools import chain
+
+subplot_shape = (3, 2)
+
+caseDir = '.'
+if len(sys.argv) > 1:
+  caseDir = sys.argv[1]
+caseDir = op.abspath(caseDir)
+
+if not op.isfile(op.join(caseDir, 'system', 'controlDict')):
+  sys.stderr.write("Error: '%s is not a case directory'\n"%caseDir)
+  sys.exit(1)
+
+fmt = '.pdf'
+outDir = 'plots'
+
+if not op.isabs(outDir):
+  outDir = op.join(caseDir, outDir)
+if not op.isdir(outDir):
+  os.makedirs(outDir)
+
+# determine latest time
+sys.stdout.write('- Finding latest time : ')
+timeMap = {float(d): d for d in filter(lambda d: re.match(r'\d+(\.\d+)?$', d),
+  map(op.basename, glob.iglob(op.join(caseDir, '[0-9]*'))))}
+tdir = timeMap[max(timeMap.keys())]
+sys.stdout.write(tdir+'\n')
+
+print '- Loading data'
+# load simulation data
+d = np.loadtxt(op.join(caseDir, 'sets', tdir,
+   'xaxis_Ux_UCloudPDFx_k_kCloudPDF_rho_pndCloudPDF_PaNIC.xy'))
+data = {
+    'x'          : d[:,0],
+    'Ux'         : d[:,1],
+    'UCloudPDFx' : d[:,2],
+    'k'          : d[:,3],
+    'kCloudPDF'  : d[:,4],
+    'rho'        : d[:,5],
+    'pndCloudPDF': d[:,6],
+    'PaNIC'      : d[:,7],
+    }
+
+plotTuples = {
+      'U'    : ('Ux', 'UCloudPDFx'),
+      'k'    : ('k', 'kCloudPDF'),
+      'rho'  : ('rho', 'pndCloudPDF'),
+      'PaNIC': ('PaNIC',)
+      }
+
+nameMap = {
+      'Ux'         : r'$\tilde U_x^\mathrm{FV}$',
+      'UCloudPDFx' : r'$\tilde U_x^\mathrm{PDF}$',
+      'k'          : r'$k^\mathrm{FV}$',
+      'kCloudPDF'  : r'$k^\mathrm{PDF}$',
+      'rho'        : r'$\tilde\rho^\mathrm{FV}$',
+      'pndCloudPDF': r'$\tilde\rho_\mathrm{pn}^\mathrm{PDF}$',
+      'PaNIC'      : r'$n_\mathrm{p}/\mathrm{cell}$',
+      }
+
+legendLocs = {
+      'U'    : 'upper right',
+      'k'    : 'lower left',
+      'rho'  : 'lower right',
+      'PaNIC': 'upper left',
+      }
+
+styles = (
+    '-k',
+    '--k',
+    '-.k',
+    )
+
+# plot the radial profiles
+print '- Creating plots'
+fig = plt.gcf()
+if fmt == '.pdf':
+  fig.set_size_inches(8.3, 11.7) # A4
+  fig.subplots_adjust(hspace=0.3)
+  pp = PdfPages(op.join(outDir,'plots.pdf'))
+sub = 1
+for p, vt in plotTuples.iteritems():
+  if fmt == '.pdf':
+    ax = fig.add_subplot(subplot_shape[0], subplot_shape[1], sub)
+  else:
+    ax = fig.gca()
+  for i, d in enumerate(vt):
+    line = ax.plot(data['x'], data[d], styles[i%len(styles)], label=nameMap[d])[0]
+    line.set_markerfacecolor('w')
+  ax.set_xlabel(r'$x$')
+  ax.legend(loc=legendLocs[p])
+  sub += 1
+  if fmt == '.pdf':
+    if sub > subplot_shape[0]*subplot_shape[1]:
+      pp.savefig(fig)
+      fig.clear()
+      fig.subplots_adjust(hspace=0.3)
+      sub = 1
+  else:
+    fig.savefig(op.join(outDir, '%s%s'%(p, fmt)))
+    fig.clear()
+
+if fmt == '.pdf':
+  pp.savefig(fig)
+  pp.close()
