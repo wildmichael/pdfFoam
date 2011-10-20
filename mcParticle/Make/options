@@ -5,6 +5,7 @@ EXE_INC = \
     -I$(LIB_SRC)/turbulenceModels \
     -I$(LIB_SRC)/transportModels \
     -I$(LIB_SRC)/turbulenceModels/LES/LESdeltas/lnInclude \
+    -I$(LIB_SRC)/turbulenceModels/compressible/RAS/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude
 
 LIB_LIBS = \

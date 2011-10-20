@@ -3,6 +3,7 @@ mcParticle/mcParticleIO.C
 mcParticleCloud/mcParticleCloud.C
 mcThermo/mcThermo.C
 mcOmegaModel/mcOmegaModel/mcOmegaModel.C
+mcOmegaModel/mcRASOmegaModel/mcRASOmegaModel.C
 mcMixingModel/mcMixingModel/mcMixingModel.C
 mcReactionModel/mcReactionModel/mcReactionModel.C
 
