@@ -651,11 +651,11 @@ void Foam::mcParticleCloud::particleNumberControl()
         {
             cellPopFlag[celli] = EMPTY;
         }
-        else if ( np <= round(Npc_ * cloneAt_) )
+        else if ( np < round(Npc_ * cloneAt_) )
         {
             cellPopFlag[celli] = TOOFEW;
         }
-        else if (np >= round(Npc_* eliminateAt_) )
+        else if (np > round(Npc_* eliminateAt_) )
         {
             cellPopFlag[celli] = TOOMANY;
         }
