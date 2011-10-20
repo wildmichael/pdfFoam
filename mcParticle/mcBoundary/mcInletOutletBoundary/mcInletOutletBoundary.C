@@ -262,6 +262,10 @@ void Foam::mcInletOutletBoundary::correct
         scalar Nf = vol / mesh().V()[cellI] * Npc;
         label N = floor(Nf);
         N += rnd.scalar01() < (Nf-N);
+        if (N < 1)
+        {
+            continue;
+        }
         np += N;
         // mass of every particle
         scalar m = vol * rho[faceI] / N;
