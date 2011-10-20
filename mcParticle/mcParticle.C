@@ -68,14 +68,10 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         // velocity. A particle number correction flux is needed as
         // well (to ensure consistency with FV density field).
 
-        cellPointWeight cpwx(mesh, position(), celli, face());
-
-        UFap_ = td.UInterp().interpolate(cpwx);
-
         vector correctedUp = UParticle_ - Updf_ + UFap_;
         meshTools::constrainDirection(mesh, mesh.solutionD(), correctedUp);
 
-
+        cellPointWeight cpwx(mesh, position(), celli, face());
         vector gradRhoFap = td.gradRhoInterp().interpolate(cpwx);
 
         vector destParticle = position() + dt * (correctedUp - gradRhoFap);
