@@ -127,6 +127,16 @@ void Foam::mcThermo::evolve()
         // Instantiate the cloud on first call
         if (!cloudP_.valid())
         {
+            // Fiddle with the time object
+            Time& runTime = const_cast<Time&>(mesh_.time());
+            scalar currTime = runTime.value();
+            label currIdx = runTime.timeIndex();
+            runTime.setTime(runTime.startTime().value(), runTime.startTimeIndex());
+            if (debug)
+            {
+                Info<< "\nCreate mcThermo for time = " << runTime.timeName()
+                    << nl << endl;
+            }
             cloudP_.reset
             (
                 new mcParticleCloud
@@ -137,6 +147,7 @@ void Foam::mcThermo::evolve()
                     0, 0, &rho_
                 )
             );
+            runTime.setTime(currTime, currIdx);
         }
         for (label i=0; i < nPDFSubCycles_; i++)
         {
