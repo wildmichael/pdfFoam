@@ -229,7 +229,18 @@ void Foam::mcParticle::hitWallPatch
     const wallPolyPatch& wpp,
     mcParticle::trackData& td
 )
-{}
+{
+    vector nw = wpp.faceAreas()[wpp.whichFace(face())];
+    nw /= mag(nw);  // Wall normal (outward)
+
+    scalar Un = UParticle_ & nw; // Normal component
+    vector Ut = UParticle_ - Un*nw; // Tangential component
+
+    if (Un > 0)
+    {
+        UParticle_ -= 2.0*Un*nw;
+    }
+}
 
 
 void Foam::mcParticle::hitWallPatch
