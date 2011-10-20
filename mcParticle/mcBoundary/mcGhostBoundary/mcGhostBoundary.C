@@ -100,8 +100,13 @@ void Foam::mcGhostBoundary::populateGhostCells(Foam::mcParticleCloud& cloud)
     purgedGhosts_ = false;
     if (debug)
     {
-        Info<< np << " particles generated in "
-            << ng << " ghost cells of patch " << patch().name() << endl;
+        reduce(np, sumOp<label>());
+        reduce(ng, sumOp<label>());
+        if (Pstream::master())
+        {
+            Info<< "Ghost particles: " << np << " generated in "
+                << ng << " ghost cells of patch " << patch().name() << endl;
+        }
     }
 }
 
@@ -165,8 +170,13 @@ void Foam::mcGhostBoundary::purgeGhostParticles(Foam::mcParticleCloud& cloud)
     purgedGhosts_ = true;
     if (debug)
     {
-        Info<< "Ghost particles: "
-            << nDelete << " deleted, " << nAdmit << " admitted." << endl;
+        reduce(nDelete, sumOp<label>());
+        reduce(nAdmit, sumOp<label>());
+        if (Pstream::master())
+        {
+            Info<< "Ghost particles: "
+                << nDelete << " deleted, " << nAdmit << " admitted." << endl;
+        }
     }
 }
 
