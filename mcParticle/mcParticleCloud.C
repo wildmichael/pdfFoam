@@ -739,7 +739,7 @@ void Foam::mcParticleCloud::initReleaseParticles()
       vector uscales(sqrt(kfv_[celli]), sqrt(kfv_[celli]), sqrt(kfv_[celli]));
       scalar psi = psicPdf_[celli];
 
-      particleGenInCell(celli, N, m, Updf, uscales, psi, false, vector::zero);
+      particleGenInCell(celli, N, m, Updf, uscales, psi, vector::zero, 0);
     }
 
   writeFields();
@@ -756,8 +756,8 @@ void Foam::mcParticleCloud::particleGenInCell
  const vector& Updf, 
  const vectorList& uscales, 
  scalar psi,
- label  ghost,
- const vector& shift
+ const vector& shift,
+ label  ghost
  )
 {
   boundBox cellbb(pointField(mesh_.points(), mesh_.cellPoints()[celli]), false);
@@ -796,7 +796,7 @@ void Foam::mcParticleCloud::particleGenInCell
           mcParticle* ptr =
             new mcParticle
             (
-             *this,  position, celli, m, Updf, UParticle, UFap, psi, dtCloud_, ghost, shift
+             *this,  position, celli, m, Updf, UParticle, UFap, psi, dtCloud_, shift, ghost
              );
           
           addParticle(ptr);
@@ -831,13 +831,13 @@ void Foam::mcParticleCloud::particleGenInCell
  const vector& Updf, 
  const vector& usc,
  scalar psi,
- label  ghost,
- const vector& shift
+ const vector& shift,
+ label  ghost
  )
 {
   scalarList masses(N, m);
   vectorList uscales(N, usc);
-  particleGenInCell(celli, N, masses, Updf, uscales, psi, ghost, shift);
+  particleGenInCell(celli, N, masses, Updf, uscales, psi, shift, ghost);
 }
 
 
@@ -860,7 +860,7 @@ void Foam::mcParticleCloud::populateGhostCells()
           // psi: from patch value (boundary condition)
           scalar psi = psifv_.boundaryField()[ghostPatchId_[ghostPatchI]][faceCelli];
           
-          particleGenInCell(celli, N, m, Updf, uscales, psi, ghost, shift);
+          particleGenInCell(celli, N, m, Updf, uscales, psi, shift, ghost);
           
           if (debug_)
             Info << N << " particles generated in cell " << celli

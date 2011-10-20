@@ -232,8 +232,8 @@ public:
    const vector& Updf, 
    const vectorList& uscales,
    scalar psi,
-   label  ghost = 0,
-   const vector& shift = vector::zero
+   const vector& shift = vector::zero,
+   label  ghost = 0
    );
 
   // with the same properties
@@ -245,8 +245,8 @@ public:
    const vector& Updf, 
    const vector& usc,
    scalar psi,
-   label  ghost = 0,
-   const vector& shift = vector::zero
+   const vector& shift = vector::zero,
+   label  ghost = 0
    );
 
   //- Update end position (for tracking)

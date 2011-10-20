@@ -82,11 +82,13 @@ class mcParticle
        //- current time step
        scalar dt_;
 
-       //- Whether this particle is a ghost
-       label ghost_;
-  
        //- separation (only for ghost cells)
        vector shift_;
+
+       // ==== PUT ALL label AND OTHER 4-BYTE TYPES AFTER THIS === //
+
+       //- Whether this particle is a ghost
+       label ghost_;
 
 public:
 
@@ -166,8 +168,8 @@ public:
             const vector& UFap,
             const scalar psi,
             const scalar dt,
-            const label  ghost = 0,
-            const vector& shift = vector::zero
+            const vector& shift = vector::zero,
+            const label  ghost = 0
 
         );
 
