@@ -107,8 +107,6 @@ class mcParticleCloud:
 
         //- The FV velocity field
         const volVectorField& Ufv_;
-        //- The FV density field
-        volScalarField& rhofv_;
 
         //- The averaging time scale
         scalar AvgTimeScale_;
@@ -160,6 +158,8 @@ class mcParticleCloud:
         //- Hash of ghost face indices
         HashSet<label>   ghostFaceHash_;
 
+        //- Extracted, time-averaged density field
+        volScalarField& rhocPdf_;
         //- Extracted, time-averaged particle-number density
         volScalarField pndcPdf_;
         //- Extracted, time-averaged velocity

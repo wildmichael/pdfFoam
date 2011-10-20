@@ -120,12 +120,6 @@ Foam::mcParticleCloud::mcParticleCloud
         U ? *U : mesh_.lookupObject<volVectorField>
                      (dict_.lookupOrDefault<word>("UName", "U"))
     ),
-    rhofv_
-    (
-        rho ? *rho : const_cast<volScalarField&>(
-            mesh_.lookupObject<volScalarField>(
-                dict_.lookupOrDefault<word>("rhoName", "rho")))
-    ),
     AvgTimeScale_
     (
         dict_.lookupOrAddDefault<scalar>
@@ -216,6 +210,13 @@ Foam::mcParticleCloud::mcParticleCloud
     ghostCellHash_(256),
     ghostFaceHash_(256),
 
+    rhocPdf_
+    (
+        rho ? *rho : const_cast<volScalarField&>(
+            mesh_.lookupObject<volScalarField>(
+                dict_.lookupOrDefault<word>("rhoName", "rho")))
+    ),
+
     pndcPdf_
     (
         IOobject
@@ -229,7 +230,7 @@ Foam::mcParticleCloud::mcParticleCloud
         mesh_,
         dimDensity,
         mMom_/mesh_.V(),
-        rhofv_.boundaryField()
+        rhocPdf_.boundaryField()
     ),
 
     UcPdf_
@@ -510,8 +511,8 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
 
     VMom_  = existWt * VMom_  + newWt * VMomInstant;
     DimensionedField<scalar, volMesh> VMomBounded = max(VMom_, SMALL_VOLUME);
-    rhofv_.internalField()   = mMom_ / VMomBounded;
-    rhofv_.correctBoundaryConditions();
+    rhocPdf_.internalField()   = mMom_ / VMomBounded;
+    rhocPdf_.correctBoundaryConditions();
 
     UMom_  = existWt * UMom_  + newWt * UMomInstant;
     UcPdf_.internalField()   = UMom_ / mMomBounded;
@@ -845,7 +846,7 @@ void Foam::mcParticleCloud::evolve()
     );
 
 
-    diffRho.internalField() = (pndcPdf_ - rhofv_)/rhofv_;
+    diffRho.internalField() = (pndcPdf_ - rhocPdf_)/rhocPdf_;
     diffRho.correctBoundaryConditions();
 
     volVectorField gradRho = fvc::grad(diffRho) * coeffRhoCorr_;
@@ -867,7 +868,7 @@ void Foam::mcParticleCloud::evolve()
     diffU = (Ufv_ - UcPdf_) / URelaxTime_;
     diffU.correctBoundaryConditions();
 
-    interpolationCellPoint<scalar> rhoInterp(rhofv_);
+    interpolationCellPoint<scalar> rhoInterp(rhocPdf_);
     //interpolationCellPointFaceFlux UInterp(U);
     interpolationCellPoint<vector> UInterp(Ufv_);
     interpolationCellPoint<vector> gradPInterp(gradP);
@@ -913,7 +914,7 @@ void Foam::mcParticleCloud::initReleaseParticles()
     // Populate each cell with Npc_ particles in each cell
     forAll(Ufv_, celli)
     {
-        scalar m = mesh_.V()[celli] * rhofv_[celli] / Npc_;
+        scalar m = mesh_.V()[celli] * rhocPdf_[celli] / Npc_;
         // TODO fv or pdf?
         vector Updf = Ufv_[celli];
         // TODO shouldn't this be multiplied with 2/3?
@@ -1019,7 +1020,7 @@ void Foam::mcParticleCloud::populateGhostCells()
             np += Npc_;
 
             label  celli = ghostCellLayers_[ghostPatchI][faceCelli];
-            scalar m = mesh_.V()[celli] * rhofv_[celli] / Npc_;
+            scalar m = mesh_.V()[celli] * rhocPdf_[celli] / Npc_;
             vector Updf = Ufv_[celli];
             // TODO shouldn't this be multiplied with 2/3?
             scalar ksqrt = sqrt(kfv()()[celli]);
