@@ -9,5 +9,6 @@ mcMixingModel/mcMixingModel/mcMixingModel.C
 mcMixingModel/mcIEMMixingModel/mcIEMMixingModel.C
 mcReactionModel/mcReactionModel/mcReactionModel.C
 mcReactionModel/mcColdReactionModel/mcColdReactionModel.C
+mcReactionModel/mcNaiveFlameletModel/mcNaiveFlameletModel.C
 
 LIB = $(FOAM_USER_LIBBIN)/libmcParticle

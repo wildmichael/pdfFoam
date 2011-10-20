@@ -31,7 +31,7 @@ cloudProperties
     );
     OmegaModel RAS;
     mixingModel IEM;
-    reactionModel Cold;
+    reactionModel naiveFlamelet;
     scalarFields
     (
         z
@@ -40,7 +40,14 @@ cloudProperties
     (
         z
     );
-
+    IEMCoeffs
+    {
+        Cmix 2.0;
+    }
+    naiveFlameletCoeffs
+    {
+        zName z;
+    }
 }
 
 // ************************************************************************* //
