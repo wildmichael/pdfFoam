@@ -60,7 +60,6 @@ int main(int argc, char *argv[])
 
         // Pressure-velocity SIMPLE corrector
         {
-            rho = thermo.rho();
             // TODO bound rho?
             rho.relax();
             Info<< "rho max/min : " << max(rho).value() << " " << min(rho).value() << endl;
