@@ -110,7 +110,7 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
             (
                 c.fieldIOobject
                 (
-                    "Phi_"+mcpc.scalarNames()[PhiI],
+                    mcpc.scalarNames()[PhiI],
                     IOobject::MUST_READ
                 )
             )
@@ -169,7 +169,7 @@ void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
             (
                 c.fieldIOobject
                 (
-                    "Phi_"+mcpc.scalarNames()[PhiI],
+                    mcpc.scalarNames()[PhiI],
                     IOobject::NO_READ
                 ),
                 np
