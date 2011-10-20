@@ -842,16 +842,31 @@ void Foam::mcParticleCloud::purgeGhostParticles()
           else
             { 
               // shift and admit this particle as normal member
-              p.position() -= p.shift();
-              label newCelli = mesh_.findCell(p.position());
+              p.position() -= p.shift(); // update position
+              label newCelli = -1;
+              label curCelli = p.cell();
+              forAll(mesh_.cellCells()[curCelli], nei)
+                {
+                  label neiCellId = mesh_.cellCells()[curCelli][nei];
+                  if( mesh_.pointInCell(p.position(), neiCellId) )
+                    {
+                      newCelli = neiCellId;
+                      break;
+                    }
+                }
+              // Not found in neighbour cells: global search
+              if(newCelli < 0)
+                {
+                  newCelli = mesh_.findCell(p.position());
+                }
               if (newCelli < 0) 
                 {
-                  Pout << "Warning in mcParticleCloud::purgeGhostParticles()" << nl
-                       << "Shifting of ghost particles caused loss."  << nl
-                       << "Possible causes are: " << nl
-                       << " (1) Strange ghost cell shapes;" << nl
-                       << " (2) parallel computing + large time steps" << nl
-                       << "Info for the lost particle: " << endl;
+                  Pout << "*** Warning in mcParticleCloud::purgeGhostParticles()" << nl
+                       << " Shifting of ghost particles caused loss."  << nl
+                       << " Possible causes are: " << nl
+                       << "  (1) Strange ghost cell shapes;" << nl
+                       << "  (2) parallel computing + large time steps" << nl
+                       << " Info for the lost particle: " << endl;
                   oneParticleInfo(p);
                   deleteParticle(p);
                 }
@@ -911,14 +926,16 @@ void Foam::mcParticleCloud::particleInfo() const
 void Foam::mcParticleCloud::oneParticleInfo(const mcParticle& p) const
 {
   Pout << "Particle Id: " << p.origId() << ": "
-       << "X    = " << p.position() << ", "
-       << "cell = " << p.cell() << ", "
-       << "m    = " << p.m() << nl
-       << "U    = " << p.UParticle()  << ", "
-       << "Ufv  = " << Ufv_[p.cell()] << ", "
-       << "UFap = " << p.UFap() << ", "
-       << "Updf = " << p.Updf() << nl
-       << "psi  = " << p.psi()
+       << "X     = " << p.position() << ", "
+       << "cell  = " << p.cell() << ", "
+       << "m     = " << p.m() << nl
+       << "U     = " << p.UParticle()  << ", "
+       << "Ufv   = " << Ufv_[p.cell()] << ", "
+       << "UFap  = " << p.UFap() << ", "
+       << "Updf  = " << p.Updf() << nl
+       << "psi   = " << p.psi() << ", "
+       << "ghost = " << p.ghost() << ", "
+       << "shift = " << p.shift()
        << endl;
 }
 
@@ -932,7 +949,10 @@ void Foam::mcParticleCloud::assertPopulationHealth() const
       )
     {
       const mcParticle & p = pIter();
-      if(! mesh_.bounds().contains(p.position()))
+      if(! mesh_.bounds().contains(p.position())
+         || p.ghost() 
+         || mag(p.shift()) > 100*SMALL
+         )
         {
           cloudHealthy = false;
           Pout << "***Warning: " << endl;
