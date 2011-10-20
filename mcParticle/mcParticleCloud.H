@@ -51,6 +51,9 @@ namespace Foam
 // Forward declaration of classes
 class fvMesh;
 
+  typedef DLList<mcParticle*> mcParticleList;
+  typedef List <mcParticleList> mcParticleListList;
+
 /*---------------------------------------------------------------------------*\
                            Class mcParticleCloud Declaration
 \*---------------------------------------------------------------------------*/
@@ -82,7 +85,7 @@ class mcParticleCloud
   dimensionedScalar SMALL_MASS;
 
   labelIOField   PaNIC_; // Particle # in cell
-  labelListList  cellParticleAddr_;
+  mcParticleListList  cellParticleAddr_;
   volScalarField M0_;
   volVectorField M1_;
   volSymmTensorField M2_;

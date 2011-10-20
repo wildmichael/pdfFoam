@@ -70,7 +70,7 @@ Foam::mcParticleCloud::mcParticleCloud
     dtCloud_(mesh.time().deltaT().value()),
     AvgTimeScale_(mesh.time().endTime().value()),
     random_(55555+12345*Pstream::myProcNo()),
-    Npc_(50),
+    Npc_(10),
 
     SMALL_MASS("SMALL_MASS", dimMass, SMALL),
 
@@ -260,16 +260,23 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
 void Foam::mcParticleCloud::updateCellParticleAddr()
 {
 
-  labelList npi(mesh_.nCells(), 0);
+  labelList withCPAddr(mesh_.nCells(), 1);
+
 
   forAll(PaNIC_, celli)
     {
       label np = PaNIC_[celli];
-      if (np > 0)
-        cellParticleAddr_[celli].setSize(np); 
-      else
-        cellParticleAddr_[celli].clear(); 
+      // classify the particle # heath condition of each cell
+      if (np < 1)
+        { withCPAddr[celli] = 0; }
+      else if ( np < (Npc_/2) )
+        { withCPAddr[celli] = 2; }
+      else if (np > Npc_*3/2)
+        { withCPAddr[celli] = 3; }
+      // clear old list
+      cellParticleAddr_[celli].clear(); 
     }
+
 
   for(iterator pIter=begin(); 
       pIter != end();
@@ -278,12 +285,36 @@ void Foam::mcParticleCloud::updateCellParticleAddr()
     {
       mcParticle & p = pIter();
       label celli = p.cell();
-      // NOTES: it is not possible to use this origId to quickly locate
-      // particles in the cloud (for deletion). This part needs more work. 
-      cellParticleAddr_[npi[celli]] = p.origId(); 
-      npi[celli] ++;
+      // If a mcParticleList is necessary for this cell, construct it.
+      if(withCPAddr[celli] > 0)
+        { // could do better: instert it int he correct place 
+          // according to ascending order of mass (if too many particles)
+          // or descending order of mass (if too few particle)
+      // TODO: insert in corret place and order
+          cellParticleAddr_[celli].insert(&p);
+        }
     }
   
+  
+  // Debug only: check the list
+  forAll(withCPAddr, celli)
+    {
+
+      if (withCPAddr[celli] == 2 || withCPAddr[celli] == 3 )
+        { 
+          Info << "size is " << cellParticleAddr_[celli].size() << ":= " << endl;
+          
+          mcParticleList & pl = cellParticleAddr_[celli];
+
+          for(mcParticleList::iterator pIter=pl.begin(); 
+              pIter!=pl.end();
+              ++pIter) 
+            {
+              Info << pIter()->origId() << ", " << endl;
+            }
+        }
+    }
+
 }
 
 
