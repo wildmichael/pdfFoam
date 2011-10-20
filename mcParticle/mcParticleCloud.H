@@ -107,7 +107,7 @@ class mcParticleCloud
   Random random_;
   //- Number of particles per cell (initially)
   label Npc_;
-  scalar clusterAt_;
+  scalar eliminateAt_;
   scalar cloneAt_;
   //- Cell size
   const label Nc_;
@@ -163,7 +163,7 @@ class mcParticleCloud
   void checkParticlePropertyDict();
   void particleNumberControl();
   void cloneParticles(label celli);
-  void clusterParticles(label celli);
+  void eliminateParticles(label celli);
 
   // Enforce in/out flow BCs by populating ghost cells
   void findGhostLayers();

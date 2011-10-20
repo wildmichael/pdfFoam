@@ -93,7 +93,6 @@ Foam::mcParticleCloud::mcParticleCloud
      ),
 
     dtCloud_(mesh.time().deltaT().value()),
-  //    AvgTimeScale_(mesh.time().endTime().value()),
   AvgTimeScale_
   (
    particleProperties_.lookupOrAddDefault<scalar>
@@ -102,7 +101,7 @@ Foam::mcParticleCloud::mcParticleCloud
   
   random_(55555+12345*Pstream::myProcNo()),
   Npc_(particleProperties_.lookupOrAddDefault<label>("particlesPerCell", 30)),
-  clusterAt_(particleProperties_.lookupOrAddDefault<scalar>("clusterAt", 1.5)),
+  eliminateAt_(particleProperties_.lookupOrAddDefault<scalar>("eliminateAt", 1.5)),
   cloneAt_(particleProperties_.lookupOrAddDefault<scalar>("cloneAt", 0.67)),
   Nc_(mesh_.nCells()),
   histNp_(size()),
@@ -393,9 +392,9 @@ void Foam::mcParticleCloud::updateParticlePDF()
 
 void Foam::mcParticleCloud::checkParticlePropertyDict()
 {
-  // Cap clone/cluster threshold with reasonable values
-  clusterAt_ = max(1.1,  min(clusterAt_, 2.5)); 
-  particleProperties_.set("clusterAt", clusterAt_);
+  // Cap clone/eliminate threshold with reasonable values
+  eliminateAt_ = max(1.1,  min(eliminateAt_, 2.5)); 
+  particleProperties_.set("eliminateAt", eliminateAt_);
 
   cloneAt_   = max(0.5,  min(cloneAt_,   0.9));
   particleProperties_.set("cloneAt", cloneAt_);
@@ -427,7 +426,7 @@ void Foam::mcParticleCloud::particleNumberControl()
         { cellPopFlag[celli] = EMPTY; }
       else if ( np <= round(Npc_ * cloneAt_) )
         { cellPopFlag[celli] = TOOFEW; }
-      else if (np >= round(Npc_* clusterAt_) )
+      else if (np >= round(Npc_* eliminateAt_) )
         { cellPopFlag[celli] = TOOMANY; }
       
       // clear old list
@@ -465,7 +464,7 @@ void Foam::mcParticleCloud::particleNumberControl()
         else if ( cellPopFlag[celli] == TOOMANY )
           {
             sort(cellParticleAddr_[celli],  less());
-            clusterParticles(celli);
+            eliminateParticles(celli);
           }
       }
         
@@ -493,7 +492,7 @@ void Foam::mcParticleCloud::particleNumberControl()
 // Split the n heaviest particles
 void Foam::mcParticleCloud::cloneParticles(label celli)
 {
-  label n = Npc_ - round(PaNIC_[celli]); // # particle to eliminate
+  label n = Npc_ - round(PaNIC_[celli]); // no. particle to reproduce
   n = min(round(PaNIC_[celli]), n);
 
   for(label particleI=0; particleI < n; particleI++)
@@ -512,10 +511,10 @@ void Foam::mcParticleCloud::cloneParticles(label celli)
 
 
 // As name suggests
-void Foam::mcParticleCloud::clusterParticles(label celli)
+void Foam::mcParticleCloud::eliminateParticles(label celli)
 {
   label ncur = round(PaNIC_[celli]);
-  label nx =  ncur - Npc_; // # particle to eliminate
+  label nx =  ncur - Npc_; // no. particle to eliminate
   // Pool of partiles to operate on is 2*nx, 
   // but liminted by available particles in this cell.  
   label nPool = min(2*nx+4, ncur); 
