@@ -268,7 +268,7 @@ void Foam::mcInletOutletBoundary::correct
         }
         np += N;
         // mass of every particle
-        scalar m = vol * rho[faceI] / N;
+        scalar m = vol * rho[faceI] / Nf;
 
         scalarField phi(PhicPdf.size());
         forAll(PhicPdf, PhiI)
