@@ -59,8 +59,10 @@ inline Foam::mcParticle::mcParticle
  const vector& Updf,
  const vector& UParticle,
  const vector& UFap,
- const scalar psi,
- const scalar dt
+ const scalar  psi,
+ const scalar  dt,
+ const label   ghost,
+ const vector& shift
 )
 :
   Particle<mcParticle>(c, position, celli),
@@ -69,7 +71,9 @@ inline Foam::mcParticle::mcParticle
   UParticle_(UParticle),
   UFap_(UFap),
   psi_(psi),
-  dt_(dt)
+  dt_(dt),
+  ghost_(ghost),
+  shift_(shift)
 {}
 
 

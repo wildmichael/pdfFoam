@@ -220,10 +220,12 @@ public:
   (
    label celli, 
    label N, 
-   scalarList masses, 
-   vector Updf, 
-   vectorList uscales,
-   scalar psi
+   const scalarList& masses, 
+   const vector& Updf, 
+   const vectorList& uscales,
+   scalar psi,
+   label  ghost = 0,
+   const vector& shift = vector::zero
    );
 
   // with the same properties
@@ -232,9 +234,11 @@ public:
    label celli, 
    label N, 
    scalar m, 
-   vector Updf, 
-   vector usc,
-   scalar psi
+   const vector& Updf, 
+   const vector& usc,
+   scalar psi,
+   label  ghost = 0,
+   const vector& shift = vector::zero
    );
 
   //- Update end position (for tracking)

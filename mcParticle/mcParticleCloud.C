@@ -695,7 +695,7 @@ void Foam::mcParticleCloud::initReleaseParticles()
       vector Updf = UcPdf_[celli];
       vector uscales(sqrt(kfv_[celli]), sqrt(kfv_[celli]), sqrt(kfv_[celli]));
       scalar psi = psicPdf_[celli];
-      particleGenInCell(celli, N, m, Updf, uscales, psi);
+      particleGenInCell(celli, N, m, Updf, uscales, psi, false, vector::zero);
     }
 
   writeFields();
@@ -708,10 +708,12 @@ void Foam::mcParticleCloud::particleGenInCell
 (
  label celli, 
  label N, 
- scalarList masses, 
- vector Updf, 
- vectorList uscales, 
- scalar psi
+ const scalarList& masses, 
+ const vector& Updf, 
+ const vectorList& uscales, 
+ scalar psi,
+ label  ghost,
+ const vector& shift
  )
 {
   boundBox cellbb(pointField(mesh_.points(), mesh_.cellPoints()[celli]), false);
@@ -750,7 +752,7 @@ void Foam::mcParticleCloud::particleGenInCell
           mcParticle* ptr =
             new mcParticle
             (
-             *this,  position, celli, m, Updf, UParticle, UFap, psi, dtCloud_
+             *this,  position, celli, m, Updf, UParticle, UFap, psi, dtCloud_, ghost, shift
              );
           
           addParticle(ptr);
@@ -782,14 +784,16 @@ void Foam::mcParticleCloud::particleGenInCell
  label celli, 
  label N, 
  scalar m, 
- vector Updf, 
- vector usc,
- scalar psi
+ const vector& Updf, 
+ const vector& usc,
+ scalar psi,
+ label  ghost,
+ const vector& shift
  )
 {
   scalarList masses(N, m);
   vectorList uscales(N, usc);
-  particleGenInCell(celli, N, masses, Updf, uscales, psi);
+  particleGenInCell(celli, N, masses, Updf, uscales, psi, ghost, shift);
 }
 
 
@@ -801,40 +805,24 @@ void Foam::mcParticleCloud::populateGhostCells()
       forAll(ghostCellLayers_[ghostPatchI], faceCelli)
         {
 
-          label celli = ghostCellLayers_[ghostPatchI][faceCelli];
+          label  celli = ghostCellLayers_[ghostPatchI][faceCelli];
+          label  N = Npc_;
+          scalar m = mesh_.V()[celli] * rhofv_[celli] / N;
+          vector Updf = Ufv_[celli];
+          scalar ksqrt = sqrt(kfv_[celli]);
+          vector uscales(ksqrt, ksqrt, ksqrt);
+          label  ghost = 1;
+          vector shift = ghostCellShifts_[ghostPatchI][faceCelli];
+          // psi: from patch value (boundary condition)
+          scalar psi = psifv_.boundaryField()[ghostPatchId_[ghostPatchI]][faceCelli];
+          
+          particleGenInCell(celli, N, m, Updf, uscales, psi, ghost, shift);
+          
+          if (1)
+            Info << N << " particles generated in cell " << celli
+                 << " m= " << m 
+                 << " shift = " << shift << endl;
 
-          if(PaNIC_[celli] < Npc_ * 2 / 3)
-            { 
-              label N = Npc_- PaNIC_[celli];
-
-              scalar m = (mesh_.V()[celli] * rhofv_[celli] - instantM0_[celli])  / N;
-              if (m <= 0) 
-                {
-                  Info << "populateGhostCells::warning on negative mass. "
-                       << "patch " << ghostPatchI << "; "
-                       << "cell " << celli << endl;
-                  continue; // prevent negative mass
-                }
-
-              vector Updf = Ufv_[celli];
-
-              scalar ksqrt = sqrt(kfv_[celli]);
-
-              vector uscales(ksqrt, ksqrt, ksqrt);
-
-              // psi: from patch value (boundary condition)
-              scalar psi = psifv_.boundaryField()[ghostPatchId_[ghostPatchI]][faceCelli];
-
-              particleGenInCell(celli, N, m, Updf, uscales, psi);
-
-              if (debug_)
-                Info << N << " particles generated in cell " << celli
-                     << " m= " << m
-                     << " original total mass:" << M0_[celli] 
-                     << " oritinal avg mass: " <<  M0_[celli] / PaNIC_[celli]
-                     << " total mass now = " << m * N + M0_[celli] << endl;
-              
-            }
         }
     }
 }
