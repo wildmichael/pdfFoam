@@ -107,6 +107,8 @@ class mcParticleCloud
   Random random_;
   //- Number of particles per cell (initially)
   label Npc_;
+  //- Cell size
+  const label Nc_;
   // How many particle existed in history (including living ones)
   // only include particles generated in this run.
   scalar histNp_; 
@@ -121,7 +123,7 @@ class mcParticleCloud
   volVectorField M1_;
   volScalarField Mpsi1_;
   volSymmTensorField M2_;
-  volScalarField instantM0_;
+  scalarField instantM0_;
 
   labelListList   ghostCellLayers_;
   labelList       ghostPatchId_;

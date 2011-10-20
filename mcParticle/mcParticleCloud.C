@@ -96,6 +96,7 @@ Foam::mcParticleCloud::mcParticleCloud
     AvgTimeScale_(20.0),
     random_(55555+12345*Pstream::myProcNo()),
     Npc_(particleProperties_.lookupOrAddDefault<label>("particlesPerCell", 50)),
+    Nc_(mesh_.nCells()),
     histNp_(size()),
 
     SMALL_MASS("SMALL_MASS", dimMass, SMALL),
@@ -109,10 +110,10 @@ Foam::mcParticleCloud::mcParticleCloud
          IOobject::READ_IF_PRESENT,
          IOobject::AUTO_WRITE
          ),
-        mesh.nCells()
+        Nc_
         ),
 
-    cellParticleAddr_(mesh.nCells()),
+    cellParticleAddr_(Nc_),
 
     M0_(
         IOobject
@@ -141,14 +142,14 @@ Foam::mcParticleCloud::mcParticleCloud
     Mpsi1_(
         IOobject
         (
-            "Mpsi1",
+            "Mpsi",
             mesh.time().timeName(),
             mesh,
             IOobject::READ_IF_PRESENT,
             IOobject::AUTO_WRITE
          ),
         mesh,
-        dimensionedScalar("Mpsi1", dimless, 0.0)
+        dimensionedScalar("Mpsi", dimMass, 0.0)
         ),
     M2_(
         IOobject
@@ -163,7 +164,7 @@ Foam::mcParticleCloud::mcParticleCloud
         dimensionedSymmTensor("M2", dimEnergy, symmTensor:: zero)
         ),
 
-    instantM0_(M0_*1.0),
+    instantM0_(Nc_, 0.0),
 
     ghostCellHash_(256),
     ghostFaceHash_(256),
@@ -184,6 +185,7 @@ Foam::mcParticleCloud::mcParticleCloud
       rho.boundaryField()
      ),
 
+    //- Use the boundary conditions of U (FV)
     UcPdf_
     (
       IOobject
@@ -199,7 +201,8 @@ Foam::mcParticleCloud::mcParticleCloud
       M1_/max(M0_, SMALL_MASS),
       Ufv_.boundaryField()
      ),
-    
+
+    //- Use the boundary conditions of psi (FV)
     psicPdf_
     (
       IOobject
@@ -253,43 +256,6 @@ Foam::mcParticleCloud::mcParticleCloud
 }
 
 
-// set boundary conditions for cloudPDF fields
-void Foam::mcParticleCloud::setCloudPDFBoundary()
-{
-    
-  Info << "rhocPDF bc: " << rhocPdf_.boundaryField() << endl;
-  Info << "UcPDF bc: " << UcPdf_.boundaryField() << endl;
-  Info << "sicPDF bc: " << psicPdf_.boundaryField() << endl;
-  FatalError.exit();
-
-  if(!rhocPdf_.headerOk())
-    {
-      // forced boundary field assignment
-      rhocPdf_.boundaryField() == rhofv_.boundaryField();
-      rhocPdf_.dimensions() = dimDensity;
-    }
-  
-  if(!UcPdf_.headerOk())
-    {
-      UcPdf_.boundaryField() == Ufv_.boundaryField();
-    }
-    
-  if(!psicPdf_.headerOk())
-    {
-      psicPdf_.boundaryField() == psifv_.boundaryField();
-    }
-}
-
-
-void Foam::mcParticleCloud::correctCloudPDFBoundaryConditions()
-{
-  rhocPdf_.correctBoundaryConditions();
-  Info << UcPdf_.boundaryField() << endl;
-  UcPdf_.correctBoundaryConditions();
-  psicPdf_.correctBoundaryConditions();
-}
-
-
 // If moments are not read correctly, initialize them.
 void Foam::mcParticleCloud::checkMoments()
 {
@@ -313,9 +279,10 @@ void Foam::mcParticleCloud::checkMoments()
 void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
 {
   instantM0_ *= 0.0;
-  volVectorField instantM1 = M1_ * 0.0;
-  volScalarField instantMpsi1 = Mpsi1_ * 0.0;
-  volSymmTensorField instantM2 = M2_ * 0.0;
+  scalarField      instantM0(Nc_, 0.0);
+  vectorField      instantM1(Nc_, vector::zero);
+  scalarField      instantMpsi1(Nc_, 0.0);
+  symmTensorField  instantM2(Nc_, symmTensor::zero);
 
   PaNIC_ *= 0;
 
@@ -337,18 +304,24 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
       instantM2[p.cell()]    += p.m() * symm(u * u);
     }
 
-  M0_    = existWt * M0_    + (1.0 - existWt) * instantM0_;
-  M1_    = existWt * M1_    + (1.0 - existWt) * instantM1;
-  Mpsi1_ = existWt * Mpsi1_ + (1.0 - existWt) * instantMpsi1;
-  M2_    = existWt * M2_    + (1.0 - existWt) * instantM2;
-  Info << "start building pdf fields:" << endl;
+  M0_.internalField()    = existWt * M0_.internalField()    + (1.0 - existWt) * instantM0_;
+  M1_.internalField()    = existWt * M1_.internalField()    + (1.0 - existWt) * instantM1;
+  Mpsi1_.internalField() = existWt * Mpsi1_.internalField() + (1.0 - existWt) * instantMpsi1;
+  M2_.internalField()    = existWt * M2_.internalField()    + (1.0 - existWt) * instantM2;
+
   // Compute U, psi, and tau
   rhocPdf_.internalField()  = M0_/mesh_.V(); 
-  UcPdf_.internalField()    = M1_/max(M0_, SMALL_MASS);
-  psicPdf_.internalField()  = Mpsi1_ / max(M0_, SMALL_MASS);
+  UcPdf_.internalField()   = M1_/max(M0_, SMALL_MASS);
+  psicPdf_  = Mpsi1_ / max(M0_, SMALL_MASS);
   TaucPdf_.internalField()  = M2_/max(M0_, SMALL_MASS);
 
-  correctCloudPDFBoundaryConditions();
+  // Info << "UcPDF boundary: " << UcPdf_.boundaryField() << endl;
+  // Info << "psicPdf boundary: " << psicPdf_.boundaryField() << endl;
+
+  rhocPdf_.correctBoundaryConditions();
+  UcPdf_.correctBoundaryConditions();
+  psicPdf_.correctBoundaryConditions();
+  TaucPdf_.correctBoundaryConditions();
 }
 
 
@@ -371,7 +344,7 @@ void Foam::mcParticleCloud::updateParticlePDF()
 void Foam::mcParticleCloud::particleNumberControl()
 {
 
-  List<cellPopStatus> cellPopFlag(mesh_.nCells(), NORMAL);
+  List<cellPopStatus> cellPopFlag(Nc_, NORMAL);
 
   forAll(PaNIC_, celli)
     {
@@ -389,7 +362,7 @@ void Foam::mcParticleCloud::particleNumberControl()
       cellParticleAddr_[celli].clear(); 
     }
 
-    labelList ncpi(mesh_.nCells(), 0);
+    labelList ncpi(Nc_, 0);
 
     for(mcParticleCloud::iterator pIter=begin(); 
       pIter != end();
@@ -672,9 +645,9 @@ void Foam::mcParticleCloud::initReleaseParticles()
     {
       // &&& Should be a cloud property (class number)
       scalar m = mesh_.V()[celli] * rhofv_[celli] / N;
-      vector Updf = Ufv_[celli];
+      vector Updf = UcPdf_[celli];
       vector uscales(sqrt(kfv_[celli]), sqrt(kfv_[celli]), sqrt(kfv_[celli]));
-      scalar psi = psifv_[celli];
+      scalar psi = psicPdf_[celli];
       particleGenInCell(celli, N, m, Updf, uscales, psi);
     }
 
