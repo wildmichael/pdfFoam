@@ -104,7 +104,7 @@ Foam::mcParticleCloud::mcParticleCloud
     const compressible::turbulenceModel* turbModel,
     const volVectorField* U,
     volScalarField* rho,
-    volScalarField* z
+    List<volScalarField*> Phi
 )
 :
     Cloud<mcParticle>(mesh, cloudName, false),
@@ -125,13 +125,6 @@ Foam::mcParticleCloud::mcParticleCloud
         rho ? *rho : const_cast<volScalarField&>(
             mesh.lookupObject<volScalarField>(
                 dict_.lookupOrDefault<word>("rho", "rho")))
-    ),
-    zfv_
-    (
-        z ? *z : const_cast<volScalarField&>(
-            mesh.lookupObject<volScalarField>(
-                dict_.lookupOrDefault<word>(
-                    "mixtureFraction", "z")))
     ),
     AvgTimeScale_
     (
@@ -204,19 +197,7 @@ Foam::mcParticleCloud::mcParticleCloud
         dimensionedVector("UMoment", dimMass*dimVelocity, vector::zero)
     ),
 
-    zMom_
-    (
-        IOobject
-        (
-            "zMoment",
-            runTime_.timeName(),
-            mesh,
-            IOobject::READ_IF_PRESENT,
-            IOobject::AUTO_WRITE
-        ),
-        mesh,
-        dimensionedScalar("zMoment", dimMass, 0.0)
-    ),
+    PhiMom_(0),
 
     uuMom_
     (
@@ -302,6 +283,8 @@ Foam::mcParticleCloud::mcParticleCloud
         kfv()().boundaryField()
     ),
 
+    PhicPdf_(Phi),
+
     coeffRhoCorr_
     (
         "cRhoCorr",
@@ -333,6 +316,25 @@ Foam::mcParticleCloud::mcParticleCloud
         dict_.lookupOrAddDefault<Switch>("particleNumberControl", true)
     )
 {
+    // find scalar fields
+    if (PhicPdf_.empty() && dict_.found("scalarFields"))
+    {
+        dict_.lookup("scalarFields") >> scalarNames_;
+        PhicPdf_.setSize(scalarNames_.size());
+        forAll(PhicPdf_, PhiI)
+        {
+            PhicPdf_[PhiI] = &const_cast<volScalarField&>
+                (mesh_.lookupObject<volScalarField>(scalarNames_[PhiI]));
+        }
+    }
+    else
+    {
+        scalarNames_.setSize(PhicPdf_.size());
+        forAll(PhicPdf_, PhiI)
+        {
+            scalarNames_[PhiI] = PhicPdf_[PhiI]->name();
+        }
+    }
     findGhostLayers();
     checkParticlePropertyDict();
     if (size() > 0) // if particle data found
@@ -355,12 +357,37 @@ Foam::mcParticleCloud::mcParticleCloud
 // If moments are not read correctly, initialize them.
 void Foam::mcParticleCloud::checkMoments()
 {
-    if (PaNIC_.headerOk() &&
+    bool readOk =
+        PaNIC_.headerOk() &&
         mMom_.headerOk() &&
         VMom_.headerOk() &&
         UMom_.headerOk() &&
-        zMom_.headerOk() &&
-        uuMom_.headerOk())
+        uuMom_.headerOk();
+    // Create moment fields
+    PhiMom_.setSize(PhicPdf_.size());
+    forAll(PhicPdf_, PhiI)
+    {
+        // Figure out a field name
+        word name = PhicPdf_[PhiI]->name() + "Moment";
+        PhiMom_.set(PhiI, new DimensionedField<scalar, volMesh>
+            (
+                IOobject
+                (
+                    name,
+                    runTime_.timeName(),
+                    mesh_,
+                    IOobject::READ_IF_PRESENT,
+                    IOobject::AUTO_WRITE
+                ),
+                mesh_,
+                dimensionedScalar(name, dimless, 0)
+            ));
+        if (!PhiMom_[PhiI].headerOk())
+        {
+            readOk = false;
+        }
+    }
+    if (readOk)
     {
         Info<< "Moments read correctly." << endl;
     }
@@ -368,6 +395,12 @@ void Foam::mcParticleCloud::checkMoments()
     {
         Info<< "Moments are missing. Forced re-initialization." << endl;
         updateCloudPDF(0.0);
+    }
+    else
+    {
+        FatalErrorIn("Foam::mcParticleCloud::checkMoments()")
+            << "Not all moment fields available and no particles present."
+            << endl;
     }
 }
 
@@ -414,19 +447,24 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
         mesh_,
         dimensionedVector("UMomInstant", dimMass*dimVelocity, vector::zero)
     );
-    DimensionedField<scalar, volMesh> zMomInstant
-    (
-        IOobject
-        (
-            "zMomInstant",
-            mesh_.time().timeName(),
-            mesh_,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh_,
-        dimensionedScalar("zMomInstant", dimMass, 0.0)
-    );
+    PtrList<DimensionedField<scalar, volMesh> > PhiMomInstant(PhiMom_.size());
+    forAll(PhiMom_, PhiI)
+    {
+        word name = PhiMom_[PhiI].name()+"Instant";
+        PhiMomInstant.set(PhiI, new DimensionedField<scalar, volMesh>
+            (
+                IOobject
+                (
+                    name,
+                    mesh_.time().timeName(),
+                    mesh_,
+                    IOobject::NO_READ,
+                    IOobject::NO_WRITE
+                ),
+                mesh_,
+                dimensionedScalar(name, PhiMom_[PhiI].dimensions(), 0.0)
+            ));
+    }
     DimensionedField<symmTensor, volMesh> uuMomInstant
     (
         IOobject
@@ -457,31 +495,40 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
         mMomInstant[cellI]  += m;
         VMomInstant[cellI]  += m / p.rho();
         UMomInstant[cellI]  += m * p.UParticle();
-        zMomInstant[cellI]  += m * p.z();
+        forAll(PhicPdf_, PhiI)
+        {
+            PhiMomInstant[PhiI][cellI]  += m * p.Phi()[PhiI];
+        }
         uuMomInstant[cellI] += m * symm(u * u);
     }
 
-    // Do time-averaging of moments
     scalar newWt = 1.0 - existWt;
+    // Do time-averaging of moments and compute mean fields
     mMom_  = existWt * mMom_  + newWt * mMomInstant;
-    VMom_  = existWt * VMom_  + newWt * VMomInstant;
-    UMom_  = existWt * UMom_  + newWt * UMomInstant;
-    zMom_  = existWt * zMom_  + newWt * zMomInstant;
-    uuMom_ = existWt * uuMom_ + newWt * uuMomInstant;
-
-    // Compute mean fields
-    rhofv_.internalField()   = mMom_ / max(VMom_, SMALL_VOLUME);
+    DimensionedField<scalar, volMesh> mMomBounded = max(mMom_, SMALL_MASS);
     pndcPdf_.internalField() = mMom_ / mesh_.V();
-    UcPdf_.internalField()   = UMom_ / max(mMom_, SMALL_MASS);
-    zfv_.internalField()     = zMom_ / max(mMom_, SMALL_MASS);
-    TaucPdf_.internalField() = uuMom_/max(mMom_, SMALL_MASS);
-    kcPdf_.internalField()   = 0.5 * tr(TaucPdf_.internalField());
 
-    // Update boundary conditions
+    VMom_  = existWt * VMom_  + newWt * VMomInstant;
+    DimensionedField<scalar, volMesh> VMomBounded = max(VMom_, SMALL_VOLUME);
+    rhofv_.internalField()   = mMom_ / VMomBounded;
     rhofv_.correctBoundaryConditions();
+
+    UMom_  = existWt * UMom_  + newWt * UMomInstant;
+    UcPdf_.internalField()   = UMom_ / mMomBounded;
     UcPdf_.correctBoundaryConditions();
-    zfv_.correctBoundaryConditions();
+
+    forAll(PhicPdf_, PhiI)
+    {
+        PhiMom_[PhiI] = existWt * PhiMom_[PhiI] + newWt * PhiMomInstant[PhiI];
+        PhicPdf_[PhiI]->internalField() = PhiMom_[PhiI] / mMomBounded;
+        PhicPdf_[PhiI]->correctBoundaryConditions();
+    }
+
+    uuMom_ = existWt * uuMom_ + newWt * uuMomInstant;
+    TaucPdf_.internalField() = uuMom_/mMomBounded;
     TaucPdf_.correctBoundaryConditions();
+
+    kcPdf_.internalField()   = 0.5 * tr(TaucPdf_.internalField());
     kcPdf_.correctBoundaryConditions();
 }
 
@@ -826,7 +873,12 @@ void Foam::mcParticleCloud::evolve()
     interpolationCellPoint<vector> gradPInterp(gradP);
     interpolationCellPoint<scalar> kInterp(kfv());
     interpolationCellPoint<scalar> epsilonInterp(epsilonfv());
-    interpolationCellPoint<scalar> zInterp(zfv_);
+    PtrList<interpolationCellPoint<scalar> > PhiInterp(PhicPdf_.size());
+    forAll(PhicPdf_, PhiI)
+    {
+        PhiInterp.set(PhiI,
+                      new interpolationCellPoint<scalar>(*PhicPdf_[PhiI]));
+    }
     interpolationCellPoint<vector> gradRhoInterp(gradRho);
     interpolationCellPoint<vector> diffUInterp(diffU);
     interpolationCellPoint<scalar> kcPdfInterp(kcPdf_);
@@ -835,7 +887,7 @@ void Foam::mcParticleCloud::evolve()
     populateGhostCells();
 
     mcParticle::trackData td(*this, rhoInterp, UInterp, gradPInterp, kInterp,
-                             epsilonInterp, zInterp, gradRhoInterp,
+                             epsilonInterp, PhiInterp, gradRhoInterp,
                              diffUInterp);
 
     Cloud<mcParticle>::move(td);
@@ -867,9 +919,13 @@ void Foam::mcParticleCloud::initReleaseParticles()
         // TODO shouldn't this be multiplied with 2/3?
         scalar ksqrt = sqrt(kfv()()[celli]);
         vector uscales(ksqrt, ksqrt, ksqrt);
-        scalar z = zfv_[celli];
+        scalarField Phi(PhicPdf_.size());
+        forAll(Phi, PhiI)
+        {
+            Phi[PhiI] = (*PhicPdf_[PhiI])[celli];
+        }
 
-        particleGenInCell(celli, Npc_, m, Updf, uscales, z);
+        particleGenInCell(celli, Npc_, m, Updf, uscales, Phi);
     }
     // writeFields();
 }
@@ -884,7 +940,7 @@ void Foam::mcParticleCloud::particleGenInCell
     scalar m,
     const vector& Updf,
     const vector& uscales,
-    scalar z,
+    const scalarField& Phi,
     const vector& shift,
     label  ghost
 )
@@ -924,7 +980,7 @@ void Foam::mcParticleCloud::particleGenInCell
 
             mcParticle* ptr = new mcParticle
                 (
-                    *this,  position, celli, m, Updf, UParticle, UFap, z,
+                    *this,  position, celli, m, Updf, UParticle, UFap, Phi,
                     runTime_.deltaT().value(), shift, ghost
                 );
 
@@ -970,10 +1026,16 @@ void Foam::mcParticleCloud::populateGhostCells()
             vector uscales(ksqrt, ksqrt, ksqrt);
             label  ghost = 1;
             vector shift = ghostCellShifts_[ghostPatchI][faceCelli];
-            // z: from patch value (boundary condition)
-            scalar z = zfv_.boundaryField()[ghostPatchId_[ghostPatchI]][faceCelli];
+            // Phi: from patch value (boundary condition)
+            scalarField Phi(PhicPdf_.size());
+            forAll(Phi, PhiI)
+            {
+                const volScalarField& f = *PhicPdf_[PhiI];
+                label patchId = ghostPatchId_[ghostPatchI];
+                Phi[PhiI] = f.boundaryField()[patchId][faceCelli];
+            }
 
-            particleGenInCell(celli, Npc_, m, Updf, uscales, z, shift, ghost);
+            particleGenInCell(celli, Npc_, m, Updf, uscales, Phi, shift, ghost);
         }
     }
     if (debug)
@@ -1073,7 +1135,7 @@ void Foam::mcParticleCloud::oneParticleInfo(const mcParticle& p) const
         << "Ufv   = " << Ufv_[p.cell()] << ", "
         << "UFap  = " << p.UFap() << ", "
         << "Updf  = " << p.Updf() << nl
-        << "z     = " << p.z() << ", "
+        << "Phi   = " << p.Phi() << ", "
         << "ghost = " << p.ghost() << ", "
         << "shift = " << p.shift()
         << endl;

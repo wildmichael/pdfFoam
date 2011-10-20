@@ -93,7 +93,12 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         vector gradPFap = td.gradPInterp().interpolate(cpw);
         scalar kFap = td.kInterp().interpolate(cpw);
         scalar epsilonFap = td.epsilonInterp().interpolate(cpw);
-        scalar zCap = td.zInterp().interpolate(cpw);
+        scalarField Phiap(Phi_.size());
+        const PtrList<interpolationCellPoint<scalar> >& pintl = td.PhiInterp();
+        forAll(Phi_, PhiI)
+        {
+            Phiap[PhiI] = pintl[PhiI].interpolate(cpw);
+        }
         vector diffUap = td.diffUInterp().interpolate(cpw);
 
         // interpolate fluid velocity to particle location This

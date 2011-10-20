@@ -109,8 +109,6 @@ class mcParticleCloud:
         const volVectorField& Ufv_;
         //- The FV density field
         volScalarField& rhofv_;
-        //- The FV mixture fraction field
-        volScalarField zfv_;
 
         //- The averaging time scale
         scalar AvgTimeScale_;
@@ -119,6 +117,8 @@ class mcParticleCloud:
         Random random_;
         //- Desired number of particles per cell (initially)
         label Npc_;
+        //- List of scalar field names
+        wordList scalarNames_;
         //- Particle elimination threshold
         scalar eliminateAt_;
         //- Particle cloning threshold
@@ -142,8 +142,8 @@ class mcParticleCloud:
             DimensionedField<scalar, volMesh> VMom_;
             //- Averaged 1st statistical moment of velocity
             DimensionedField<vector, volMesh> UMom_;
-            //- Averaged 1st statistical moment of mixture fraction
-            DimensionedField<scalar, volMesh> zMom_;
+            //- Averaged 1st statistical moments of scalar properties
+            PtrList<DimensionedField<scalar, volMesh> > PhiMom_;
             //- Averaged 2nd statistical moment of fluctuating velocity
             DimensionedField<symmTensor, volMesh> uuMom_;
 
@@ -168,6 +168,8 @@ class mcParticleCloud:
         volSymmTensorField TaucPdf_;
         //- Extracted, time-averaged TKE
         volScalarField kcPdf_;
+        //- Extracted, time-averaged scalar fields
+        List<volScalarField*> PhicPdf_;
 
         // Model parameters
 
@@ -227,7 +229,11 @@ public:
         //- Construct from components
         // If any of the field/object pointers happens to be 0, the
         // corresponding field will be looked up from the @a mesh. The names of
-        // the fields can be overriden in the dictionary @a dict.
+        // the fields can be overriden in the dictionary @a dict. If
+        // @a Phi is empty, the names of the scalar fields will be looked up in
+        // the @c scalarFields list-entry of @a dict. If that does not exist or
+        // is empty, the particles will have no scalar properties and no scalar
+        // fields will be extracted.
         mcParticleCloud
         (
             const fvMesh& mesh,
@@ -236,7 +242,7 @@ public:
             const compressible::turbulenceModel* turbModel = 0,
             const volVectorField* U = 0,
             volScalarField* rho = 0,
-            volScalarField* z = 0
+            List<volScalarField*> Phi = List<volScalarField*>()
         );
 
     // Member Functions
@@ -254,6 +260,8 @@ public:
         inline const dimensionedScalar& kRelaxTime() const;
         //- The desired number of particles per cell
         inline label Npc();
+        //- The names of the scalar fiels
+        inline const wordList& scalarNames() const;
 
         //- The random number generator
         Random &random() {return random_;}
@@ -270,7 +278,7 @@ public:
             scalar m,
             const vector& Updf,
             const vector& uscales,
-            scalar z,
+            const scalarField& Phi,
             const vector& shift = vector::zero,
             label  ghost = 0
         );

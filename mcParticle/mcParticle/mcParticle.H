@@ -76,9 +76,6 @@ class mcParticle
        // (same time with Updf & UParticle)
        vector UFap_;
 
-       //- mixture fraction
-       scalar z_;
-
        //- density
        scalar rho_;
 
@@ -92,6 +89,11 @@ class mcParticle
 
        //- Whether this particle is a ghost
        label ghost_;
+
+       // ==== PUT ALL NON-POD DATA AFTER THIS === //
+
+       //- scalar properties
+       scalarField Phi_;
 
 protected:
 
@@ -115,7 +117,7 @@ public:
             const interpolationCellPoint<vector>& gradPInterp_;
             const interpolationCellPoint<scalar>& kInterp_;
             const interpolationCellPoint<scalar>& epsilonInterp_;
-            const interpolationCellPoint<scalar>& zInterp_;
+            const PtrList<interpolationCellPoint<scalar> >& PhiInterp_;
             const interpolationCellPoint<vector>& gradRhoInterp_;
             const interpolationCellPoint<vector>& diffUInterp_;
 
@@ -135,7 +137,7 @@ public:
        const interpolationCellPoint<vector>& gradPInterp,
        const interpolationCellPoint<scalar>& kInterp,
        const interpolationCellPoint<scalar>& epsilonInterp,
-       const interpolationCellPoint<scalar>& zInterp,
+       const PtrList<interpolationCellPoint<scalar> >& PhiInterp,
        const interpolationCellPoint<vector>& gradRhoInterp,
        const interpolationCellPoint<vector>& diffUInterp
        );
@@ -154,7 +156,7 @@ public:
 
       inline const interpolationCellPoint<scalar>& epsilonInterp() const;
 
-      inline const interpolationCellPoint<scalar>& zInterp() const;
+      inline const PtrList<interpolationCellPoint<scalar> >& PhiInterp() const;
 
       inline const interpolationCellPoint<vector>& gradRhoInterp() const;
 
@@ -174,7 +176,7 @@ public:
             const vector& Updf,
             const vector& UParticle,
             const vector& UFap,
-            const scalar z,
+            const scalarField& Phi,
             const scalar dt,
             const vector& shift = vector::zero,
             const label  ghost = 0
@@ -219,8 +221,11 @@ public:
             //- Fluid velocity @ particle location
             inline const vector& UFap() const;
 
-            //- mixture fraction
-            inline const scalar& z() const;
+            //- scalar properties
+            inline const scalarField& Phi() const;
+
+            //- scalar properties
+            inline scalarField& Phi();
 
             //- density
             inline const scalar& rho() const;
@@ -344,7 +349,8 @@ public:
 template<>
 inline bool contiguous<mcParticle>()
 {
-    return true;
+    // contains scalar field
+    return false;
 }
 
 
