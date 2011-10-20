@@ -1130,9 +1130,8 @@ void Foam::mcParticleCloud::initReleaseParticles()
         scalar m = mesh_.V()[celli] * rhocPdf_[celli] / Npc_;
         // TODO fv or pdf?
         vector Updf = Ufv_[celli];
-        // TODO shouldn't this be multiplied with 2/3?
-        scalar ksqrt = sqrt(kfv()()[celli]);
-        vector uscales(ksqrt, ksqrt, ksqrt);
+        scalar urms = sqrt(2./3.*kfv()()[celli]);
+        vector uscales(urms, urms, urms);
         scalarField Phi(PhicPdf_.size());
         forAll(Phi, PhiI)
         {
@@ -1261,9 +1260,8 @@ void Foam::mcParticleCloud::populateGhostCells()
             label  celli = ghostCellLayers_[ghostPatchI][faceCelli];
             scalar m = mesh_.V()[celli] * rhocPdf_[celli] / Npc_;
             vector Updf = Ufv_[celli];
-            // TODO shouldn't this be multiplied with 2/3?
-            scalar ksqrt = sqrt(kfv()()[celli]);
-            vector uscales(ksqrt, ksqrt, ksqrt);
+            scalar urms = sqrt(2./3.*kfv()()[celli]);
+            vector uscales(urms, urms, urms);
             label  ghost = 1;
             vector shift = ghostCellShifts_[ghostPatchI][faceCelli];
             // Phi: from patch value (boundary condition)
