@@ -26,7 +26,7 @@ License
 #include "mcParticleCloud.H"
 #include "fvMesh.H"
 #include "volFields.H"
-#include "interpolationCellPoint.H"
+#include "interpolationCellPointFace.H"
 #include "fixedValueFvPatchField.H"
 #include "boundBox.H"
 #include "fvc.H"
@@ -1072,14 +1072,14 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     diffU = (Ufv_ - UcPdf_) / URelaxTime_;
     diffU.correctBoundaryConditions();
 
-    interpolationCellPoint<scalar> rhoInterp(rhocPdf_);
+    interpolationCellPointFace<scalar> rhoInterp(rhocPdf_);
     //interpolationCellPointFaceFlux UInterp(U);
-    interpolationCellPoint<vector> UInterp(Ufv_);
-    interpolationCellPoint<vector> gradPInterp(gradP);
-    interpolationCellPoint<scalar> kInterp(kfv());
-    interpolationCellPoint<vector> gradRhoInterp(gradRho);
-    interpolationCellPoint<vector> diffUInterp(diffU);
-    interpolationCellPoint<scalar> kcPdfInterp(kcPdf_);
+    interpolationCellPointFace<vector> UInterp(Ufv_);
+    interpolationCellPointFace<vector> gradPInterp(gradP);
+    interpolationCellPointFace<scalar> kInterp(kfv());
+    interpolationCellPointFace<vector> gradRhoInterp(gradRho);
+    interpolationCellPointFace<vector> diffUInterp(diffU);
+    interpolationCellPointFace<scalar> kcPdfInterp(kcPdf_);
 
     //Impose boundary conditions via particles
     populateGhostCells();

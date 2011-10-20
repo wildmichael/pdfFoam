@@ -74,12 +74,12 @@ Foam::scalar computeCourantNo(const Foam::mcParticle& p)
 Foam::mcParticle::trackData::trackData
 (
     mcParticleCloud& mcpc,
-    const interpolationCellPoint<scalar>& rhoInterp,
-    const interpolationCellPoint<vector>& UInterp,
-    const interpolationCellPoint<vector>& gradPInterp,
-    const interpolationCellPoint<scalar>& kInterp,
-    const interpolationCellPoint<vector>& gradRhoInterp,
-    const interpolationCellPoint<vector>& diffUInterp
+    const interpolationCellPointFace<scalar>& rhoInterp,
+    const interpolationCellPointFace<vector>& UInterp,
+    const interpolationCellPointFace<vector>& gradPInterp,
+    const interpolationCellPointFace<scalar>& kInterp,
+    const interpolationCellPointFace<vector>& gradRhoInterp,
+    const interpolationCellPointFace<vector>& diffUInterp
 )
 :
     Particle<mcParticle>::trackData(mcpc),
@@ -147,19 +147,21 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         {
             Info<< "Updating fluctuating velocity" << endl;
         }
-        cellPointWeight cpw(mesh, position(), cell(), face());
+        const point& p = position();
+        label c = cell();
+        label f = face();
 
         // fluid quantities @ particle position
-        vector gradPFap = td.gradPInterp().interpolate(cpw);
-        scalar kFap = td.kInterp().interpolate(cpw);
-        vector diffUap = td.diffUInterp().interpolate(cpw);
+        vector gradPFap = td.gradPInterp().interpolate(p, c, f);
+        scalar kFap = td.kInterp().interpolate(p, c, f);
+        vector diffUap = td.diffUInterp().interpolate(p, c, f);
 
         // interpolate fluid velocity to particle location This
         // quantity is a data member the class.
         // Note: if would be the best if UInterp is interpolating
         // velocities based on faces to get UFap instead of cell
         // center values. Will implemente later.
-        UFap_ = td.UInterp().interpolate(cpw);
+        UFap_ = td.UInterp().interpolate(p, c, f);
 
         // Wiener process (question mark)
         vector dW = sqrt(deltaT) * vector
@@ -183,8 +185,12 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
 
     vector correctedUp = UParticle_ - Updf_ + UFap_;
 
-    cellPointWeight cpwx(mesh, position(), cell(), face());
-    vector gradRhoFap = td.gradRhoInterp().interpolate(cpwx);
+    vector gradRhoFap = td.gradRhoInterp().interpolate
+    (
+        position(),
+        cell(),
+        face()
+    );
 
     Utracking_ = correctedUp - gradRhoFap;
     meshTools::constrainDirection(mesh, mesh.solutionD(), Utracking_);

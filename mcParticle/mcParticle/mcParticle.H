@@ -42,7 +42,7 @@ Author: Heng Xiao with Patrick Jenny, 2010-08-29
 #include "Particle.H"
 #include "IOstream.H"
 #include "autoPtr.H"
-#include "interpolationCellPoint.H"
+#include "interpolationCellPointFace.H"
 #include "contiguous.H"
 #include "meshTools.H"
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -118,12 +118,12 @@ public:
 
         // Interpolators for continuous phase fields
 
-            const interpolationCellPoint<scalar>& rhoInterp_;
-            const interpolationCellPoint<vector>& UInterp_;
-            const interpolationCellPoint<vector>& gradPInterp_;
-            const interpolationCellPoint<scalar>& kInterp_;
-            const interpolationCellPoint<vector>& gradRhoInterp_;
-            const interpolationCellPoint<vector>& diffUInterp_;
+            const interpolationCellPointFace<scalar>& rhoInterp_;
+            const interpolationCellPointFace<vector>& UInterp_;
+            const interpolationCellPointFace<vector>& gradPInterp_;
+            const interpolationCellPointFace<scalar>& kInterp_;
+            const interpolationCellPointFace<vector>& gradRhoInterp_;
+            const interpolationCellPointFace<vector>& diffUInterp_;
 
 
     public:
@@ -133,28 +133,28 @@ public:
         trackData
         (
             mcParticleCloud& mcpc,
-            const interpolationCellPoint<scalar>& rhoInterp,
-            const interpolationCellPoint<vector>& UInterp,
-            const interpolationCellPoint<vector>& gradPInterp,
-            const interpolationCellPoint<scalar>& kInterp,
-            const interpolationCellPoint<vector>& gradRhoInterp,
-            const interpolationCellPoint<vector>& diffUInterp
+            const interpolationCellPointFace<scalar>& rhoInterp,
+            const interpolationCellPointFace<vector>& UInterp,
+            const interpolationCellPointFace<vector>& gradPInterp,
+            const interpolationCellPointFace<scalar>& kInterp,
+            const interpolationCellPointFace<vector>& gradRhoInterp,
+            const interpolationCellPointFace<vector>& diffUInterp
         );
 
         // Member functions
 
-        inline const interpolationCellPoint<scalar>& rhoInterp() const;
+        inline const interpolationCellPointFace<scalar>& rhoInterp() const;
 
-        inline const interpolationCellPoint<vector>& UInterp() const;
+        inline const interpolationCellPointFace<vector>& UInterp() const;
 
-        inline const interpolationCellPoint<vector>& gradPInterp() const;
+        inline const interpolationCellPointFace<vector>& gradPInterp() const;
 
-        inline const interpolationCellPoint<scalar>& kInterp() const;
+        inline const interpolationCellPointFace<scalar>& kInterp() const;
 
 
-        inline const interpolationCellPoint<vector>& gradRhoInterp() const;
+        inline const interpolationCellPointFace<vector>& gradRhoInterp() const;
 
-        inline const interpolationCellPoint<vector>& diffUInterp() const;
+        inline const interpolationCellPointFace<vector>& diffUInterp() const;
     };
 
 

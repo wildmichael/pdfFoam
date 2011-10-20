@@ -25,42 +25,42 @@ License
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-inline const Foam::interpolationCellPoint<Foam::scalar>&
+inline const Foam::interpolationCellPointFace<Foam::scalar>&
 Foam::mcParticle::trackData::rhoInterp() const
 {
     return rhoInterp_;
 }
 
 
-inline const Foam::interpolationCellPoint<Foam::vector>&
+inline const Foam::interpolationCellPointFace<Foam::vector>&
 Foam::mcParticle::trackData::UInterp() const
 {
     return UInterp_;
 }
 
 
-inline const Foam::interpolationCellPoint<Foam::vector>&
+inline const Foam::interpolationCellPointFace<Foam::vector>&
 Foam::mcParticle::trackData::gradPInterp() const
 {
     return gradPInterp_;
 }
 
 
-inline const Foam::interpolationCellPoint<Foam::scalar>&
+inline const Foam::interpolationCellPointFace<Foam::scalar>&
 Foam::mcParticle::trackData::kInterp() const
 {
     return kInterp_;
 }
 
 
-inline const Foam::interpolationCellPoint<Foam::vector>&
+inline const Foam::interpolationCellPointFace<Foam::vector>&
 Foam::mcParticle::trackData::gradRhoInterp() const
 {
     return gradRhoInterp_;
 }
 
 
-inline const Foam::interpolationCellPoint<Foam::vector>&
+inline const Foam::interpolationCellPointFace<Foam::vector>&
 Foam::mcParticle::trackData::diffUInterp() const
 {
     return diffUInterp_;
