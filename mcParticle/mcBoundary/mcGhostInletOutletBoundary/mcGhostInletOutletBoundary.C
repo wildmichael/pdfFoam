@@ -280,13 +280,13 @@ void Foam::mcGhostInletOutletBoundary::correct
     bool afterMove
 )
 {
-    if (!afterMove)
+    if (afterMove)
     {
-        populateGhostCells(cloud);
+        purgeGhostParticles(cloud);
     }
     else
     {
-        purgeGhostParticles(cloud);
+        populateGhostCells(cloud);
     }
 }
 
