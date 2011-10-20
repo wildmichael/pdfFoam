@@ -50,6 +50,7 @@ Foam::mcParticleCloud::mcParticleCloud
     mesh_(mesh),
     Ufv_(U),
     dtCloud_(mesh.time().deltaT().value()),
+    random_(55555+12345*Pstream::myProcNo()),
     particleProperties_
     (
         IOobject
@@ -60,7 +61,21 @@ Foam::mcParticleCloud::mcParticleCloud
             IOobject::MUST_READ,
             IOobject::NO_WRITE
         )
-    )
+     ),
+    M0_(
+        IOobject
+        (
+            "M0",
+            mesh_.time().constant(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        )
+        mesh_,
+        
+       ),
+    M1_(),
+    M2_()
 {
   //&&& should be a property cloud (read from dict)
   bool initialRelease = true;
@@ -85,15 +100,17 @@ void Foam::mcParticleCloud::evolve()
 {
     const volScalarField& rho = mesh_.lookupObject<const volScalarField>("rho");
     const volVectorField& U = mesh_.lookupObject<const volVectorField>("U");
+    const volVectorField& gradP = mesh_.lookupObject<const volVectorField>("grad(p)");
     const volScalarField& k = mesh_.lookupObject<const volScalarField>("k");
+    const volScalarField& epsilon = mesh_.lookupObject<const volScalarField>("epsilon");
 
     interpolationCellPoint<scalar> rhoInterp(rho);
     interpolationCellPoint<vector> UInterp(U);
+    interpolationCellPoint<vector> gradPInterp(gradP);
     interpolationCellPoint<scalar> kInterp(k);
+    interpolationCellPoint<scalar> epsilonInterp(epsilon);
 
-    mcParticle::trackData td(*this, rhoInterp, UInterp, kInterp);
-
-    updateEndPositions();
+    mcParticle::trackData td(*this, rhoInterp, UInterp, gradPInterp, kInterp, epsilonInterp);
 
     Cloud<mcParticle>::move(td);
     allParticlesInfo();
@@ -128,7 +145,8 @@ void Foam::mcParticleCloud::initReleaseParticles()
 }
 
 
-void Foam::mcParticleCloud::updateEndPositions()
+//This serves as a template for looping through particles in the cloud
+void Foam::mcParticleCloud::updateParticleProperties()
 {
  
   for(mcParticleCloud::iterator pIter=begin(); 
@@ -136,8 +154,7 @@ void Foam::mcParticleCloud::updateEndPositions()
       ++pIter
       )
     {
-      mcParticle & p = pIter();
-      p.endPosition() = p.position() + (p.UParticle()) * p.dt();
+      // mcParticle & p = pIter();
     }
   
 }
@@ -161,7 +178,7 @@ void Foam::mcParticleCloud::allParticlesInfo() const
       const mcParticle & p = pIter();
       Info << "Particle # " << p.origId() << "; "
            << "X = " << p.position() << "; "
-           << "u = " << p.u()
+           << "Up = " << p.UParticle()
            << endl;
       
     }

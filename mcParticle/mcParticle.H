@@ -65,17 +65,21 @@ class mcParticle
         //- mass (statistical weight)
         scalar m_;
 
-        //- Reference to mean velocity
+        //- mean velocity based on particles
         vector Updf_;
   
-        //- Fluctuation Velocity
-        vector u_;
+        //- particle velocity (mean + flutuation) (primary variable)
+        vector UParticle_;
 
-       //- current destination
-        vector endPosition_;
+        //- fluid velocity @ particle location (not stored)
+        //- particle fluctuation velocity w.r.t Updf (not stored)
 
        //- current time step
-        scalar dt_;
+       scalar dt_;
+
+       //- fluid velocity @ particle location, updated at the end of each Lagrangian dt
+       // (same time with Updf & UParticle)
+       vector UFap_;
 
 public:
 
@@ -91,7 +95,9 @@ public:
 
             const interpolationCellPoint<scalar>& rhoInterp_;
             const interpolationCellPoint<vector>& UInterp_;
+            const interpolationCellPoint<vector>& gradPInterp_;
             const interpolationCellPoint<scalar>& kInterp_;
+            const interpolationCellPoint<scalar>& epsilonInterp_;
 
 
     public:
@@ -106,7 +112,9 @@ public:
        mcParticleCloud& mcpc,
        const interpolationCellPoint<scalar>& rhoInterp,
        const interpolationCellPoint<vector>& UInterp,
-       const interpolationCellPoint<scalar>& kInterp
+       const interpolationCellPoint<vector>& gradPInterp,
+       const interpolationCellPoint<scalar>& kInterp,
+       const interpolationCellPoint<scalar>& epsilonInterp
        );
 
       // Member functions
@@ -116,9 +124,12 @@ public:
       inline const interpolationCellPoint<scalar>& rhoInterp() const;
       
       inline const interpolationCellPoint<vector>& UInterp() const;
+
+      inline const interpolationCellPoint<vector>& gradPInterp() const;
       
       inline const interpolationCellPoint<scalar>& kInterp() const;
       
+      inline const interpolationCellPoint<scalar>& epsilonInterp() const;
     };
 
 
@@ -161,17 +172,12 @@ public:
             //- Return velocity PDF
             inline const vector& Updf() const;
 
-            //- Return fluctuation
-            inline const vector& u() const;
-
             //- Return total particle velocity;
-            inline const vector UParticle();
+            inline const vector& UParticle() const; 
             
             //- particle time step
-            inline scalar dt();
+            inline scalar& dt();
 
-           //- Return current destination
-            inline vector& endPosition();
 
         // Tracking
 

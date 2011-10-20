@@ -40,6 +40,7 @@ SourceFiles
 #include "Cloud.H"
 #include "mcParticle.H"
 #include "IOdictionary.H"
+#include "Random.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -65,9 +66,16 @@ class mcParticleCloud
   
   scalar dtCloud_;
 
+  //- random number for Wiener process (diffusion) 
+  Random random_;
+
   IOdictionary particleProperties_;
 
-
+  //- statistical moments (mass, momentum, energy)
+  //- needed to obtain UPdf, and TauPdf fields
+  volScalarField M0;
+  volVectorField M1;
+  volSymmTensorField M2;
 
   // Private Member Functions
 
@@ -101,6 +109,9 @@ public:
       inline scalar e() const;
       inline scalar mu() const;
 
+  
+      Random &random() {return random_;}
+
         // Edit
 
 
@@ -108,7 +119,7 @@ public:
   void initReleaseParticles();
 
   //- Update end position (for tracking)
-  void updateEndPositions();
+  void updateParticleProperties();
 
   //- Evolve the particles
   void evolve();

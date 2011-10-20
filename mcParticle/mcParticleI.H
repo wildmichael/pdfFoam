@@ -30,13 +30,17 @@ inline Foam::mcParticle::trackData::trackData
     mcParticleCloud& mcpc,
     const interpolationCellPoint<scalar>& rhoInterp,
     const interpolationCellPoint<vector>& UInterp,
-    const interpolationCellPoint<scalar>& kInterp
+    const interpolationCellPoint<vector>& gradPInterp,
+    const interpolationCellPoint<scalar>& kInterp,
+    const interpolationCellPoint<scalar>& epsilonInterp
 )
 :
     mcpc_(mcpc),
     rhoInterp_(rhoInterp),
     UInterp_(UInterp),
-    kInterp_(kInterp)
+    gradPInterp_(gradPInterp),
+    kInterp_(kInterp),
+    epsilonInterp_(epsilonInterp)
 {}
 
 
@@ -47,15 +51,14 @@ inline Foam::mcParticle::mcParticle
  const label celli,
  const scalar m,
  const vector& Updf,
- const vector& u,
+ const vector& UParticle,
  const scalar dt
 )
 :
   Particle<mcParticle>(c, position, celli),
   m_(m),
   Updf_(Updf),
-  u_(u),
-  endPosition_(position),
+  UParticle_(UParticle),
   dt_(dt)
 {}
 
@@ -79,10 +82,22 @@ Foam::mcParticle::trackData::UInterp() const
     return UInterp_;
 }
 
+inline const Foam::interpolationCellPoint<Foam::vector>&
+Foam::mcParticle::trackData::gradPInterp() const
+{
+    return gradPInterp_;
+}
+
 inline const Foam::interpolationCellPoint<Foam::scalar>&
 Foam::mcParticle::trackData::kInterp() const
 {
     return kInterp_;
+}
+
+inline const Foam::interpolationCellPoint<Foam::scalar>&
+Foam::mcParticle::trackData::epsilonInterp() const
+{
+    return epsilonInterp_;
 }
 
 
@@ -96,24 +111,20 @@ inline const Foam::vector& Foam::mcParticle::Updf() const
     return Updf_;
 }
 
-inline const Foam::vector& Foam::mcParticle::u() const
+inline const Foam::vector& Foam::mcParticle::UParticle() const
 {
-    return u_;
+    return UParticle_;
 }
 
-inline const Foam::vector Foam::mcParticle::UParticle()
+am::vector& Foam::mcParticle::UFap() const
 {
-    return Updf_ + u_;
+    return UFap_;
 }
 
-inline Foam::scalar Foam::mcParticle::dt()
+inline Foam::scalar& Foam::mcParticle::dt()
 {
     return dt_;
 }
 
-inline Foam::vector & Foam::mcParticle::endPosition()
-{
-  return endPosition_;
-}
 
 // ************************************************************************* //

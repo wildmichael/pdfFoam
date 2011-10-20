@@ -29,45 +29,131 @@ License
 
 bool Foam::mcParticle::move(mcParticle::trackData& td)
 {
+  // SLM constant, temperarily put here C0 = 2.1
+
+    scalar C0 = 2.1;
+  
     td.switchProcessor = false;
     td.keepParticle = true;
 
     const polyMesh& mesh = cloud().pMesh();
     const polyBoundaryMesh& pbMesh = mesh.boundaryMesh();
 
-    while (td.keepParticle && !td.switchProcessor 
-           && stepFraction_ < 1.0 - SMALL )
+    scalar deltaT = mesh.time().deltaT().value();
+    scalar tEnd = (1.0 - stepFraction())*deltaT;
+    scalar dtMax = tEnd;
+
+
+    while (td.keepParticle && !td.switchProcessor && tEnd > SMALL)
     {
         if (debug)
         {
             Info<< "Time = " << mesh.time().timeName()
+                << " deltaT = " << deltaT
+                << " tEnd = " << tEnd
                 << " steptFraction() = " << stepFraction() << endl;
         }
 
-        stepFraction_ += trackToFace(endPosition(), td)*(1.0 - stepFraction_);  
+        // set the lagrangian time-step
+        scalar dt = min(dtMax, tEnd);
 
-        Info << "Finished trackToFace" << endl;
+        // remember which cell the parcel is in
+        // since this will change if a face is hit
+        label celli = cell();
+
+        // Particle does not move with its actual velocity, but with
+        // FV interpolated velocity plus particle fluctuation
+        // velocity. A particle number correction flux is needed as
+        // well (to ensure consistency with FV density field).
+        destParticle = position() + dt * (UParticle_ - UPdf_ + UFap_);
+          
+        dt *= trackToFace(destParticle, td);
+
+        tEnd -= dt;
+        stepFraction() = 1.0 - tEnd/deltaT;
+
+        cellPointWeight cpw(mesh, position(), celli, face());
+        
+        // fluid quantities @ particle position
+        scalar rhoFap = td.rhoInterp().interpolate(cpw);
+        vector gradPFap = td.gradPInterp().interpolate(cpw);
+        scalar kFap = td.kInterp().interpolate(cpw);
+        scalar epsilonFap = td.epsilonInterp().interpolate(cpw);
+        
+        // interpolate fluid velocity to particle location This
+        // quantity is a data member the class. 
+        // Note: if would be the best of UInterp is interpolating
+        // velocities based on faces to get UFap instead of cell
+        // center values. Will implemente later. 
+        UFap_ = td.UInterp().interpolate(cpw);
+
+        //Wiener process
+        vector dW = sqrt(dt) * vector
+          (
+           td.mcpc().random().GaussNormal(),
+           td.mcpc().random().GaussNormal(),
+           td.mcpc().random().GaussNormal()
+           );
+
+        // Update velocity (rhof should be rho-particle) 
+        UParticle_ += gradPFap/rhoFap
+          - (0.5 + 0.75 * C0) * epsilonFap / kFap * (UParticle_- Updf_) * dt
+          + sqrt(C0 * epsilonFap) * dW;
 
         if (onBoundary() && td.keepParticle)
         {
             if (isA<processorPolyPatch>(pbMesh[patch(face())]))
-              {
+            {
                 td.switchProcessor = true;
-              }
-            
-            if (isA<wallPolyPatch>(pbMesh[patch(face())]))
-               {
-                 Info << "Hitting wall patch..." << endl;
-                 stepFraction_ = 1.0;
-                 //                 const wallPolyPatch & wpp = static_cast<const wallPolyPatch&> (pbMesh[patch(face())]);
-                 //                 hitWallPatch(wpp, td);
-             }
+            }
         }
     }
-    
 
     return td.keepParticle;
 }
+
+
+// bool Foam::mcParticle::move(mcParticle::trackData& td)
+// {
+//     td.switchProcessor = false;
+//     td.keepParticle = true;
+
+//     const polyMesh& mesh = cloud().pMesh();
+//     const polyBoundaryMesh& pbMesh = mesh.boundaryMesh();
+
+//     while (td.keepParticle && !td.switchProcessor 
+//            && stepFraction_ < 1.0 - SMALL )
+//     {
+//         if (debug)
+//         {
+//             Info<< "Time = " << mesh.time().timeName()
+//                 << " steptFraction() = " << stepFraction() << endl;
+//         }
+
+//         stepFraction_ += trackToFace(endPosition(), td)*(1.0 - stepFraction_);  
+
+//         Info << "Finished trackToFace" << endl;
+
+//         if (onBoundary() && td.keepParticle)
+//         {
+//             if (isA<processorPolyPatch>(pbMesh[patch(face())]))
+//               {
+//                 td.switchProcessor = true;
+//               }
+            
+//             if (isA<wallPolyPatch>(pbMesh[patch(face())]))
+//                {
+//                  Info << "Hitting wall patch..." << endl;
+//                  stepFraction_ = 1.0;
+//                  //                 const wallPolyPatch & wpp = static_cast<const wallPolyPatch&> (pbMesh[patch(face())]);
+//                  //                 hitWallPatch(wpp, td);
+//              }
+//         }
+//     }
+    
+
+//     return td.keepParticle;
+// }
 
 
 // Pre-action before hitting patches
@@ -78,7 +164,7 @@ bool Foam::mcParticle::hitPatch
  const label Lb
 )
 {
-  return skipPatchHitAction;
+  return false;
 }
 
 
@@ -117,27 +203,23 @@ void Foam::mcParticle::hitWallPatch
     mcParticle::trackData& td
 )
 {
-  Info << "Calling hit wall patch" << endl;
   vector nw = wpp.faceAreas()[wpp.whichFace(face())];
   nw /= mag(nw);  // Wall normal (outward)
   
-  vector UPTmp = Updf_ + u_;
-  
-  scalar Un = UPTmp & nw; // Normal component
-  vector Ut = UPTmp - Un*nw; // Tangential component
+  scalar Un = UParticle_ & nw; // Normal component
+  vector Ut = UParticle_ - Un*nw; // Tangential component
   
   if (Un > 0)
     {
       // Elastic coefficient: 1 = perfectly elastic; 0 = perfect plastic.
-      UPTmp -= (1.0 + td.mcpc().e())*Un*nw; 
+      UParticle_ -= (1.0 + td.mcpc().e())*Un*nw; 
     }
 
   // Tangential friction coefficient: 
   // 1 = totally friction (stop); 0 = smooth (no loss)
-  UPTmp -= td.mcpc().mu()*Ut;
-  
-  u_ = UPTmp - Updf_;  // Updf is not changed.
-  Info << "After hitting wall, Uparticle = " << UParticle() << endl;
+  UParticle_ -= td.mcpc().mu()*Ut;
+
+  Info << "After hitting wall, UParticle = " << UParticle() << endl;
   Info << "stepFraction: " << stepFraction() << endl;
 }
 
@@ -172,9 +254,7 @@ void Foam::mcParticle::hitPatch
 void Foam::mcParticle::transformProperties (const tensor& T)
 {
     Particle<mcParticle>::transformProperties(T);
-    vector UPTmp = Updf_ + u_;
-    UPTmp = transform(T, UPTmp);
-    u_ = UPTmp - Updf_;
+    UParticle_ = transform(T, UParticle_);
 }
 
 
