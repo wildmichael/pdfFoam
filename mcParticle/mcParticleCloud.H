@@ -188,6 +188,8 @@ class mcParticleCloud:
 
         Switch particleNumberControl_;
 
+        bool finishedInit_;
+
     // Private Member Functions
 
         //- Ensure moments are cnosistently read

@@ -360,22 +360,13 @@ Foam::mcParticleCloud::mcParticleCloud
     (
         particleProperties_.lookupOrAddDefault<Switch>
                 ("particleNumberControl", true)
-    )
+    ),
+    finishedInit_(false)
 {
-    if (size() > 0) // if particle data not found
+    if (size() > 0) // if particle data found
     {
         mcParticle::readFields(*this);
     }
-
-    // Take care of statistical moments (make sure they are consistent)
-    checkMoments();
-
-    // Ensure particles takes the updated PDF values
-
-    updateParticlePDF();
-
-    findGhostLayers();
-
     checkParticlePropertyDict();
 }
 
@@ -798,15 +789,28 @@ void Foam::mcParticleCloud::evolve()
     kfvPtr_ = &tmpkfv();
     kcPdf_.boundaryField() = kfvPtr_->boundaryField(); // TODO dangerous?
 
-    // initialize particle cloud if that didn't happen so far
-    if (!size())
+    // finish initialization if needed
+    if (!finishedInit_)
     {
-        Info<< "I am releasing particles initially! size = " << size() << endl;
-        initReleaseParticles();
-        Info<< "Done releasing particles. size = " << size() << endl;
+        finishedInit_ = true;
+
+        findGhostLayers();
+
+        // initialize particle cloud if that didn't happen so far
+        if (!size())
+        {
+            Info<< "I am releasing particles initially! size = " << size() << endl;
+            initReleaseParticles();
+            Info<< "Done releasing particles. size = " << size() << endl;
+        }
+        // Take care of statistical moments (make sure they are consistent)
+        checkMoments();
+
+        // Ensure particles takes the updated PDF values
+        updateParticlePDF();
     }
 
-    // Check that kcPdf_ > SMALL
+    // lower bound for k
     kcPdf_ = max(kcPdf_, kMin_);
 
     // const volScalarField& rho = mesh_.lookupObject<const volScalarField>("rho");
