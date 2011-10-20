@@ -78,7 +78,7 @@ patches
         (1 2  8 7)
         (2 4 10 8)
     )
-    patch walls
+    wall walls
     (
         (0 1  7  6)
         (4 5 11 10)
