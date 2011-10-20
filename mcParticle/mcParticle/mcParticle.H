@@ -160,7 +160,7 @@ public:
         //- Construct from components
         mcParticle
         (
-            mcParticleCloud& c,
+            const mcParticleCloud& c,
             const vector& position,
             const label celli,
             const scalar m,

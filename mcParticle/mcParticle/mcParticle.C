@@ -89,7 +89,7 @@ Foam::mcParticle::trackData::trackData
 
 Foam::mcParticle::mcParticle
 (
-    mcParticleCloud& c,
+    const mcParticleCloud& c,
     const vector& position,
     const label   celli,
     const scalar  m,
