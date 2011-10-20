@@ -57,19 +57,7 @@ cloudProperties
             {
                     type ghostOutlet;
             }
-            bottom
-            {
-                type            slip;
-            }
-            top
-            {
-                type            slip;
-            }
-            front
-            {
-                type            slip;
-            }
-            back
+            walls
             {
                 type            slip;
             }
