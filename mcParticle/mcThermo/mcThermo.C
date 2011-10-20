@@ -79,7 +79,8 @@ Foam::mcThermo::mcThermo(const fvMesh& mesh)
         ).lookup("nu")
     ),
 
-    evolutionFrequency_(lookupOrDefault<label>("evolutionFrequency", 1))
+    nFVSubCycles_(lookupOrDefault<label>("nFVSubCycles", 1)),
+    nPDFSubCycles_(lookupOrDefault<label>("nPDFSubCycles", 1))
 {
     calculate();
 }
@@ -109,7 +110,8 @@ void Foam::mcThermo::correct()
 
 void Foam::mcThermo::evolve()
 {
-    if (!(mesh_.time().timeIndex() % evolutionFrequency_))
+    Time& runTime = const_cast<Time&>(mesh_.time());
+    if ((runTime.timeIndex()-runTime.startTimeIndex()) % (nPDFSubCycles_ + nFVSubCycles_) + 1 > nFVSubCycles_)
     {
         if (debug)
         {
@@ -136,7 +138,11 @@ void Foam::mcThermo::evolve()
                 )
             );
         }
-        cloudP_().evolve();
+        for (label i=0; i < nPDFSubCycles_; i++)
+        {
+            runTime++;
+            cloudP_().evolve();
+        }
 
         if (debug)
         {

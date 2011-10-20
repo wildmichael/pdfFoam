@@ -15,7 +15,8 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-evolutionFrequency 1;
+nFVSubCycles 1;
+nPDFSubCycles 1;
 
 cloudProperties
 {
