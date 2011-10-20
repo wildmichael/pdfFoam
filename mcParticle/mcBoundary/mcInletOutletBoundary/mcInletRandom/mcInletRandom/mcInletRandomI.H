@@ -25,17 +25,17 @@ License
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-Foam::scalar Foam::mcInversionInletRandom::CDF(scalar x)
+Foam::scalar Foam::mcInletRandom::PDF(scalar x) const
 {
-    x -= Umean();
-    return (expma2b2_-exp(-b2_*x*x)+abSqrtPi_*(erfab_+erf(b_*x)))/denom_;
+    scalar xp = x - UMean_;
+    return b22denom_*exp(-b2_*xp*xp)*x;
 }
 
 
-Foam::scalar Foam::mcInversionInletRandom::PDF(scalar x)
+Foam::scalar Foam::mcInletRandom::CDF(scalar x) const
 {
-    scalar xp = x - Umean();
-    return b22denom_*exp(-b2_*xp*xp)*x;
+    x -= UMean_;
+    return (expma2b2_-exp(-b2_*x*x)+abSqrtPi_*(erfab_+erf(b_*x)))/denom_;
 }
 
 // ************************************************************************* //

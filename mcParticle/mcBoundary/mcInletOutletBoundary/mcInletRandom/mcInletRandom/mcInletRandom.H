@@ -72,15 +72,44 @@ class mcInletRandom
         //- Random number generator
         Random& rnd_;
         //- Mean velocity
-        scalar Umean_;
+        scalar UMean_;
         //- RMS of fluctuations (stddev)
-        scalar urms_;
+        scalar uRms_;
+        //- Inlet mean velocity
+        scalar UCondMean_;
+        //- Commonly used, precomputed factors
+        scalar b_, b2_, expma2b2_, abSqrtPi_, erfab_, denom_, b22denom_;
 
     // Private member functions
 
         // Disallow default bitwise copy construct and assignment
         mcInletRandom(const mcInletRandom&);
         void operator=(const mcInletRandom&);
+
+protected:
+
+    // Protected member functions
+
+        //- 1/sqrt(2*uRms()*uRms())
+        scalar b() const { return b_; }
+
+        //- pow(b(), 2)
+        scalar b2() const { return b2_; }
+
+        //- exp(-pow(UMean()*b(), 2))
+        scalar expma2b2() const { return expma2b2_; }
+
+        //- Umean()*b()*sqrt*(pi)
+        scalar abSqrtPi() const { return abSqrtPi_; }
+
+        //- erf(UMean()*b())
+        scalar erfab() const { return erfab_; }
+
+        //- expma2b2()+abSqrtPi()*(1+erfab())
+        scalar denom() const { return denom_; }
+
+        //- 2*b2()/denom
+        scalar b22denom() const { return b22denom_; }
 
 public:
 
@@ -96,11 +125,11 @@ public:
             mcInletRandom,
             (
                 Random& rnd,
-                scalar Umean,
-                scalar urms,
+                scalar UMean,
+                scalar uRms,
                 const dictionary& dict
             ),
-            (rnd, Umean, urms, dict)
+            (rnd, UMean, uRms, dict)
         );
 
     // Constructors
@@ -110,8 +139,8 @@ public:
         mcInletRandom
         (
             Random& rnd,
-            scalar Umean,
-            scalar urms,
+            scalar UMean,
+            scalar uRms,
             const dictionary& dict
         );
 
@@ -126,31 +155,53 @@ public:
         static autoPtr<mcInletRandom> New
         (
             Random& rnd,
-            scalar Umean,
-            scalar urms,
+            scalar UMean,
+            scalar uRms,
             const dictionary& dict
         );
 
     // Access
 
+        //- The underlying random number generator object
         Random& rnd() { return rnd_; }
-        scalar Umean() const { return Umean_; }
-        scalar& Umean() { return Umean_; }
-        scalar urms() const { return urms_; }
-        scalar& urms() { return urms_; }
+
+        //- The unconditional mean velocity
+        scalar UMean() const { return UMean_; }
+
+        //- The unconditional mean velocity
+        scalar& UMean() { return UMean_; }
+
+        //- The unconditional standard deviation of the velocity
+        scalar uRms() const { return uRms_; }
+
+        //- The unconditional standard deviation of the velocity
+        scalar& uRms() { return uRms_; }
+
+        //- The conditional mean velocity
+        inline scalar UCondMean() const { return UCondMean_; }
 
     // Public member functions
 
         //- Generate one random number
         virtual scalar value() = 0;
 
-        //- Update the coefficients for changed Umean and urms
-        virtual void updateCoeffs(scalar Umean, scalar urms);
+        //- Update the coefficients for changed UMean and uRms
+        virtual void updateCoeffs(scalar UMean, scalar uRms);
+
+        //- Probability density function (PDF)
+        inline scalar PDF(scalar x) const;
+
+        //- Cummulative distribution function (CDF)
+        inline scalar CDF(scalar x) const;
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#include "mcInletRandomI.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

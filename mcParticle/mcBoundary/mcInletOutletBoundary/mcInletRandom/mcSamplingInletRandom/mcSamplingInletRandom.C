@@ -37,8 +37,8 @@ using namespace Foam;
 void fillBuf
 (
     Random&            rnd,
-    scalar             Umean,
-    scalar             urms,
+    scalar             UMean,
+    scalar             uRms,
     FIFOStack<scalar>& buf
 )
 {
@@ -47,7 +47,7 @@ void fillBuf
     scalar m = -VGREAT;
     forAll(tmp, i)
     {
-        tmp[i] = rnd.GaussNormal()*urms + Umean;
+        tmp[i] = rnd.GaussNormal()*uRms + UMean;
         m = max(m, fabs(tmp[i]));
     }
     forAll(tmp, i)
@@ -82,12 +82,12 @@ namespace Foam
 Foam::mcSamplingInletRandom::mcSamplingInletRandom
 (
     Random& rnd,
-    scalar Umean,
-    scalar urms,
+    scalar UMean,
+    scalar uRms,
     const dictionary& dict
 )
 :
-    mcInletRandom(rnd, Umean, urms, dict)
+    mcInletRandom(rnd, UMean, uRms, dict)
 {}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
@@ -96,7 +96,7 @@ Foam::scalar Foam::mcSamplingInletRandom::value()
 {
     if (!buf_.size())
     {
-        fillBuf(rnd(), Umean(), urms(), buf_);
+        fillBuf(rnd(), UMean(), uRms(), buf_);
     }
     return buf_.pop();
 }
@@ -108,7 +108,7 @@ void Foam::mcSamplingInletRandom::updateCoeffs
     scalar up
 )
 {
-    if (fabs(Umean()-U)>VSMALL || fabs(urms()-up)>VSMALL)
+    if (fabs(UMean()-U)>VSMALL || fabs(uRms()-up)>VSMALL)
     {
         buf_.clear();
     }

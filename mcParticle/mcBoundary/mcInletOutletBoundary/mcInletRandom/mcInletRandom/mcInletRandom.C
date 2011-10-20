@@ -42,15 +42,15 @@ namespace Foam
 Foam::mcInletRandom::mcInletRandom
 (
     Foam::Random& rnd,
-    scalar Umean,
-    scalar urms,
+    scalar UMean,
+    scalar uRms,
     const dictionary& dict
 )
 :
     dictionary(dict),
     rnd_(rnd)
 {
-    updateCoeffs(Umean, urms);
+    updateCoeffs(UMean, uRms);
 }
 
 // * * * * * * * * * * * * * * * * Destructor *  * * * * * * * * * * * * * * //
@@ -64,8 +64,8 @@ Foam::mcInletRandom::~mcInletRandom()
 Foam::autoPtr<Foam::mcInletRandom> Foam::mcInletRandom::New
 (
     Random& rnd,
-    scalar Umean,
-    scalar urms,
+    scalar UMean,
+    scalar uRms,
     const dictionary& dict
 )
 {
@@ -84,19 +84,27 @@ Foam::autoPtr<Foam::mcInletRandom> Foam::mcInletRandom::New
             << mcInletRandomConstructorTablePtr_->sortedToc()
             << exit(FatalError);
     }
-    return autoPtr<mcInletRandom>(cstrIter()(rnd, Umean, urms, dict));
+    return autoPtr<mcInletRandom>(cstrIter()(rnd, UMean, uRms, dict));
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 void Foam::mcInletRandom::updateCoeffs
 (
-    Foam::scalar Umean,
-    Foam::scalar urms
+    Foam::scalar UMean,
+    Foam::scalar uRms
 )
 {
-    Umean_ = Umean;
-    urms_ = urms;
+    UMean_ = UMean;
+    uRms_ = uRms;
+    b_ = M_SQRT1_2/uRms_;
+    b2_ = b_*b_;
+    expma2b2_ = exp(-UMean_*UMean_*b2_);
+    abSqrtPi_ = UMean_*b_*sqrt(M_PI);
+    erfab_ = erf(UMean_*b_);
+    denom_ = expma2b2_+abSqrtPi_*(1.+erfab_);
+    b22denom_ = 2.*b2_/denom_;
+    UCondMean_ = 0.5*(UMean_+expma2b2_/(b_*sqrt(M_PI))+UMean_*erfab_);
 }
 
 // ************************************************************************* //

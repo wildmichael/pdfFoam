@@ -48,14 +48,14 @@ namespace Foam
 Foam::mcInversionInletRandom::mcInversionInletRandom
 (
     Random& rnd,
-    scalar Umean,
-    scalar urms,
+    scalar UMean,
+    scalar uRms,
     const dictionary& dict
 )
 :
-    mcInletRandom(rnd, Umean, urms, dict)
+    mcInletRandom(rnd, UMean, uRms, dict)
 {
-    updateCoeffs(Umean, urms);
+    updateCoeffs(UMean, uRms);
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
@@ -115,14 +115,7 @@ void Foam::mcInversionInletRandom::updateCoeffs
 )
 {
     mcInletRandom::updateCoeffs(U, up);
-    b_ = M_SQRT1_2/urms();
-    b2_ = b_*b_;
-    expma2b2_ = exp(-Umean()*Umean()*b2_);
-    abSqrtPi_ = Umean()*b_*sqrt(M_PI);
-    erfab_ = erf(Umean()*b_);
-    denom_ = expma2b2_+abSqrtPi_*(1.0+erfab_);
-    b22denom_ = 2.0*b2_/denom_;
-    m_ = 0.5*(Umean()*b_+sqrt(2.0+Umean()*Umean()*b2_))/b_;
+    m_ = 0.5*(UMean()*b()+sqrt(2.0+UMean()*UMean()*b2()))/b();
 }
 
 // ************************************************************************* //

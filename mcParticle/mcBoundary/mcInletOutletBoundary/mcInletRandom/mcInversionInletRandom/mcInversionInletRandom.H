@@ -58,10 +58,6 @@ class mcInversionInletRandom
 {
     // Private data
 
-        //- 1/sqrt(2*Variance)
-        scalar b_;
-        //- Commonly used, precomputed factors
-        scalar b2_, expma2b2_, abSqrtPi_, erfab_, denom_, b22denom_;
         //- Location of the peak of the PDF
         scalar m_;
 
@@ -69,12 +65,6 @@ class mcInversionInletRandom
 
         //- Newton-Raphson root finding of the CDF
         scalar newton(scalar x0, scalar y, label& nIter);
-
-        //- Cummulative distribution function (CDF)
-        inline scalar CDF(scalar x);
-
-        //- Probability density function (PDF)
-        inline scalar PDF(scalar x);
 
         // Disallow default bitwise copy construct and assignment
         mcInversionInletRandom(const mcInversionInletRandom&);
@@ -92,8 +82,8 @@ public:
         mcInversionInletRandom
         (
             Random& rnd,
-            scalar Umean,
-            scalar urms,
+            scalar UMean,
+            scalar uRms,
             const dictionary& dict
         );
 
@@ -102,17 +92,13 @@ public:
         //- Generate one random number
         virtual scalar value();
 
-        //- Update the coefficients for changed Umean and urms
-        virtual void updateCoeffs(scalar Umean, scalar urms);
+        //- Update the coefficients for changed UMean and uRms
+        virtual void updateCoeffs(scalar UMean, scalar uRms);
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-#include "mcInversionInletRandomI.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

@@ -82,8 +82,8 @@ public:
         mcSamplingInletRandom
         (
             Random& rnd,
-            scalar Umean,
-            scalar urms,
+            scalar UMean,
+            scalar uRms,
             const dictionary& dict
         );
 
@@ -92,8 +92,8 @@ public:
         //- Generate one random number
         virtual scalar value();
 
-        //- Update the coefficients for changed Umean and urms
-        virtual void updateCoeffs(scalar Umean, scalar urms);
+        //- Update the coefficients for changed UMean and uRms
+        virtual void updateCoeffs(scalar UMean, scalar uRms);
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
