@@ -801,7 +801,7 @@ void Foam::mcParticleCloud::particleNumberControl()
             mcParticleList & cepl = cellParticleAddr_[celli];
             if (cepl.size() < 1)
             {
-                cepl.setSize(round(PaNIC_[celli]));
+                cepl.setSize(round(PaNIC_[celli]), NULL);
             }
             cepl[ncpi[celli]++] = &p;
         }
