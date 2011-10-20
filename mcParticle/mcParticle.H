@@ -69,16 +69,8 @@ class mcParticle
         //- mean velocity based on particles
         vector Updf_;
 
-        //- Mean Reynolds stress based on partiles
-        // symmTensor Taupdf_;
-  
         //- particle velocity (mean + flutuation) (primary variable)
         vector UParticle_;
-
-        //- particle fluctuation velocity w.r.t Updf (not stored)
-
-       //- current time step
-       scalar dt_;
 
        //- fluid velocity @ particle location, updated at the end of each Lagrangian dt
        // (same time with Updf & UParticle)
@@ -86,6 +78,9 @@ class mcParticle
 
        //- scalar concetration
        scalar psi_;
+
+       //- current time step
+       scalar dt_;
 
 public:
 

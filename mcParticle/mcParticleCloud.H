@@ -143,6 +143,8 @@ class mcParticleCloud
   dimensionedScalar coeffRhoCorr_;
   dimensionedScalar coeffUCorr_;
 
+  Switch particleNumberControl_;
+
   // Private Member Functions
 
   //- ensure moments M0, M1, M2 are cnosistently read

@@ -44,19 +44,22 @@ Foam::mcParticle::mcParticle
             m_ = readScalar(is);
             is >> Updf_;
             is >> UParticle_;
+            is >> UFap_;
             is >> psi_;
+            is >> dt_;
         }
         else
         {
             is.read
             (
                 reinterpret_cast<char*>(&m_),
-                sizeof(m_) + sizeof(Updf_) + sizeof(UParticle_) + sizeof(psi_)
+                sizeof(m_) + sizeof(Updf_) +
+                sizeof(UParticle_) + sizeof(UFap_) +
+                sizeof(psi_) + sizeof(dt_)
             );
         }
     }
 
-    dt_ = 0.01;
     // Check state of Istream
     is.check("mcParticle::mcParticle(Istream&)");
 }
@@ -143,7 +146,9 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
             << token::SPACE << p.m_
             << token::SPACE << p.Updf_
             << token::SPACE << p.UParticle_
-            << token::SPACE << p.psi_;
+            << token::SPACE << p.UFap_
+            << token::SPACE << p.psi_
+            << token::SPACE << p.dt_;
     }
     else
     {
@@ -151,7 +156,9 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
         os.write
         (
             reinterpret_cast<const char*>(&p.m_),
-            sizeof(p.m_) + sizeof(p.Updf_)  + sizeof(p.UParticle_) + sizeof(p.psi_)
+            sizeof(p.m_) + sizeof(p.Updf_) +
+            sizeof(p.UParticle_) + sizeof(p.UFap_) +
+            sizeof(p.psi_) + sizeof(p.dt_)
         );
     }
 

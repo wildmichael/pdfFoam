@@ -248,7 +248,11 @@ Foam::mcParticleCloud::mcParticleCloud
     "cUCorr", 
     dimless,
     particleProperties_.lookupOrAddDefault<scalar>("coeffUCorrection", 0.001)
-  )
+   ),
+  particleNumberControl_
+  (
+   particleProperties_.lookupOrAddDefault<Switch>("particleNumberControl", true)
+   )
 {
   if (size() > 0) // if particle data not found
     {
@@ -263,7 +267,6 @@ Foam::mcParticleCloud::mcParticleCloud
   // Take care of statistical moments (make sure they are consistent)
   checkMoments();
 
-  Info << "finished checking moments" << endl;
   // Ensure particles takes the updated PDF values
 
   updateParticlePDF();
@@ -334,9 +337,6 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
   psicPdf_  = Mpsi1_ / max(M0_, SMALL_MASS);
   TaucPdf_.internalField()  = M2_/max(M0_, SMALL_MASS);
 
-  // Info << "UcPDF boundary: " << UcPdf_.boundaryField() << endl;
-  // Info << "psicPdf boundary: " << psicPdf_.boundaryField() << endl;
-
   rhocPdf_.correctBoundaryConditions();
   UcPdf_.correctBoundaryConditions();
   psicPdf_.correctBoundaryConditions();
@@ -362,6 +362,7 @@ void Foam::mcParticleCloud::updateParticlePDF()
 // particles I host?
 void Foam::mcParticleCloud::particleNumberControl()
 {
+  if (!particleNumberControl_) return;
 
   List<cellPopStatus> cellPopFlag(Nc_, NORMAL);
 
@@ -369,7 +370,7 @@ void Foam::mcParticleCloud::particleNumberControl()
     {
       label np = PaNIC_[celli];
 
-      // classify the particle # heath condition of each cell
+      // classify the particle # health condition of each cell
       if (np < 1)
         { cellPopFlag[celli] = EMPTY; }
       else if ( np <= (Npc_ * 2 / 3) )
@@ -423,7 +424,6 @@ void Foam::mcParticleCloud::particleNumberControl()
               }
           }
       }
-
         
   // Debug only: check the list
     if(debug_)
@@ -444,6 +444,7 @@ void Foam::mcParticleCloud::particleNumberControl()
             }
         }
 }
+
 
 // Split the n heaviest particles
 void Foam::mcParticleCloud::cloneParticles(label celli)
@@ -737,6 +738,7 @@ void Foam::mcParticleCloud::particleGenInCell
                   );
           vector UParticle = u + Updf;
           vector UFap = Ufv_[celli];
+
           mcParticle* ptr =
             new mcParticle
             (
@@ -811,9 +813,8 @@ void Foam::mcParticleCloud::populateGhostCells()
               scalar ksqrt = sqrt(kfv_[celli]);
 
               vector uscales(ksqrt, ksqrt, ksqrt);
+
               // psi: from patch value (boundary condition)
-              //Info << " ghostPatchI =  " << ghostPatchI << endl;
-              //Info << "psifv field: " << psifv_.boundaryField() << endl;
               scalar psi = psifv_.boundaryField()[ghostPatchId_[ghostPatchI]][faceCelli];
 
               particleGenInCell(celli, N, m, Updf, uscales, psi);
@@ -876,7 +877,8 @@ void Foam::mcParticleCloud::oneParticleInfo(const mcParticle& p) const
        << "m    = " << p.m() << nl
        << "U    = " << p.UParticle()  << ", "
        << "Ufv  = " << Ufv_[p.cell()] << ", "
-       << "Updf = " << p.Updf() << ", "
+       << "UFap = " << p.UFap() << ", "
+       << "Updf = " << p.Updf() << nl
        << "psi  = " << p.psi()
        << endl;
 }
@@ -894,7 +896,7 @@ void Foam::mcParticleCloud::assertPopulationHealth() const
       if(! mesh_.bounds().contains(p.position()))
         {
           cloudHealthy = false;
-          Info << "***Warning: " << endl;
+          Pout << "***Warning: " << endl;
           oneParticleInfo(p);
         }
       
