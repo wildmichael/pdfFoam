@@ -50,7 +50,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
     {
         if (debug)
         {
-            Info<< "Time = " << mesh.time().timeName()
+           Info<< "Time = " << mesh.time().timeName()
                 << " deltaT = " << deltaT
                 << " tEnd = " << tEnd
                 << " steptFraction() = " << stepFraction() << endl;
@@ -110,12 +110,12 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         UParticle_ += - gradPFap/rhoFap * dt
           - (0.5 + 0.75 * C0) * epsilonFap / kFap * (UParticle_- Updf_) * dt
           + sqrt(C0 * epsilonFap) * dW
-          + diffUap;
+          + diffUap * dt;
 
         // Scale to ensure consistency on TKE
         mcParticleCloud& mcpc = td.mcpc();
         UParticle_ += 
-          (UParticle_ - Updf_) * mcpc.coeffkCorr() *
+          (UParticle_ - Updf_)  * dt / mcpc.kRelaxTime().value() *
           (
            sqrt(mcpc.kfv()[celli]/mcpc.kcPdf()[celli]) - 1.0
           );

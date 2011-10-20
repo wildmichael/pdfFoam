@@ -75,6 +75,7 @@ Foam::mcParticleCloud::mcParticleCloud
   Cloud<mcParticle>(mesh, cloudName, false),
     debug_ (false),
     mesh_(mesh),
+    runTime_(mesh.time()),
     Ufv_(U),
     rhofv_(rho),
     kfv_(k),
@@ -85,18 +86,18 @@ Foam::mcParticleCloud::mcParticleCloud
        IOobject
         (
             "particleProperties",
-            mesh_.time().constant(),
+            runTime_.constant(),
             mesh_,
             IOobject::MUST_READ,
             IOobject::NO_WRITE
         )
      ),
 
-    dtCloud_(mesh.time().deltaT().value()),
+    dtCloud_(runTime_.deltaT().value()),
   AvgTimeScale_
   (
    particleProperties_.lookupOrAddDefault<scalar>
-                  ("averageTimeScale", 0.1*mesh.time().endTime().value())
+                  ("averageTimeScale", 0.1*runTime_.endTime().value())
    ),
   
   random_(55555+12345*Pstream::myProcNo()),
@@ -113,7 +114,7 @@ Foam::mcParticleCloud::mcParticleCloud
          IOobject
          (
             "PaNIC",
-            mesh.time().timeName(),
+            runTime_.timeName(),
             mesh_,
             IOobject::READ_IF_PRESENT,
             IOobject::AUTO_WRITE
@@ -129,7 +130,7 @@ Foam::mcParticleCloud::mcParticleCloud
         IOobject
         (
             "M0",
-            mesh.time().timeName(),
+            runTime_.timeName(),
             mesh_,
             IOobject::READ_IF_PRESENT,
             IOobject::AUTO_WRITE
@@ -141,7 +142,7 @@ Foam::mcParticleCloud::mcParticleCloud
         IOobject
         (
             "M1",
-            mesh.time().timeName(),
+            runTime_.timeName(),
             mesh,
             IOobject::READ_IF_PRESENT,
             IOobject::AUTO_WRITE
@@ -153,7 +154,7 @@ Foam::mcParticleCloud::mcParticleCloud
         IOobject
         (
             "Mpsi",
-            mesh.time().timeName(),
+            runTime_.timeName(),
             mesh,
             IOobject::READ_IF_PRESENT,
             IOobject::AUTO_WRITE
@@ -165,7 +166,7 @@ Foam::mcParticleCloud::mcParticleCloud
         IOobject
           (
             "M2",
-            mesh.time().timeName(),
+            runTime_.timeName(),
             mesh,
             IOobject::READ_IF_PRESENT,
             IOobject::AUTO_WRITE
@@ -184,7 +185,7 @@ Foam::mcParticleCloud::mcParticleCloud
       IOobject
      (
       "rhoCloudPDF",
-      mesh.time().timeName(),
+      runTime_.timeName(),
       mesh,
       IOobject::READ_IF_PRESENT,
       IOobject::AUTO_WRITE
@@ -201,7 +202,7 @@ Foam::mcParticleCloud::mcParticleCloud
       IOobject
      (
       "UCloudPDF",
-      mesh.time().timeName(),
+      runTime_.timeName(),
       mesh,
        IOobject::READ_IF_PRESENT,
       IOobject::AUTO_WRITE
@@ -218,7 +219,7 @@ Foam::mcParticleCloud::mcParticleCloud
       IOobject
      (
       "psiCloudPDF",
-      mesh.time().timeName(),
+      runTime_.timeName(),
       mesh,
        IOobject::READ_IF_PRESENT,
       IOobject::AUTO_WRITE
@@ -234,7 +235,7 @@ Foam::mcParticleCloud::mcParticleCloud
       IOobject
       (
        "TauCloudPDF",
-       mesh.time().timeName(),
+       runTime_.timeName(),
        mesh,
        IOobject::READ_IF_PRESENT,
        IOobject::AUTO_WRITE
@@ -252,7 +253,7 @@ Foam::mcParticleCloud::mcParticleCloud
       IOobject
       (
        "kCloudPDF",
-       mesh.time().timeName(),
+       runTime_.timeName(),
        mesh,
        IOobject::READ_IF_PRESENT,
        IOobject::AUTO_WRITE
@@ -269,15 +270,17 @@ Foam::mcParticleCloud::mcParticleCloud
     dimTime,
     particleProperties_.lookupOrAddDefault<scalar>("coeffRhoCorrection", 1.0e-7)
    ),
-  coeffUCorr_
+  URelaxTime_
   (
-    "cUCorr", 
-    dimless,
-    particleProperties_.lookupOrAddDefault<scalar>("coeffUCorrection", 0.001)
+    "URelaxTime", 
+    dimTime,
+    particleProperties_.lookupOrAddDefault<scalar>("URelaxTime", runTime_.deltaT().value()*10.0)
    ),
-  coeffkCorr_
+  kRelaxTime_
   (
-   particleProperties_.lookupOrAddDefault<scalar>("coeffkCorrection", 0.001)
+    "kRelaxTime", 
+    dimTime,
+   particleProperties_.lookupOrAddDefault<scalar>("kRelaxTime", runTime_.deltaT().value()*10.0)
    ),
   particleNumberControl_
   (
@@ -393,17 +396,19 @@ void Foam::mcParticleCloud::updateParticlePDF()
 void Foam::mcParticleCloud::checkParticlePropertyDict()
 {
   // Cap clone/eliminate threshold with reasonable values
+  scalar Dt = runTime_.deltaT().value();
+
   eliminateAt_ = max(1.1,  min(eliminateAt_, 2.5)); 
   particleProperties_.set("eliminateAt", eliminateAt_);
 
   cloneAt_   = max(0.5,  min(cloneAt_,   0.9));
   particleProperties_.set("cloneAt", cloneAt_);
     
-  coeffkCorr_   = max(0.0,  min(coeffkCorr_,   1.0));
-  particleProperties_.set("coeffkCorrection", coeffkCorr_);
+  kRelaxTime_   = max(2.0*Dt,  kRelaxTime_.value());
+  particleProperties_.set("kRelaxTime", kRelaxTime_.value());
 
-  coeffUCorr_.value()   = max(0.0,  min(coeffUCorr_.value(),   1.0));
-  particleProperties_.set("coeffUCorrection", coeffUCorr_.value());
+  URelaxTime_.value()   = max(2.0*Dt,  URelaxTime_.value());
+  particleProperties_.set("URelaxTime", URelaxTime_.value());
 
   Info << "Particle Properties Dict:" << particleProperties_ << nl << endl; 
 }
@@ -688,7 +693,7 @@ void Foam::mcParticleCloud::evolve()
             zeroGradientFvPatchScalarField::typeName
          );
 
-    diffU = (Ufv_ - UcPdf_) * coeffUCorr_;
+    diffU = (Ufv_ - UcPdf_) / URelaxTime_;
     diffU.correctBoundaryConditions();
 
     interpolationCellPoint<scalar> rhoInterp(rhofv_);
@@ -714,7 +719,7 @@ void Foam::mcParticleCloud::evolve()
     //  and clear those still in ghost a cell
     purgeGhostParticles();
 
-    scalar existWt = 1.0/(1.0 + (mesh_.time().deltaT()/AvgTimeScale_).value());
+    scalar existWt = 1.0/(1.0 + (runTime_.deltaT()/AvgTimeScale_).value());
     // Extract statistical averaging to obtain mesh-based quantities
     updateCloudPDF(existWt); 
     updateParticlePDF();

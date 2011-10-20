@@ -92,6 +92,7 @@ class mcParticleCloud
   // Private data
   bool  debug_;
   const fvMesh& mesh_;
+  const Time& runTime_;
   
   const volVectorField& Ufv_;
   const volScalarField& rhofv_;
@@ -145,8 +146,8 @@ class mcParticleCloud
   //- constants
 
   dimensionedScalar coeffRhoCorr_;
-  dimensionedScalar coeffUCorr_;
-  scalar coeffkCorr_;
+  dimensionedScalar URelaxTime_;
+  dimensionedScalar kRelaxTime_;
 
   Switch particleNumberControl_;
 
@@ -209,7 +210,7 @@ public:
 
       inline const volScalarField& kfv() const;
       inline const volScalarField& kcPdf() const;
-      inline scalar coeffkCorr() const;
+      inline const dimensionedScalar& kRelaxTime() const;
 
       inline scalar dtCloud();
       inline label Npc();

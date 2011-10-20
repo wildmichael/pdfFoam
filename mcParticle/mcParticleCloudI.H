@@ -56,9 +56,9 @@ inline const Foam::volScalarField& Foam::mcParticleCloud::kcPdf() const
   return kcPdf_;
 }
 
-inline Foam::scalar Foam::mcParticleCloud::coeffkCorr() const
+inline const Foam::dimensionedScalar& Foam::mcParticleCloud::kRelaxTime() const
 {
-  return coeffkCorr_;
+  return kRelaxTime_;
 }
 
 inline Foam::scalar Foam::mcParticleCloud::dtCloud()
