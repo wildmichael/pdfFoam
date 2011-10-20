@@ -101,26 +101,30 @@ Foam::mcParticleCloud::mcParticleCloud
   
   random_(55555+12345*Pstream::myProcNo()),
   Npc_(particleProperties_.lookupOrAddDefault<label>("particlesPerCell", 30)),
+  clusterAt_(particleProperties_.lookupOrAddDefault<scalar>("clusterAt", 1.5)),
+  cloneAt_(particleProperties_.lookupOrAddDefault<scalar>("cloneAt", 0.66)),
   Nc_(mesh_.nCells()),
   histNp_(size()),
 
-    SMALL_MASS("SMALL_MASS", dimMass, SMALL),
+  SMALL_MASS("SMALL_MASS", dimMass, SMALL),
 
-    PaNIC_(
-        IOobject
+  PaNIC_
         (
-         "PaNIC",
-         mesh.time().timeName(),
+         IOobject
+         (
+            "PaNIC",
+            mesh_,
+            IOobject::READ_IF_PRESENT,
+            IOobject::AUTO_WRITE
+          ),
          mesh_,
-         IOobject::READ_IF_PRESENT,
-         IOobject::AUTO_WRITE
+         dimensionedScalar("PaNIC", dimless, 0),
+         zeroGradientFvPatchScalarField::typeName
          ),
-        Nc_
-        ),
+  
+  cellParticleAddr_(Nc_),
 
-    cellParticleAddr_(Nc_),
-
-    M0_(
+  M0_(
         IOobject
         (
             "M0",
@@ -254,6 +258,7 @@ Foam::mcParticleCloud::mcParticleCloud
    particleProperties_.lookupOrAddDefault<Switch>("particleNumberControl", true)
    )
 {
+
   if (size() > 0) // if particle data not found
     {
       mcParticle::readFields(*this);
@@ -272,8 +277,7 @@ Foam::mcParticleCloud::mcParticleCloud
   updateParticlePDF();
 
   findGhostLayers();
-  
-  Info << "Particle Properties Dict:" << nl << particleProperties_ << nl << endl;
+
   mesh_.time().write();
 }
 
@@ -358,7 +362,19 @@ void Foam::mcParticleCloud::updateParticlePDF()
 }
 
 
-// Update particle-cell addressing: for each cell, what are the IDs of the
+void Foam::mcParticleCloud::checkParticlePropertyDict()
+{
+  // Cap clone/cluster threshold with reasonable values
+  clusterAt_ = max(1.1,  min(clusterAt_, 2.5)); 
+  cloneAt_   = max(0.5,  min(cloneAt_,   0.9));
+  particleProperties_.set("clusterAt", clusterAt_);
+  particleProperties_.set("cloneAt", cloneAt_);
+    
+  Info << "Particle Properties Dict:" << nl << particleProperties_ << nl << endl; 
+}
+
+
+// Update particle-cell addressing: for each cell, what are the addresses of the
 // particles I host?
 void Foam::mcParticleCloud::particleNumberControl()
 {
@@ -368,14 +384,14 @@ void Foam::mcParticleCloud::particleNumberControl()
 
   forAll(PaNIC_, celli)
     {
-      label np = PaNIC_[celli];
+      label np = round(PaNIC_[celli]);
 
       // classify the particle # health condition of each cell
       if (np < 1)
         { cellPopFlag[celli] = EMPTY; }
-      else if ( np <= (Npc_ * 2 / 3) )
+      else if ( np <= (Npc_ * cloneAt_) )
         { cellPopFlag[celli] = TOOFEW; }
-      else if (np >= Npc_* 3 / 2)
+      else if (np >= Npc_* clusterAt_)
         { cellPopFlag[celli] = TOOMANY; }
       
       // clear old list
@@ -397,7 +413,7 @@ void Foam::mcParticleCloud::particleNumberControl()
           // according to ascending order of mass (if too many particles)
           // or descending order of mass (if too few particle)
           mcParticleList & cepl = cellParticleAddr_[celli];
-          if(cepl.size() < 1)  cepl.setSize(PaNIC_[celli]);
+          if(cepl.size() < 1)  cepl.setSize(round(PaNIC_[celli]));
           cepl[ncpi[celli]++] = &p;
         }
     }
@@ -441,8 +457,8 @@ void Foam::mcParticleCloud::particleNumberControl()
 // Split the n heaviest particles
 void Foam::mcParticleCloud::cloneParticles(label celli)
 {
-  label n = Npc_ - PaNIC_[celli]; // # particle to eliminate
-  n = min(PaNIC_[celli], n);
+  label n = Npc_ - round(PaNIC_[celli]); // # particle to eliminate
+  n = min(round(PaNIC_[celli]), n);
 
   for(label particleI=0; particleI < n; particleI++)
     {
@@ -462,7 +478,7 @@ void Foam::mcParticleCloud::cloneParticles(label celli)
 // As name suggests
 void Foam::mcParticleCloud::clusterParticles(label celli)
 {
-  label ncur = PaNIC_[celli];
+  label ncur = round(PaNIC_[celli]);
   label nx =  ncur - Npc_; // # particle to eliminate
   // Pool of partiles to operate on is 2*nx, 
   // but liminted by available particles in this cell.  
@@ -678,7 +694,7 @@ void Foam::mcParticleCloud::evolve()
 void Foam::mcParticleCloud::initReleaseParticles()
 {
   // Populate each cell with partilces with N particle each cell
-  label N = Npc_* 1.5;
+  label N = Npc_;
 
   forAll(Ufv_, celli)
     {

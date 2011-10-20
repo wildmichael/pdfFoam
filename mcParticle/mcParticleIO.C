@@ -92,9 +92,6 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
     IOField<scalar> psi(c.fieldIOobject("psi", IOobject::MUST_READ));
     c.checkFieldIOobject(c, psi);
 
-    //    IOField<vector> shift(c.fieldIOobject("shift", IOobject::MUST_READ));
-    //    c.checkFieldIOobject(c, shift);
-
     label i = 0;
     forAllIter(Cloud<mcParticle>, c, iter)
     {
@@ -123,8 +120,6 @@ void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
     IOField<vector> UParticle(c.fieldIOobject("UParticle", IOobject::NO_READ), np);
     IOField<vector> UFap(c.fieldIOobject("UFap", IOobject::NO_READ), np);
     IOField<scalar> psi(c.fieldIOobject("psi", IOobject::NO_READ), np);
-    IOField<label> ghost(c.fieldIOobject("ghost", IOobject::NO_READ), np);
-    IOField<vector> shift(c.fieldIOobject("shift", IOobject::NO_READ), np);
 
     label i = 0;
     forAllConstIter(Cloud<mcParticle>, c, iter)
@@ -136,8 +131,6 @@ void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
         UParticle[i] = p.UParticle_;
         UFap[i] = p.UFap_;
         psi[i] = p.psi_;
-        ghost[i] = p.ghost_;
-        shift[i] = p.shift_;
         i++;
     }
 
@@ -146,8 +139,6 @@ void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
     UParticle.write();
     UFap.write();
     psi.write();
-    ghost.write();
-    shift.write();
 }
 
 

@@ -107,6 +107,8 @@ class mcParticleCloud
   Random random_;
   //- Number of particles per cell (initially)
   label Npc_;
+  scalar clusterAt_;
+  scalar cloneAt_;
   //- Cell size
   const label Nc_;
   // How many particle existed in history (including living ones)
@@ -117,7 +119,7 @@ class mcParticleCloud
   //- needed to obtain Updf (and later Taupdf) fields
   dimensionedScalar SMALL_MASS;
 
-  labelIOField   PaNIC_; // Particle # in cell
+  volScalarField      PaNIC_; // Particle # in cell
   mcParticleListList  cellParticleAddr_;
   volScalarField M0_;
   volVectorField M1_;
@@ -156,6 +158,7 @@ class mcParticleCloud
   void updateParticlePDF();
 
   //Particle number control actions
+  void checkParticlePropertyDict();
   void particleNumberControl();
   void cloneParticles(label celli);
   void clusterParticles(label celli);
