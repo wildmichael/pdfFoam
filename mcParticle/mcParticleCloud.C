@@ -102,7 +102,7 @@ Foam::mcParticleCloud::mcParticleCloud
   random_(55555+12345*Pstream::myProcNo()),
   Npc_(particleProperties_.lookupOrAddDefault<label>("particlesPerCell", 30)),
   clusterAt_(particleProperties_.lookupOrAddDefault<scalar>("clusterAt", 1.5)),
-  cloneAt_(particleProperties_.lookupOrAddDefault<scalar>("cloneAt", 0.66)),
+  cloneAt_(particleProperties_.lookupOrAddDefault<scalar>("cloneAt", 0.67)),
   Nc_(mesh_.nCells()),
   histNp_(size()),
 
@@ -113,6 +113,7 @@ Foam::mcParticleCloud::mcParticleCloud
          IOobject
          (
             "PaNIC",
+            mesh.time().timeName(),
             mesh_,
             IOobject::READ_IF_PRESENT,
             IOobject::AUTO_WRITE
@@ -278,6 +279,7 @@ Foam::mcParticleCloud::mcParticleCloud
 
   findGhostLayers();
 
+  checkParticlePropertyDict();
   mesh_.time().write();
 }
 
@@ -389,9 +391,9 @@ void Foam::mcParticleCloud::particleNumberControl()
       // classify the particle # health condition of each cell
       if (np < 1)
         { cellPopFlag[celli] = EMPTY; }
-      else if ( np <= (Npc_ * cloneAt_) )
+      else if ( np <= round(Npc_ * cloneAt_) )
         { cellPopFlag[celli] = TOOFEW; }
-      else if (np >= Npc_* clusterAt_)
+      else if (np >= round(Npc_* clusterAt_) )
         { cellPopFlag[celli] = TOOMANY; }
       
       // clear old list
@@ -693,16 +695,16 @@ void Foam::mcParticleCloud::evolve()
 // Initialization: populate the FV field with particles
 void Foam::mcParticleCloud::initReleaseParticles()
 {
-  // Populate each cell with partilces with N particle each cell
+  // Populate each cell with N particles in each cell
   label N = Npc_;
 
   forAll(Ufv_, celli)
     {
-      // &&& Should be a cloud property (class number)
       scalar m = mesh_.V()[celli] * rhofv_[celli] / N;
       vector Updf = UcPdf_[celli];
       vector uscales(sqrt(kfv_[celli]), sqrt(kfv_[celli]), sqrt(kfv_[celli]));
       scalar psi = psicPdf_[celli];
+
       particleGenInCell(celli, N, m, Updf, uscales, psi, false, vector::zero);
     }
 

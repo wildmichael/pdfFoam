@@ -110,7 +110,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         UParticle_ += - gradPFap/rhoFap * dt
           - (0.5 + 0.75 * C0) * epsilonFap / kFap * (UParticle_- Updf_) * dt
           + sqrt(C0 * epsilonFap) * dW
-          + diffUap * dt/deltaT;
+          + diffUap;
 
         psi_ += -0.5 * Cpsi *  epsilonFap / kFap * (psi_ - psiCap) * dt;
 
