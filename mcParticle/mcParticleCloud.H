@@ -131,6 +131,7 @@ class mcParticleCloud
 
   // Mesh based velocity and Reynolds stress, obtained from particle
   // quantities.
+  volScalarField rhocPdf_;
   volVectorField UcPdf_;
   volScalarField psicPdf_;
   volSymmTensorField TaucPdf_;
@@ -149,10 +150,13 @@ class mcParticleCloud
   void cloneParticles(label celli);
   void clusterParticles(label celli);
 
-
   // Enforce in/out flow BCs by populating ghost cells
   void findGhostLayers();
   void populateGhostCells();
+
+  // Boundary Fields for cloudPDF
+  void setCloudPDFBoundary();
+  void correctCloudPDFBoundaryConditions();
 
   //- Disallow default bitwise copy construct
   mcParticleCloud(const mcParticleCloud&);

@@ -168,6 +168,22 @@ Foam::mcParticleCloud::mcParticleCloud
     ghostCellHash_(256),
     ghostFaceHash_(256),
 
+    rhocPdf_
+    (
+      IOobject
+     (
+      "rhoCloudPDF",
+      mesh.time().timeName(),
+      mesh,
+      IOobject::READ_IF_PRESENT,
+      IOobject::AUTO_WRITE
+       ),
+      mesh_,
+      dimDensity,
+      M0_/mesh_.V(),
+      rho.boundaryField()
+     ),
+
     UcPdf_
     (
       IOobject
@@ -178,7 +194,10 @@ Foam::mcParticleCloud::mcParticleCloud
        IOobject::READ_IF_PRESENT,
       IOobject::AUTO_WRITE
        ),
-      M1_/max(M0_, SMALL_MASS)
+      mesh_,
+      dimVelocity,
+      M1_/max(M0_, SMALL_MASS),
+      Ufv_.boundaryField()
      ),
     
     psicPdf_
@@ -191,7 +210,10 @@ Foam::mcParticleCloud::mcParticleCloud
        IOobject::READ_IF_PRESENT,
       IOobject::AUTO_WRITE
        ),
-      Mpsi1_/max(M0_, SMALL_MASS)
+      mesh_,
+      dimless,
+      Mpsi1_/max(M0_, SMALL_MASS),
+      psifv_.boundaryField()
      ),
 
     TaucPdf_
@@ -206,9 +228,7 @@ Foam::mcParticleCloud::mcParticleCloud
        ),
      M2_/max(M0_, SMALL_MASS)
      )
-
 {
-
   if (size() > 0) // if particle data not found
     {
       mcParticle::readFields(*this);
@@ -218,15 +238,55 @@ Foam::mcParticleCloud::mcParticleCloud
       Info << "I am releasing particles initially!" << endl;
       initReleaseParticles();
     }
-  
+
   // Take care of statistical moments (make sure they are consistent)
   checkMoments();
+
+  Info << "finished checking moments" << endl;
   // Ensure particles takes the updated PDF values
+
   updateParticlePDF();
 
   findGhostLayers();
-
+  
   mesh_.time().write();
+}
+
+
+// set boundary conditions for cloudPDF fields
+void Foam::mcParticleCloud::setCloudPDFBoundary()
+{
+    
+  Info << "rhocPDF bc: " << rhocPdf_.boundaryField() << endl;
+  Info << "UcPDF bc: " << UcPdf_.boundaryField() << endl;
+  Info << "sicPDF bc: " << psicPdf_.boundaryField() << endl;
+  FatalError.exit();
+
+  if(!rhocPdf_.headerOk())
+    {
+      // forced boundary field assignment
+      rhocPdf_.boundaryField() == rhofv_.boundaryField();
+      rhocPdf_.dimensions() = dimDensity;
+    }
+  
+  if(!UcPdf_.headerOk())
+    {
+      UcPdf_.boundaryField() == Ufv_.boundaryField();
+    }
+    
+  if(!psicPdf_.headerOk())
+    {
+      psicPdf_.boundaryField() == psifv_.boundaryField();
+    }
+}
+
+
+void Foam::mcParticleCloud::correctCloudPDFBoundaryConditions()
+{
+  rhocPdf_.correctBoundaryConditions();
+  Info << UcPdf_.boundaryField() << endl;
+  UcPdf_.correctBoundaryConditions();
+  psicPdf_.correctBoundaryConditions();
 }
 
 
@@ -259,7 +319,6 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
 
   PaNIC_ *= 0;
 
-
   // Loop through particles to accumulate moments (0, 1, 2 order)
   // as well as particle number
   for(iterator pIter=begin(); 
@@ -282,10 +341,14 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
   M1_    = existWt * M1_    + (1.0 - existWt) * instantM1;
   Mpsi1_ = existWt * Mpsi1_ + (1.0 - existWt) * instantMpsi1;
   M2_    = existWt * M2_    + (1.0 - existWt) * instantM2;
+  Info << "start building pdf fields:" << endl;
   // Compute U, psi, and tau
-  UcPdf_    = M1_/max(M0_, SMALL_MASS);
-  psicPdf_  = Mpsi1_ / max(M0_, SMALL_MASS);
-  TaucPdf_  = M2_/max(M0_, SMALL_MASS);
+  rhocPdf_.internalField()  = M0_/mesh_.V(); 
+  UcPdf_.internalField()    = M1_/max(M0_, SMALL_MASS);
+  psicPdf_.internalField()  = Mpsi1_ / max(M0_, SMALL_MASS);
+  TaucPdf_.internalField()  = M2_/max(M0_, SMALL_MASS);
+
+  correctCloudPDFBoundaryConditions();
 }
 
 
@@ -564,7 +627,7 @@ void Foam::mcParticleCloud::evolve()
             zeroGradientFvPatchScalarField::typeName
          );
 
-    diffRho.internalField() = -(M0_.internalField()/mesh_.V() - rho)/rho;
+    diffRho.internalField() = -(rhocPdf_ - rho)/rho;
     diffRho.correctBoundaryConditions();
     volVectorField gradRho = fvc::grad(diffRho) * coeffCorr;
 
@@ -591,7 +654,7 @@ void Foam::mcParticleCloud::evolve()
 
     particleNumberControl();
 
-    // Correct boundary conditions:
+    //Impose boundary conditions via particles
     populateGhostCells();
 
     // particleInfo();

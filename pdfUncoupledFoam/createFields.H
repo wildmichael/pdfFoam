@@ -15,9 +15,9 @@
             IOobject::NO_WRITE
         ),
         mesh, 
-        dimensionedScalar("rho", dimDensity, 1.0)
+        dimensionedScalar("rho", dimDensity, 1.0),
+        zeroGradientFvPatchScalarField::typeName
     );
-
 
     volVectorField U
     (
@@ -32,6 +32,7 @@
         mesh
     );
 
+#include "createPhi.H"
 
     volScalarField p
     (
