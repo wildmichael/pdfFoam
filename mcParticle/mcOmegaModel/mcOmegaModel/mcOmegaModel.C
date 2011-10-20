@@ -55,17 +55,17 @@ Foam::autoPtr<Foam::mcOmegaModel> Foam::mcOmegaModel::New
     const Foam::dictionary& dict
 )
 {
-    word reactionType(dict.lookup("OmegaModel"));
+    word omegaType(dict.lookup("OmegaModel"));
 
     mcOmegaModelConstructorTable::iterator cstrIter =
-        mcOmegaModelConstructorTablePtr_->find(reactionType);
+        mcOmegaModelConstructorTablePtr_->find(omegaType);
 
     if (cstrIter == mcOmegaModelConstructorTablePtr_->end())
     {
         FatalErrorIn
         (
             "mcOmegaModel::New(const fvMesh&, const dictionary&)"
-        )   << "Unknown mcOmegaModel type " << reactionType << endl << endl
+        )   << "Unknown mcOmegaModel type " << omegaType << endl << endl
             << "Valid mcOmegaModel types are :" << endl
             << mcOmegaModelConstructorTablePtr_->sortedToc()
             << exit(FatalError);
