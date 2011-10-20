@@ -54,8 +54,8 @@ inline Foam::mcParticle::mcParticle
 (
  const Cloud<mcParticle>& c,
  const vector& position,
- const label celli,
- const scalar m,
+ const label   celli,
+ const scalar  m,
  const vector& Updf,
  const vector& UParticle,
  const vector& UFap,

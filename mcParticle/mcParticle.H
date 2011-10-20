@@ -60,7 +60,7 @@ class mcParticle
 :
     public Particle<mcParticle>
 {
-  
+
     // Private member data
 
         //- mass (statistical weight)
@@ -116,9 +116,9 @@ public:
 
       bool switchProcessor;
       bool keepParticle;
-      
+
       // Constructors
-      
+
       inline trackData
       (
        mcParticleCloud& mcpc,
@@ -135,15 +135,15 @@ public:
       // Member functions
 
       inline mcParticleCloud& mcpc();
-      
+
       inline const interpolationCellPoint<scalar>& rhoInterp() const;
-      
+
       inline const interpolationCellPoint<vector>& UInterp() const;
 
       inline const interpolationCellPoint<vector>& gradPInterp() const;
-      
+
       inline const interpolationCellPoint<scalar>& kInterp() const;
-      
+
       inline const interpolationCellPoint<scalar>& epsilonInterp() const;
 
       inline const interpolationCellPoint<scalar>& psiInterp() const;
@@ -206,11 +206,11 @@ public:
            // inline symmTensor& Taupdf();
 
             //- Return total particle velocity;
-            inline const vector& UParticle() const; 
+            inline const vector& UParticle() const;
 
             //- Fluid velocity @ particle location
             inline const vector& UFap() const;
-            
+
             //- species concentration
             inline const scalar& psi() const;
 

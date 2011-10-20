@@ -59,128 +59,173 @@ class fvMesh;
                            Class mcParticleCloud Declaration
 \*---------------------------------------------------------------------------*/
 
-class mcParticleCloud
-:
+class mcParticleCloud:
     public Cloud<mcParticle>
 {
-  
-  enum cellPopStatus {EMPTY, NORMAL, TOOFEW, TOOMANY};
-  //- scalar comparison function used for sorting
-       class less
-       {
-       public:
-    
-         inline bool operator()
-         (
-           mcParticle* one,
-           mcParticle* two
-          ) const;
-       };
 
-      class more
-      {
-      public:
-        
-        inline bool operator()
-        (
-         mcParticle* one,
-         mcParticle* two
-         ) const;
-      };
-  
+    //- Particle population status flag
+    enum cellPopStatus {EMPTY, NORMAL, TOOFEW, TOOMANY};
 
-  // Private data
-  bool  debug_;
-  const fvMesh& mesh_;
-  const Time& runTime_;
-  
-  const volVectorField& Ufv_;
-  const volScalarField& rhofv_;
-  const volScalarField& kfv_;
-  const volScalarField& psifv_;
-  IOdictionary particleProperties_;
-  
-  scalar dtCloud_;
-  scalar AvgTimeScale_;
+    // Private types
+
+        //- scalar comparison functor used for sorting
+        class less
+        {
+            public:
+
+                inline bool operator()
+                (
+                    mcParticle* one,
+                    mcParticle* two
+                ) const;
+        };
+
+        //- scalar comparison functor used for sorting
+        class more
+        {
+            public:
+
+                inline bool operator()
+                (
+                    mcParticle* one,
+                    mcParticle* two
+                ) const;
+        };
+
+    // Private static data
+
+        //- A small mass
+        static const dimensionedScalar SMALL_MASS;
 
 
-  //- random number for Wiener process (diffusion) 
-  Random random_;
-  //- Number of particles per cell (initially)
-  label Npc_;
-  scalar eliminateAt_;
-  scalar cloneAt_;
-  //- Cell size
-  const label Nc_;
-  // How many particle existed in history (including living ones)
-  // only include particles generated in this run.
-  scalar histNp_; 
+    // Private data
 
-  //- statistical moments (mass, momentum, energy)
-  //- needed to obtain Updf (and later Taupdf) fields
-  dimensionedScalar SMALL_MASS;
+        //- The mesh
+        const fvMesh& mesh_;
+        //- The time object
+        const Time& runTime_;
 
-  volScalarField      PaNIC_; // Particle # in cell
-  mcParticleListList  cellParticleAddr_;
-  volScalarField M0_;
-  volVectorField M1_;
-  volScalarField Mpsi1_;
-  volSymmTensorField M2_;
-  scalarField instantM0_;
+        //- The FV velocity field
+        const volVectorField& Ufv_;
+        //- The FV density field
+        const volScalarField& rhofv_;
+        //- The FV TKE field
+        const volScalarField& kfv_;
+        //- The FV scalar field
+        const volScalarField& psifv_;
+        //- The control dictionary
+        IOdictionary particleProperties_;
 
-  labelListList    ghostCellLayers_;
-  labelList        ghostPatchId_;
-  labelListList    ghostFaceLayers_;
-  List<vectorList> ghostCellShifts_;
-  HashSet<label>   ghostCellHash_;
-  HashSet<label>   ghostFaceHash_;
+        //- The averaging time scale
+        scalar AvgTimeScale_;
 
-  // Mesh based velocity and Reynolds stress, obtained from particle
-  // quantities.
-  volScalarField rhocPdf_;
-  volVectorField UcPdf_;
-  volScalarField psicPdf_;
-  volSymmTensorField TaucPdf_; // turbulent stress
-  volScalarField kcPdf_;  // TKE
+        //- Random number generator for Wiener process (diffusion)
+        Random random_;
+        //- Desired number of particles per cell (initially)
+        label Npc_;
+        //- Particle elimination threshold
+        scalar eliminateAt_;
+        //- Particle cloning threshold
+        scalar cloneAt_;
+        //- Number of cells
+        const label Nc_;
+        //- How many particle existed in history (including living ones)
+        // only include particles generated in this run.
+        scalar histNp_;
 
-  //- constants
+        //- List where element @a celli contains a list of particles in cell @celli
+        mcParticleListList  cellParticleAddr_;
 
-  dimensionedScalar coeffRhoCorr_;
-  dimensionedScalar URelaxTime_;
-  dimensionedScalar kRelaxTime_;
+        // Statistical moments (mass, momentum, energy)
 
-  Switch particleNumberControl_;
+            //- Number of particles in cell
+            volScalarField      PaNIC_;
+            //- Averaged mass
+            volScalarField M0_;
+            //- Averaged velocity
+            volVectorField M1_;
+            //- Averaged mixture fraction
+            volScalarField Mpsi1_;
+            //- Averaged Reynolds stress
+            volSymmTensorField M2_;
 
-  // Private Member Functions
+        //- List of cell-indices for each ghost patch
+        labelListList    ghostCellLayers_;
+        //- List of labels of the ghost patches
+        labelList        ghostPatchId_;
+        //- List of face-indices for each ghost patch
+        labelListList    ghostFaceLayers_;
+        //- List of ghost-cell shifts for each ghost patch
+        List<vectorList> ghostCellShifts_;
+        //- Hash of ghost cell indices
+        HashSet<label>   ghostCellHash_;
+        //- Hash of ghost face indices
+        HashSet<label>   ghostFaceHash_;
 
-  //- ensure moments M0, M1, M2 are cnosistently read
-  void checkMoments();
+        //- Extracted, time-averaged density
+        volScalarField rhocPdf_;
+        //- Extracted, time-averaged velocity
+        volVectorField UcPdf_;
+        //- Extracted, time-averaged scalar
+        volScalarField psicPdf_;
+        //- Extracted, time-averaged turbulent stress tensor
+        volSymmTensorField TaucPdf_;
+        //- Extracted, time-averaged TKE
+        volScalarField kcPdf_;
 
-  //- update moments and the quantities remembered by particles
-  void updateCloudPDF(scalar existWt);
-  void updateParticlePDF();
+        // Model parameters
 
-  //Particle number control actions
-  void checkParticlePropertyDict();
-  void particleNumberControl();
-  void cloneParticles(label celli);
-  void eliminateParticles(label celli);
+            //- Density-correction coefficient
+            dimensionedScalar coeffRhoCorr_;
+            //- Mean velocity relaxation time
+            dimensionedScalar URelaxTime_;
+            //- Mean TKE relaxation time
+            dimensionedScalar kRelaxTime_;
 
-  // Enforce in/out flow BCs by populating ghost cells
-  void findGhostLayers();
-  void populateGhostCells();
+        Switch particleNumberControl_;
 
-  void purgeGhostParticles();
+    // Private Member Functions
 
-  // Boundary Fields for cloudPDF
-  void setCloudPDFBoundary();
-  void correctCloudPDFBoundaryConditions();
+        //- Ensure moments are cnosistently read
+        void checkMoments();
 
-  //- Disallow default bitwise copy construct
-  mcParticleCloud(const mcParticleCloud&);
-  
-  //- Disallow default bitwise assignment
-  void operator=(const mcParticleCloud&);
+        //- Update moments and the quantities remembered by particles
+        void updateCloudPDF(scalar existWt);
+
+        //- Update Updf & (maybe later, Taupdf) in the particle side.
+        void updateParticlePDF();
+
+        // Particle number control actions
+
+            //- Limit cluster/clone thresholds to reasonable values
+            void checkParticlePropertyDict();
+            //- Perform the particle number control
+            void particleNumberControl();
+            //- Clone particles in @a celli
+            void cloneParticles(label celli);
+            //- Eliminate particles in @a celli
+            void eliminateParticles(label celli);
+
+        //- Finds the ghost cell layers
+        void findGhostLayers();
+
+        //- Enforce in/out flow BCs by populating ghost cells
+        void populateGhostCells();
+
+        //- Remove all ghost particles from cloud
+        void purgeGhostParticles();
+
+#if 0
+        //- Boundary Fields for cloudPDF
+        void setCloudPDFBoundary();
+        void correctCloudPDFBoundaryConditions();
+#endif
+
+        //- Disallow default bitwise copy construct
+        mcParticleCloud(const mcParticleCloud&);
+
+        //- Disallow default bitwise assignment
+        void operator=(const mcParticleCloud&);
 
 
 public:
@@ -195,72 +240,55 @@ public:
             const volScalarField& rho,
             const volScalarField& k,
             const volScalarField& psi,
-            const word& cloudName = "defaultCloud",
-            bool readFields = true
+            const word& cloudName = "defaultCloud"
         );
 
+    // Member Functions
 
-  // Member Functions
+        //- Access the mesh
+        inline const fvMesh& mesh() const;
 
-      // Access
+        //- The TKE FV field
+        inline const volScalarField& kfv() const;
+        //- Tthe TKE PDF field
+        inline const volScalarField& kcPdf() const;
+        //- The TKE relaxation time
+        inline const dimensionedScalar& kRelaxTime() const;
+        //- The desired number of particles per cell
+        inline label Npc();
 
-      inline const fvMesh& mesh() const;
-      inline scalar e() const;
-      inline scalar mu() const;
+        //- The random number generator
+        Random &random() {return random_;}
 
-      inline const volScalarField& kfv() const;
-      inline const volScalarField& kcPdf() const;
-      inline const dimensionedScalar& kRelaxTime() const;
+        //- initial release of particles
+        void initReleaseParticles();
 
-      inline scalar dtCloud();
-      inline label Npc();
-  
-      Random &random() {return random_;}
+        //- Randomly generate N particles in celli, with provided cell-based
+        // values and the scale of velocity fluctuation
+        void particleGenInCell
+        (
+            label  celli,
+            label  N,
+            scalar m,
+            const  vector& Updf,
+            const  vector& uscales,
+            scalar psi,
+            const  vector& shift = vector::zero,
+            label  ghost = 0
+        );
 
-        // Edit
+        //- Evolve the particles
+        void evolve();
 
-
-  //- initial release of particles
-  void initReleaseParticles();
-
-  // Randomly generate N particles in celli, with provided cell-based
-  // values and the scale of velocity fluctuation
-  void particleGenInCell
-  (
-   label celli, 
-   label N, 
-   const scalarList& masses, 
-   const vector& Updf, 
-   const vectorList& uscales,
-   scalar psi,
-   const vector& shift = vector::zero,
-   label  ghost = 0
-   );
-
-  // with the same properties
-  void particleGenInCell
-  (
-   label celli, 
-   label N, 
-   scalar m, 
-   const vector& Updf, 
-   const vector& usc,
-   scalar psi,
-   const vector& shift = vector::zero,
-   label  ghost = 0
-   );
-
-  //- Update end position (for tracking)
-  void updateParticleProperties();
-
-  //- Evolve the particles
-  void evolve();
-
-  //- Report Info
-  void info() const;
-  void particleInfo() const;
-  void oneParticleInfo(const mcParticle& p) const;
-  void assertPopulationHealth() const;
+        //- Report info about name and total number of particles in cloud
+        void info() const;
+        //- Report info about all particles in cloud
+        void particleInfo() const;
+        //- Report info about a single particle
+        void oneParticleInfo(const mcParticle& p) const;
+        //- Asserts that all particles are in domain, none of them is a
+        // ghost particle and that its shift is small
+        void assertPopulationHealth() const;
 };
 
 

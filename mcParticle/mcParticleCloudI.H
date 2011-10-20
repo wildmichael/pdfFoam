@@ -31,44 +31,25 @@ inline const Foam::fvMesh& Foam::mcParticleCloud::mesh() const
 }
 
 
-inline Foam::scalar Foam::mcParticleCloud::e() const
-{
-  scalar e_ = 1.0;
-  return e_;
-}
-
-
-inline Foam::scalar Foam::mcParticleCloud::mu() const
-{
-  scalar mu_ = 0.0;
-  return mu_;
-}
-
-
 inline const Foam::volScalarField& Foam::mcParticleCloud::kfv() const
 {
-  return kfv_;
+    return kfv_;
 }
 
 
 inline const Foam::volScalarField& Foam::mcParticleCloud::kcPdf() const
 {
-  return kcPdf_;
+    return kcPdf_;
 }
 
 inline const Foam::dimensionedScalar& Foam::mcParticleCloud::kRelaxTime() const
 {
-  return kRelaxTime_;
-}
-
-inline Foam::scalar Foam::mcParticleCloud::dtCloud()
-{
-  return dtCloud_;
+    return kRelaxTime_;
 }
 
 inline Foam::label Foam::mcParticleCloud::Npc()
-{ 
-  return Npc_;
+{
+    return Npc_;
 }
 
 // ************************************************************************* //

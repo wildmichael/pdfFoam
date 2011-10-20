@@ -104,6 +104,5 @@
      rho,
      k,
      psi,
-     mcParticleCloudName,
-     true
+     mcParticleCloudName
     );

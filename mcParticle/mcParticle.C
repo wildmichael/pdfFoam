@@ -34,7 +34,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
 
     scalar C0 = 2.1;
     scalar Cpsi = 0.6893;
-  
+
     td.switchProcessor = false;
     td.keepParticle = true;
 
@@ -82,7 +82,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         stepFraction() = 1.0 - tEnd/deltaT;
 
         cellPointWeight cpw(mesh, position(), celli, face());
-        
+
         // fluid quantities @ particle position
         scalar rhoFap = td.rhoInterp().interpolate(cpw);
         vector gradPFap = td.gradPInterp().interpolate(cpw);
@@ -90,40 +90,37 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         scalar epsilonFap = td.epsilonInterp().interpolate(cpw);
         scalar psiCap = td.psiInterp().interpolate(cpw);
         vector diffUap = td.diffUInterp().interpolate(cpw);
-        
+
         // interpolate fluid velocity to particle location This
-        // quantity is a data member the class. 
+        // quantity is a data member the class.
         // Note: if would be the best if UInterp is interpolating
         // velocities based on faces to get UFap instead of cell
-        // center values. Will implemente later. 
+        // center values. Will implemente later.
         UFap_ = td.UInterp().interpolate(cpw);
 
         //Wiener process (question mark)
         vector dW = sqrt(dt) * vector
-          (
-           td.mcpc().random().GaussNormal(),
-           td.mcpc().random().GaussNormal(),
-           td.mcpc().random().GaussNormal()
-           );
+            (
+                td.mcpc().random().GaussNormal(),
+                td.mcpc().random().GaussNormal(),
+                td.mcpc().random().GaussNormal()
+            );
 
-        // Update velocity (rhof should be rho-particle??) 
+        // Update velocity (rhof should be rho-particle??)
         UParticle_ += - gradPFap/rhoFap * dt
-          - (0.5 + 0.75 * C0) * epsilonFap / kFap * (UParticle_- Updf_) * dt
-          + sqrt(C0 * epsilonFap) * dW
-          + diffUap * dt;
+            - (0.5 + 0.75 * C0) * epsilonFap / kFap * (UParticle_- Updf_) * dt
+            + sqrt(C0 * epsilonFap) * dW
+            + diffUap * dt;
 
         // Scale to ensure consistency on TKE
         mcParticleCloud& mcpc = td.mcpc();
-        UParticle_ += 
-          (UParticle_ - Updf_)  * dt / mcpc.kRelaxTime().value() *
-          (
-           sqrt(mcpc.kfv()[celli]/mcpc.kcPdf()[celli]) - 1.0
-          );
+        UParticle_ +=
+              (UParticle_ - Updf_)  * dt / mcpc.kRelaxTime().value()
+            * (sqrt(mcpc.kfv()[celli]/mcpc.kcPdf()[celli]) - 1.0);
 
         // Evolve concentration
         psi_ += -0.5 * Cpsi *  epsilonFap / kFap * (psi_ - psiCap) * dt;
 
-         
         if (onBoundary() && td.keepParticle)
         {
             if (isA<processorPolyPatch>(pbMesh[patch(face())]))
@@ -141,12 +138,12 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
 // Pre-action before hitting patches
 bool Foam::mcParticle::hitPatch
 (
- const polyPatch& patch,
- mcParticle::trackData& td,
- const label Lb
+    const polyPatch& patch,
+    mcParticle::trackData& td,
+    const label Lb
 )
 {
-  return false;
+    return false;
 }
 
 
@@ -184,23 +181,7 @@ void Foam::mcParticle::hitWallPatch
     const wallPolyPatch& wpp,
     mcParticle::trackData& td
 )
-{
-  vector nw = wpp.faceAreas()[wpp.whichFace(face())];
-  nw /= mag(nw);  // Wall normal (outward)
-  
-  scalar Un = UParticle_ & nw; // Normal component
-  vector Ut = UParticle_ - Un*nw; // Tangential component
-  
-  if (Un > 0)
-    {
-      // Elastic coefficient: 1 = perfectly elastic; 0 = perfect plastic.
-      UParticle_ -= (1.0 + td.mcpc().e())*Un*nw; 
-    }
-
-  // Tangential friction coefficient: 
-  // 1 = totally friction (stop); 0 = smooth (no loss)
-  UParticle_ -= td.mcpc().mu()*Ut;
-}
+{}
 
 
 void Foam::mcParticle::hitWallPatch
@@ -217,7 +198,7 @@ void Foam::mcParticle::hitPatch
     mcParticle::trackData& td
 )
 {
-  td.keepParticle = false;
+    td.keepParticle = false;
 }
 
 
