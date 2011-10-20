@@ -168,29 +168,6 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
     }
     else
     {
-#if 0
-        printf("\nDEBUG: Particle layout\n"
-               "\t&m = %p\tsizeof(m) = %zu\n"
-               "\t&Updf = %p\tsizeof(Updf) = %zu\n"
-               "\t&UParticle = %p\tsizeof(UParticle) = %zu\n"
-               "\t&UFap = %p\tsizeof(UFap) = %zu\n"
-               "\t&z = %p\tsizeof(z) = %zu\n"
-               "\t&rho = %p\tsizeof(rho) = %zu\n"
-               "\t&dt = %p\tsizeof(dt) = %zu\n"
-               "\t&shift = %p\tsizeof(shift) = %zu\n"
-               "\t&ghost = %p\tsizeof(ghost) = %zu\n"
-               "\n",
-               &p.m_, sizeof(p.m_),
-               &p.Updf_, sizeof(p.Updf_),
-               &p.UParticle_, sizeof(p.UParticle_),
-               &p.UFap_, sizeof(p.UFap_),
-               &p.z_, sizeof(p.z_),
-               &p.rho_, sizeof(p.rho_),
-               &p.dt_, sizeof(p.dt_),
-               &p.shift_, sizeof(p.shift_),
-               &p.ghost_, sizeof(p.ghost_)
-               );
-#endif
         os  << static_cast<const Particle<mcParticle>&>(p);
         os.write
         (

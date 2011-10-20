@@ -231,11 +231,13 @@ public:
             //- whether this particle is ghost
             inline label ghost() const;
 
+            //- whether this particle is ghost
             inline label& ghost();
 
             //- shift for ghost particles
             inline const vector& shift() const;
 
+            //- shift for ghost particles
             inline vector& shift();
 
 
