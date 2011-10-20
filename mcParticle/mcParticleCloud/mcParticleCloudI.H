@@ -118,4 +118,16 @@ inline const Foam::surfaceVectorField& Foam::mcParticleCloud::CourantCoeffs() co
     return CourantCoeffs_;
 }
 
+
+template<class TrackData>
+void Foam::mcParticleCloud::hitPatch
+(
+    Foam::mcParticle& p,
+    TrackData& td,
+    Foam::label patchI
+)
+{
+    boundaryHandlers_[patchI].hitPatch(p, td);
+}
+
 // ************************************************************************* //

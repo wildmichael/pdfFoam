@@ -193,18 +193,21 @@ inline Foam::scalar Foam::mcParticle::Co() const
 }
 
 
-template<class TrackData>
-void Foam::mcParticle::hitWedgePatch
+void Foam::mcParticle::hitProcessorPatch
 (
-    const wedgePolyPatch& wpp,
-    TrackData&
+    const processorPolyPatch&,
+    mcParticle::trackData& td
 )
 {
-    FatalErrorIn("template<class TrackData> mcParticle::hitWedgePatch"
-        "(const wedgePolyPatch&, TrackData&)")
-        << "A mcParticle should never hit a wedge patch!" << nl
-        << info() << endl << exit(FatalError);
+    td.switchProcessor = true;
 }
 
+
+void Foam::mcParticle::hitProcessorPatch
+(
+    const processorPolyPatch&,
+    int&
+)
+{}
 
 // ************************************************************************* //

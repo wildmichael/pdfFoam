@@ -227,9 +227,6 @@ Foam::mcParticleCloud::mcParticleCloud
         dimensionedSymmTensor("uuMoment", dimEnergy, symmTensor::zero)
     ),
 
-    ghostCellHash_(256),
-    ghostFaceHash_(256),
-
     ownedScalarFields_(),
 
     rhocPdf_
@@ -394,7 +391,7 @@ Foam::mcParticleCloud::mcParticleCloud
         }
     }
 
-    findGhostLayers();
+    initBCHandlers();
     checkParticlePropertyDict();
 
     // Populate cloud
@@ -795,112 +792,6 @@ void Foam::mcParticleCloud::eliminateParticles(label celli)
 }
 
 
-// Find "ghost cells" (actually the first layer of cells of in/out-flow patch
-void Foam::mcParticleCloud::findGhostLayers()
-{
-    const cellList& cells = mesh_.cells();
-    const faceList& faces = mesh_.faces();
-    const polyBoundaryMesh& patches = mesh_.boundaryMesh();
-    // in/out-flow patches (should read from dictionary)
-    const wordList patchNames(dict_.lookup("inoutPatches"));
-
-    label ngPatchs = patchNames.size();
-    labelList patchSizes(ngPatchs);
-
-    if (ngPatchs > 0)
-    {
-        ghostCellLayers_.setSize(ngPatchs);
-        ghostFaceLayers_.setSize(ngPatchs);
-        ghostCellShifts_.setSize(ngPatchs);
-        ghostPatchId_.setSize(ngPatchs);
-    }
-    else
-    {
-        return;
-    }
-
-    forAll(patchNames, nameI)
-    {
-        label patchI = patches.findPatchID(patchNames[nameI]);
-
-        if (patchI == -1)
-        {
-            FatalErrorIn("mcParticleCloud::findGhostLayers()")
-                << "Illegal patch " << patchNames[nameI]
-                << ". Valid patches are " << patches.name()
-                << exit(FatalError);
-        }
-        label nf = patches[patchI].size();
-
-        patchSizes[nameI] = nf;
-
-        if (nf > 0)
-        {
-            ghostCellLayers_[nameI].setSize(nf);
-            ghostFaceLayers_[nameI].setSize(nf);
-            ghostCellShifts_[nameI].setSize(nf);
-            ghostPatchId_[nameI] = patchI;
-            // Find the ghost cells and faces
-            const polyPatch& curPatch = patches[patchI];
-            label j = 0;
-            forAll(curPatch, facei)
-            {
-                // find ghost cell
-                label faceCelli = curPatch.faceCells()[facei];
-                ghostCellLayers_[nameI][j] =  faceCelli;
-                //- Add  to hash set
-                ghostCellHash_.insert(faceCelli);
-
-                // find opposite face
-                label gFaceI = curPatch.start() + facei;
-                const cell& ownCell = cells[faceCelli];
-                label oppositeFaceI = ownCell.opposingFaceLabel(gFaceI, faces);
-                if (oppositeFaceI == -1)
-                {
-                    FatalErrorIn("mcParticleCloud::findGhostLayers()")
-                        << "Face:" << facei << " owner cell:" << faceCelli
-                        << " is not a hex?" << abort(FatalError);
-                }
-                else
-                {
-                    ghostFaceLayers_[nameI][j] =  oppositeFaceI;
-                    ghostCellShifts_[nameI][j] =
-                          mesh_.Cf()[oppositeFaceI]
-                        - mesh_.Cf().boundaryField()[patchI][facei];
-                }
-
-                //- Add face to hash set
-                ghostFaceHash_.insert(oppositeFaceI);
-                j++;
-            }
-        }
-    }
-
-    // Check the faces found above
-
-#if 0
-    forAll(ghostFaceLayers_, patchI)
-    {
-        forAll(ghostFaceLayers_[patchI], facei)
-        {
-            label ghostFaceI = ghostFaceLayers_[patchI][facei];
-            const face& f = faces[ghostFaceI];
-            Info<< "face #: " << ghostFaceI << endl
-                << "  normal: " << f.normal(mesh_.points()) << endl
-                << "  centre: " << f.centre(mesh_.points()) << endl
-                << endl;
-        }
-       forAll(ghostCellShifts_, patchI)
-       {
-           forAll(ghostCellShifts_[patchI], celli)
-           {
-               Info<< "shift: " << ghostCellShifts_[patchI][celli] << endl;
-           }
-       }
-#endif
-}
-
-
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 Foam::scalar Foam::mcParticleCloud::evolve()
@@ -958,14 +849,20 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     interpolationCellPointFace<vector> diffUInterp(diffU);
     interpolationCellPointFace<scalar> kcPdfInterp(kcPdf_);
 
-    //Impose boundary conditions via particles
-    populateGhostCells();
+    // Correct boundary conditions
+    forAll(boundaryHandlers_, boundaryI)
+    {
+        boundaryHandlers_[boundaryI].correct(*this, false);
+    }
 
     OmegaModel_().correct(*this);
     mixingModel_().correct(*this);
     reactionModel_().correct(*this);
 
     scalar existWt = 1.0/(1.0 + (runTime_.deltaT()/AvgTimeScale_).value());
+    // Extract statistical averaging to obtain mesh-based quantities
+    updateCloudPDF(existWt);
+    updateParticlePDF();
 
     mcParticle::trackData td
     (
@@ -984,15 +881,13 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     }
 
     Cloud<mcParticle>::move(td);
-
-    // "Accept" and shift the survived ghost particles
-    //  and clear those still in ghost a cell
-    purgeGhostParticles();
-
-    // Extract statistical averaging to obtain mesh-based quantities
-    updateCloudPDF(existWt);
-    updateParticlePDF();
     printParticleCo();
+
+    // Correct boundary conditions
+    forAll(boundaryHandlers_, boundaryI)
+    {
+        boundaryHandlers_[boundaryI].correct(*this, true);
+    }
 
     particleNumberControl();
 
@@ -1325,113 +1220,24 @@ void Foam::mcParticleCloud::initScalarFields()
 }
 
 
-// Enforce in/out flow BCs by populating ghost cells
-void Foam::mcParticleCloud::populateGhostCells()
+void Foam::mcParticleCloud::initBCHandlers()
 {
-    label np = 0;
-    label ng = 0;
-    forAll(ghostCellLayers_, ghostPatchI)
+    boundaryHandlers_.clear();
+    boundaryHandlers_.setSize(mesh_.boundaryMesh().size());
+    const dictionary& bd = dict_.subDict("boundaryHandlers");
+    forAll(mesh_.boundaryMesh(), patchI)
     {
-        forAll(ghostCellLayers_[ghostPatchI], faceCelli)
-        {
-            ++ng;
-            np += Npc_;
-
-            label  celli = ghostCellLayers_[ghostPatchI][faceCelli];
-            scalar m = mesh_.V()[celli] * rhocPdf_[celli] / Npc_;
-            vector Updf = Ufv_[celli];
-            scalar urms = sqrt(2./3.*kfv()()[celli]);
-            vector uscales(urms, urms, urms);
-            label  ghost = 1;
-            vector shift = ghostCellShifts_[ghostPatchI][faceCelli];
-            // Phi: from patch value (boundary condition)
-            scalarField Phi(PhicPdf_.size());
-            forAll(Phi, PhiI)
-            {
-                const volScalarField& f = *PhicPdf_[PhiI];
-                label patchId = ghostPatchId_[ghostPatchI];
-                Phi[PhiI] = f.boundaryField()[patchId][faceCelli];
-            }
-
-            particleGenInCell
+        boundaryHandlers_.set
+        (
+            patchI,
+            mcBoundary::New
             (
-                celli,
-                Npc_,
-                m,
-                Updf,
-                uscales,
-                Phi,
-                shift,
-                ghost
-            );
-        }
+                mesh_,
+                patchI,
+                bd.subDict(mesh_.boundaryMesh()[patchI].name())
+            )
+        );
     }
-    if (debug)
-    {
-        Info<< np << " particles generated in "
-            << ng << " ghost cells" << endl;
-    }
-
-}
-
-
-void Foam::mcParticleCloud::purgeGhostParticles()
-{
-
-    label nDelete = 0;
-    label nAdmit = 0;
-    forAllIter(mcParticleCloud, *this, pIter)
-    {
-        mcParticle & p = pIter();
-        if (p.ghost() > 0) // This is a ghost
-        {
-            label celli = p.cell();
-            if (ghostCellHash_.found(celli)) // still in ghost cell
-            {
-                deleteParticle(p);
-                ++nDelete;
-            }
-            else
-            {
-                // shift and admit this particle as normal member
-                p.position() -= p.shift(); // update position
-                label newCelli = -1;
-                label curCelli = p.cell();
-                forAll(mesh_.cellCells()[curCelli], nei)
-                {
-                    label neiCellId = mesh_.cellCells()[curCelli][nei];
-                    if (mesh_.pointInCell(p.position(), neiCellId))
-                    {
-                        newCelli = neiCellId;
-                        break;
-                    }
-                }
-                // Not found in neighbour cells: global search
-                if (newCelli < 0)
-                {
-                    newCelli = mesh_.findCell(p.position());
-                }
-                if (newCelli < 0)
-                {
-                    WarningIn("mcParticleCloud::purgeGhostParticles()")
-                        << " Shifting of ghost particles caused loss."  << nl
-                        << " Possible causes are: " << nl
-                        << "  (1) Strange ghost cell shapes;" << nl
-                        << "  (2) parallel computing + large time steps" << nl
-                        << " Info for the lost particle: " << nl
-                        << p.info() << endl;
-                    deleteParticle(p);
-                    ++nDelete;
-                }
-                p.cell()  = newCelli;
-                p.ghost() = 0;
-                p.shift() = vector::zero;
-                ++nAdmit;
-            }
-        }
-    }
-    Info<< "Ghost particles: " << nDelete << " deleted, "
-        << nAdmit << " admitted." << endl;
 }
 
 

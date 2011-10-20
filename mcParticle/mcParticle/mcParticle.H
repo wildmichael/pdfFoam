@@ -269,32 +269,24 @@ public:
             //  Executed before other patch-hitting functions
             bool hitPatch
             (
-                const polyPatch&,
-                mcParticle::trackData& td,
-                const label patchI
+                const polyPatch& patch,
+                trackData&       td,
+                const label      patchI
             );
 
             //- Overridable function to handle the particle hitting a patch
-            //  Executed before other patch-hitting functions without trackData
+            //  without trackData.
+            //  Executed before other patch-hitting functions
             bool hitPatch
             (
-                const polyPatch& p,
-                int& td,
-                const label patchI
-            );
-
-            //- Overridable function to handle the particle hitting a wedge patch
-            //  Executed before other patch-hitting functions without trackData
-            template<class TrackData>
-            void hitWedgePatch
-            (
-                const wedgePolyPatch&,
-                TrackData&
+                const polyPatch& patch,
+                int&             td,
+                const label      patchI
             );
 
             //- Overridable function to handle the particle hitting a
             //  processorPatch
-            void hitProcessorPatch
+            inline void hitProcessorPatch
             (
                 const processorPolyPatch&,
                 mcParticle::trackData& td
@@ -302,33 +294,19 @@ public:
 
             //- Overridable function to handle the particle hitting a
             //  processorPatch without trackData
-            void hitProcessorPatch
+            inline void hitProcessorPatch
             (
                 const processorPolyPatch&,
                 int&
             );
 
-            //- Overridable function to handle the particle hitting a wallPatch
-            void hitWallPatch
-            (
-                const wallPolyPatch&,
-                mcParticle::trackData& td
-            );
-
-            //- Overridable function to handle the particle hitting a wallPatch
-            //- without trackData
-            void hitWallPatch
-            (
-                const wallPolyPatch&,
-                int&
-            );
-
             //- Overridable function to handle the particle hitting a polyPatch
             void hitPatch
             (
                 const polyPatch&,
                 mcParticle::trackData& td
-            );
+            )
+            {}
 
             //- Overridable function to handle the particle hitting a polyPatch
             //- without trackData
@@ -336,7 +314,9 @@ public:
             (
                 const polyPatch&,
                 int&
-            );
+            )
+            {}
+
 
             //- Transform the physical properties of the particle
             //  according to the given transformation tensor

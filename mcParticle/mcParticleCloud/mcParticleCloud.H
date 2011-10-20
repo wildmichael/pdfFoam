@@ -40,6 +40,7 @@ SourceFiles
 #include "Cloud.H"
 #include "DLPtrList.H"
 #include "mcParticle.H"
+#include "mcBoundary.H"
 #include "mcOmegaModel.H"
 #include "mcMixingModel.H"
 #include "mcReactionModel.H"
@@ -47,7 +48,6 @@ SourceFiles
 #include "Random.H"
 #include "labelIOField.H"
 #include "SortableList.H"
-#include "vectorList.H"
 #include "compressible/turbulenceModel/turbulenceModel.H"
 #include "surfaceMesh.H"
 #include "fvsPatchField.H"
@@ -154,18 +154,8 @@ class mcParticleCloud:
             //- Averaged 2nd statistical moment of fluctuating velocity
             DimensionedField<symmTensor, volMesh> uuMom_;
 
-        //- List of cell-indices for each ghost patch
-        labelListList    ghostCellLayers_;
-        //- List of labels of the ghost patches
-        labelList        ghostPatchId_;
-        //- List of face-indices for each ghost patch
-        labelListList    ghostFaceLayers_;
-        //- List of ghost-cell shifts for each ghost patch
-        List<vectorList> ghostCellShifts_;
-        //- Hash of ghost cell indices
-        HashSet<label>   ghostCellHash_;
-        //- Hash of ghost face indices
-        HashSet<label>   ghostFaceHash_;
+        //- List of boundary condition handlers
+        PtrList<mcBoundary> boundaryHandlers_;
 
         //- Owned scalar fields
         //  (i.e. which don't exist already in the registry)
@@ -246,14 +236,8 @@ class mcParticleCloud:
         //- Initialize scalar fields
         void initScalarFields();
 
-        //- Finds the ghost cell layers
-        void findGhostLayers();
-
-        //- Enforce in/out flow BCs by populating ghost cells
-        void populateGhostCells();
-
-        //- Remove all ghost particles from cloud
-        void purgeGhostParticles();
+        //- Initialise boundary condition handlers
+        void initBCHandlers();
 
         //- Compute and print the mean and maximum particle Courant number
         void printParticleCo();
@@ -343,6 +327,15 @@ public:
         //- Evolve the particles
         // @returns The maximum residual
         scalar evolve();
+
+        //- Handle particles hitting a patch
+        template<class TrackData>
+        inline void hitPatch
+        (
+            mcParticle& p,
+            TrackData& td,
+            label patchI
+        );
 
         //- Report info about name and total number of particles in cloud
         void info() const;

@@ -271,91 +271,39 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
 }
 
 
-
 // Pre-action before hitting patches
-bool Foam::mcParticle::hitPatch
-(
-    const polyPatch& patch,
-    mcParticle::trackData& td,
-    const label Lb
-)
-{
-    return false;
+#define DEFINE_HITPATCH(TRACKDATA)                                            \
+bool Foam::mcParticle::hitPatch                                               \
+(                                                                             \
+    const polyPatch& patch,                                                   \
+    TRACKDATA&       td,                                                      \
+    const label      patchI                                                   \
+)                                                                             \
+{                                                                             \
+    if (isA<wedgePolyPatch>(patch))                                           \
+    {                                                                         \
+        FatalErrorIn("mcParticle::hitPatch"                                   \
+            "(const polyPatch&, " #TRACKDATA "&, const label)")               \
+            << "A mcParticle should never hit a wedge patch!" << endl         \
+            << abort(FatalError);                                             \
+    }                                                                         \
+    else if (isA<processorPolyPatch>(patch))                                  \
+    {                                                                         \
+        hitProcessorPatch(static_cast<const processorPolyPatch&>(patch), td); \
+    }                                                                         \
+    else                                                                      \
+    {                                                                         \
+        mcParticleCloud& c = const_cast<mcParticleCloud&>                     \
+        (                                                                     \
+            refCast<const mcParticleCloud>(cloud())                           \
+        );                                                                    \
+        c.hitPatch(*this, td, patchI);                                        \
+    }                                                                         \
+    return true;                                                              \
 }
 
-
-bool Foam::mcParticle::hitPatch
-(
-    const polyPatch&,
-    int&,
-    const label
-)
-{
-  return false;
-}
-
-
-void Foam::mcParticle::hitProcessorPatch
-(
-    const processorPolyPatch&,
-    mcParticle::trackData& td
-)
-{
-    td.switchProcessor = true;
-}
-
-
-void Foam::mcParticle::hitProcessorPatch
-(
-    const processorPolyPatch&,
-    int&
-)
-{}
-
-
-void Foam::mcParticle::hitWallPatch
-(
-    const wallPolyPatch& wpp,
-    mcParticle::trackData& td
-)
-{
-    vector nw = wpp.faceAreas()[wpp.whichFace(face())];
-    nw /= mag(nw);  // Wall normal (outward)
-
-    scalar Un = UParticle_ & nw; // Normal component
-    vector Ut = UParticle_ - Un*nw; // Tangential component
-
-    if (Un > 0)
-    {
-        UParticle_ -= 2.0*Un*nw;
-    }
-}
-
-
-void Foam::mcParticle::hitWallPatch
-(
-    const wallPolyPatch&,
-    int&
-)
-{}
-
-
-void Foam::mcParticle::hitPatch
-(
-    const polyPatch&,
-    mcParticle::trackData& td
-)
-{
-    td.keepParticle = false;
-}
-
-
-void Foam::mcParticle::hitPatch
-(
-    const polyPatch&,
-    int&
-)
-{}
+DEFINE_HITPATCH(mcParticle::trackData)
+DEFINE_HITPATCH(int)
 
 
 void Foam::mcParticle::transformProperties (const tensor& T)
