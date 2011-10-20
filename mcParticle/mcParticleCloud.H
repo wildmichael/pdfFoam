@@ -96,6 +96,7 @@ class mcParticleCloud
   const volVectorField& Ufv_;
   const volScalarField& rhofv_;
   const volScalarField& kfv_;
+  const volScalarField& psifv_;
   IOdictionary particleProperties_;
   
   scalar dtCloud_;
@@ -118,6 +119,7 @@ class mcParticleCloud
   mcParticleListList  cellParticleAddr_;
   volScalarField M0_;
   volVectorField M1_;
+  volScalarField Mpsi1_;
   volSymmTensorField M2_;
   volScalarField instantM0_;
 
@@ -129,6 +131,7 @@ class mcParticleCloud
   // Mesh based velocity and Reynolds stress, obtained from particle
   // quantities.
   volVectorField UcPdf_;
+  volScalarField psicPdf_;
   volSymmTensorField TaucPdf_;
 
   // Private Member Functions
@@ -168,6 +171,7 @@ public:
             const volVectorField& U,
             const volScalarField& rho,
             const volScalarField& k,
+            const volScalarField& psi,
             const word& cloudName = "defaultCloud",
             bool readFields = true
         );
@@ -200,7 +204,8 @@ public:
    label N, 
    scalarList masses, 
    vector Updf, 
-   vectorList uscales
+   vectorList uscales,
+   scalar psi
    );
 
   // with the same properties
@@ -210,9 +215,9 @@ public:
    label N, 
    scalar m, 
    vector Updf, 
-   vector usc
+   vector usc,
+   scalar psi
    );
-
 
   //- Update end position (for tracking)
   void updateParticleProperties();

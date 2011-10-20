@@ -33,6 +33,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
   // SLM constant, temperarily put here C0 = 2.1
 
     scalar C0 = 2.1;
+    scalar Cpsi = 0.6893;
   
     td.switchProcessor = false;
     td.keepParticle = true;
@@ -87,6 +88,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         vector gradPFap = td.gradPInterp().interpolate(cpw);
         scalar kFap = td.kInterp().interpolate(cpw);
         scalar epsilonFap = td.epsilonInterp().interpolate(cpw);
+        scalar psiCap = td.psiInterp().interpolate(cpw);
         
         // interpolate fluid velocity to particle location This
         // quantity is a data member the class. 
@@ -107,6 +109,8 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         UParticle_ += gradPFap/rhoFap
           - (0.5 + 0.75 * C0) * epsilonFap / kFap * (UParticle_- Updf_) * dt
           + sqrt(C0 * epsilonFap) * dW;
+
+        psi_ += -0.5*Cpsi * (psi_ - psiCap) * dt;
 
         if (onBoundary() && td.keepParticle)
         {

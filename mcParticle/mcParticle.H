@@ -68,6 +68,7 @@ class mcParticle
 
         //- mean velocity based on particles
         vector Updf_;
+
         //- Mean Reynolds stress based on partiles
         // symmTensor Taupdf_;
   
@@ -82,6 +83,9 @@ class mcParticle
        //- fluid velocity @ particle location, updated at the end of each Lagrangian dt
        // (same time with Updf & UParticle)
        vector UFap_;
+
+       //- scalar concetration
+       scalar psi_;
 
 public:
 
@@ -100,6 +104,7 @@ public:
             const interpolationCellPoint<vector>& gradPInterp_;
             const interpolationCellPoint<scalar>& kInterp_;
             const interpolationCellPoint<scalar>& epsilonInterp_;
+            const interpolationCellPoint<scalar>& psiInterp_;
             const interpolationCellPoint<vector>& gradRhoInterp_;
 
 
@@ -118,6 +123,7 @@ public:
        const interpolationCellPoint<vector>& gradPInterp,
        const interpolationCellPoint<scalar>& kInterp,
        const interpolationCellPoint<scalar>& epsilonInterp,
+       const interpolationCellPoint<scalar>& psiInterp,
        const interpolationCellPoint<vector>& gradRhoInterp_
        );
 
@@ -135,6 +141,8 @@ public:
       
       inline const interpolationCellPoint<scalar>& epsilonInterp() const;
 
+      inline const interpolationCellPoint<scalar>& psiInterp() const;
+
       inline const interpolationCellPoint<vector>& gradRhoInterp() const;
     };
 
@@ -151,6 +159,7 @@ public:
             const vector& Updf,
             const vector& UParticle,
             const vector& UFap,
+            const scalar psi,
             const scalar dt
         );
 
@@ -192,6 +201,9 @@ public:
             //- Fluid velocity @ particle location
             inline const vector& UFap() const;
             
+            //- species concentration
+            inline const scalar& psi() const;
+
             //- particle time step
             inline scalar& dt();
 

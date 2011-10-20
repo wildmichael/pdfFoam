@@ -66,6 +66,7 @@ Foam::mcParticleCloud::mcParticleCloud
     const volVectorField& U,
     const volScalarField& rho,
     const volScalarField& k,
+    const volScalarField& psi,
     const word& cloudName,
     bool readFields
 )
@@ -76,6 +77,7 @@ Foam::mcParticleCloud::mcParticleCloud
     Ufv_(U),
     rhofv_(rho),
     kfv_(k),
+    psifv_(psi),
 
     particleProperties_
     (
@@ -135,6 +137,18 @@ Foam::mcParticleCloud::mcParticleCloud
         mesh,
         dimensionedVector("M1", dimMass*dimVelocity, vector::zero)
         ),
+    Mpsi1_(
+        IOobject
+        (
+            "Mpsi1",
+            mesh.time().timeName(),
+            mesh,
+            IOobject::READ_IF_PRESENT,
+            IOobject::AUTO_WRITE
+         ),
+        mesh,
+        dimensionedScalar("Mpsi1", dimless, 0.0)
+        ),
     M2_(
         IOobject
           (
@@ -166,6 +180,19 @@ Foam::mcParticleCloud::mcParticleCloud
       M1_/max(M0_, SMALL_MASS)
      ),
     
+    psicPdf_
+    (
+      IOobject
+     (
+      "psiCloudPDF",
+      mesh.time().timeName(),
+      mesh,
+       IOobject::READ_IF_PRESENT,
+      IOobject::AUTO_WRITE
+       ),
+      Mpsi1_/max(M0_, SMALL_MASS)
+     ),
+
     TaucPdf_
     (
       IOobject
@@ -226,6 +253,7 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
 {
   instantM0_ *= 0.0;
   volVectorField instantM1 = M1_ * 0.0;
+  volScalarField instantMpsi1 = Mpsi1_ * 0.0;
   volSymmTensorField instantM2 = M2_ * 0.0;
 
   PaNIC_ *= 0;
@@ -245,14 +273,17 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
 
       instantM0_[p.cell()] += p.m();
       instantM1[p.cell()] += p.m() * p.UParticle();
+      instantMpsi1[p.cell()] += p.m() * p.psi();
       instantM2[p.cell()] += p.m() * symm(u * u);
     }
 
-  M0_ = existWt * M0_ + (1.0 - existWt) * instantM0_;
-  M1_ = existWt * M1_ + (1.0 - existWt) * instantM1;
-  M2_ = existWt * M2_ + (1.0 - existWt) * instantM2;
+  M0_    = existWt * M0_    + (1.0 - existWt) * instantM0_;
+  M1_    = existWt * M1_    + (1.0 - existWt) * instantM1;
+  Mpsi1_ = existWt * Mpsi1_ + (1.0 - existWt) * instantMpsi1;
+  M2_    = existWt * M2_    + (1.0 - existWt) * instantM2;
   // Compute U and tau
-  UcPdf_  = M1_/max(M0_, SMALL_MASS);
+  UcPdf_    = M1_/max(M0_, SMALL_MASS);
+  psicPdf_  = Mpsi1_ / max(M0_, SMALL_MASS);
   TaucPdf_  = M2_/max(M0_, SMALL_MASS);
 }
 
@@ -267,7 +298,6 @@ void Foam::mcParticleCloud::updateParticlePDF()
     {
       mcParticle & p = pIter();
       p.Updf() = UcPdf_[p.cell()];
-      // p.Taupdf() = TaucPdf_[p.cell()];
     }
 }
 
@@ -517,6 +547,7 @@ void Foam::mcParticleCloud::evolve()
     const volVectorField& gradP = mesh_.lookupObject<const volVectorField>("grad(p)");
     const volScalarField& k = mesh_.lookupObject<const volScalarField>("k");
     const volScalarField& epsilon = mesh_.lookupObject<const volScalarField>("epsilon");
+
     volScalarField diffRho(M0_);
     diffRho.internalField() = -(M0_.internalField()/mesh_.V() - rho)/rho;
     volVectorField gradRho = fvc::grad(diffRho) * coeffCorr;
@@ -529,10 +560,11 @@ void Foam::mcParticleCloud::evolve()
     interpolationCellPoint<vector> gradPInterp(gradP);
     interpolationCellPoint<scalar> kInterp(k);
     interpolationCellPoint<scalar> epsilonInterp(epsilon);
+    interpolationCellPoint<scalar> psiInterp(psicPdf_);
     interpolationCellPoint<vector> gradRhoInterp(gradRho);
 
     mcParticle::trackData td(*this, rhoInterp, UInterp, gradPInterp, kInterp, 
-                             epsilonInterp, gradRho);
+                             epsilonInterp, psiInterp, gradRhoInterp);
 
     Cloud<mcParticle>::move(td);
 
@@ -548,7 +580,7 @@ void Foam::mcParticleCloud::evolve()
     // Correct boundary conditions:
     populateGhostCells();
 
-    //  particleInfo();
+    // particleInfo();
     assertPopulationHealth();
 }
 
@@ -565,8 +597,8 @@ void Foam::mcParticleCloud::initReleaseParticles()
       scalar m = mesh_.V()[celli] * rhofv_[celli] / N;
       vector Updf = Ufv_[celli];
       vector uscales(sqrt(kfv_[celli]), sqrt(kfv_[celli]), sqrt(kfv_[celli]));
-
-      particleGenInCell(celli, N, m, Updf, uscales);
+      scalar psi = psifv_[celli];
+      particleGenInCell(celli, N, m, Updf, uscales, psi);
     }
 
   writeFields();
@@ -581,7 +613,8 @@ void Foam::mcParticleCloud::particleGenInCell
  label N, 
  scalarList masses, 
  vector Updf, 
- vectorList uscales
+ vectorList uscales, 
+ scalar psi
  )
 {
   boundBox cellbb(pointField(mesh_.points(), mesh_.cellPoints()[celli]));
@@ -619,7 +652,7 @@ void Foam::mcParticleCloud::particleGenInCell
           mcParticle* ptr =
             new mcParticle
             (
-             *this,  position, celli, m, Updf, UParticle, UFap, dtCloud_
+             *this,  position, celli, m, Updf, UParticle, UFap, psi, dtCloud_
              );
           
           addParticle(ptr);
@@ -652,12 +685,13 @@ void Foam::mcParticleCloud::particleGenInCell
  label N, 
  scalar m, 
  vector Updf, 
- vector usc
+ vector usc,
+ scalar psi
  )
 {
   scalarList masses(N, m);
   vectorList uscales(N, usc);
-  particleGenInCell(celli, N, masses, Updf, uscales);
+  particleGenInCell(celli, N, masses, Updf, uscales, psi);
 }
 
 
@@ -684,8 +718,9 @@ void Foam::mcParticleCloud::populateGhostCells()
               vector Updf = Ufv_[celli];
               scalar ksqrt = sqrt(kfv_[celli]);
               vector uscales(ksqrt, ksqrt, ksqrt);
-
-              particleGenInCell(celli, N, m, Updf, uscales);
+              // psi: from patch value (boundary condition)
+              scalar psi = psifv_.boundaryField()[patchi][faceCelli];
+              particleGenInCell(celli, N, m, Updf, uscales, psi);
               if (debug_)
                 Info << N << " particles generated in cell " << celli
                      << " m= " << m
@@ -744,7 +779,8 @@ void Foam::mcParticleCloud::oneParticleInfo(const mcParticle& p) const
        << "m    = " << p.m() << nl
        << "U    = " << p.UParticle()  << ", "
        << "Ufv  = " << Ufv_[p.cell()] << ", "
-       << "Updf = " << p.Updf()
+       << "Updf = " << p.Updf() << ", "
+       << "psi  = " << p.psi()
        << endl;
 }
 

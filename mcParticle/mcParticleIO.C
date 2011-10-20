@@ -44,13 +44,14 @@ Foam::mcParticle::mcParticle
             m_ = readScalar(is);
             is >> Updf_;
             is >> UParticle_;
+            is >> psi_;
         }
         else
         {
             is.read
             (
                 reinterpret_cast<char*>(&m_),
-                sizeof(m_) + sizeof(Updf_) + sizeof(UParticle_)
+                sizeof(m_) + sizeof(Updf_) + sizeof(UParticle_) + sizeof(psi_)
             );
         }
     }
@@ -81,6 +82,9 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
     IOField<vector> UFap(c.fieldIOobject("UFap", IOobject::MUST_READ));
     c.checkFieldIOobject(c, UFap);
 
+    IOField<scalar> psi(c.fieldIOobject("psi", IOobject::MUST_READ));
+    c.checkFieldIOobject(c, psi);
+
     label i = 0;
     forAllIter(Cloud<mcParticle>, c, iter)
     {
@@ -90,6 +94,7 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
         p.Updf_ = Updf[i];
         p.UParticle_ = UParticle[i];
         p.UFap_ = UFap[i];
+        p.psi_ = psi[i];
         i++;
     }
 }
@@ -105,6 +110,7 @@ void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
     IOField<vector> Updf(c.fieldIOobject("Updf", IOobject::NO_READ), np);
     IOField<vector> UParticle(c.fieldIOobject("UParticle", IOobject::NO_READ), np);
     IOField<vector> UFap(c.fieldIOobject("UFap", IOobject::NO_READ), np);
+    IOField<scalar> psi(c.fieldIOobject("psi", IOobject::NO_READ), np);
 
     label i = 0;
     forAllConstIter(Cloud<mcParticle>, c, iter)
@@ -115,6 +121,7 @@ void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
         Updf[i] = p.Updf_;
         UParticle[i] = p.UParticle_;
         UFap[i] = p.UFap_;
+        psi[i] = p.psi_;
         i++;
     }
 
@@ -122,6 +129,7 @@ void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
     Updf.write();
     UParticle.write();
     UFap.write();
+    psi.write();
 }
 
 
@@ -134,7 +142,8 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
         os  << static_cast<const Particle<mcParticle>&>(p)
             << token::SPACE << p.m_
             << token::SPACE << p.Updf_
-            << token::SPACE << p.UParticle_;
+            << token::SPACE << p.UParticle_
+            << token::SPACE << p.psi_;
     }
     else
     {
@@ -142,7 +151,7 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
         os.write
         (
             reinterpret_cast<const char*>(&p.m_),
-            sizeof(p.m_) + sizeof(p.Updf_)  + sizeof(p.UParticle_)
+            sizeof(p.m_) + sizeof(p.Updf_)  + sizeof(p.UParticle_) + sizeof(p.psi_)
         );
     }
 

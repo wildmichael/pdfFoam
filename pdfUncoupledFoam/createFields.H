@@ -75,6 +75,21 @@
         mesh
     );
 
+
+    volScalarField psi
+    (
+        IOobject
+        (
+            "psi",
+            runTime.timeName(),
+            mesh,
+            IOobject::MUST_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh
+    );
+
+
     volVectorField gradP = fvc::grad(p);
 
     word mcParticleCloudName("mcParticleCloud");
@@ -87,6 +102,7 @@
      U,
      rho,
      k,
+     psi,
      mcParticleCloudName,
      true
     );
