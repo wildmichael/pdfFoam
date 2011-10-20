@@ -29,8 +29,8 @@ License
 
 void Foam::mcParticle::updateThermo()
 {
-    // compute rho
-    rho_ = (1. - 3.2*z_*(1.-z_));
+    // TODO move to reaction model
+    //rho_ = (1. - 3.2*z_*(1.-z_));
 }
 
 bool Foam::mcParticle::move(mcParticle::trackData& td)
@@ -38,9 +38,8 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
   // SLM constant, temperarily put here C0 = 2.1
 
     scalar C0 = 2.1;
-    // TODO shouldn't this be 2.0?
-    //scalar Cz = 0.6893;
-    scalar Cz = 2.0;
+    // TODO move mixing constants to mixing model
+    //scalar Cz = 2.0;
 
     td.switchProcessor = false;
     td.keepParticle = true;
@@ -124,8 +123,8 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
               (UParticle_ - Updf_)  * dt / mcpc.kRelaxTime().value()
             * (sqrt(mcpc.kfv()()[celli]/mcpc.kcPdf()[celli]) - 1.0);
 
-        // Evolve concentration
-        z_ += -0.5 * Cz *  epsilonFap / kFap * (z_ - zCap) * dt;
+        // TODO Move mixing to mixing model
+        //z_ += -0.5 * Cz *  epsilonFap / kFap * (z_ - zCap) * dt;
 
         updateThermo();
 
