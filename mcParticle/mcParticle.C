@@ -65,7 +65,10 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         // FV interpolated velocity plus particle fluctuation
         // velocity. A particle number correction flux is needed as
         // well (to ensure consistency with FV density field).
-        destParticle = position() + dt * (UParticle_ - UPdf_ + UFap_);
+        
+        vector correctedUp = UParticle_ - Updf_ + UFap_;
+        meshTools::constrainDirection(mesh, mesh.solutionD(), correctedUp);
+        vector destParticle = position() + dt * correctedUp;
           
         dt *= trackToFace(destParticle, td);
 
@@ -100,6 +103,8 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
           - (0.5 + 0.75 * C0) * epsilonFap / kFap * (UParticle_- Updf_) * dt
           + sqrt(C0 * epsilonFap) * dW;
 
+        
+
         if (onBoundary() && td.keepParticle)
         {
             if (isA<processorPolyPatch>(pbMesh[patch(face())]))
@@ -112,48 +117,6 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
     return td.keepParticle;
 }
 
-
-// bool Foam::mcParticle::move(mcParticle::trackData& td)
-// {
-//     td.switchProcessor = false;
-//     td.keepParticle = true;
-
-//     const polyMesh& mesh = cloud().pMesh();
-//     const polyBoundaryMesh& pbMesh = mesh.boundaryMesh();
-
-//     while (td.keepParticle && !td.switchProcessor 
-//            && stepFraction_ < 1.0 - SMALL )
-//     {
-//         if (debug)
-//         {
-//             Info<< "Time = " << mesh.time().timeName()
-//                 << " steptFraction() = " << stepFraction() << endl;
-//         }
-
-//         stepFraction_ += trackToFace(endPosition(), td)*(1.0 - stepFraction_);  
-
-//         Info << "Finished trackToFace" << endl;
-
-//         if (onBoundary() && td.keepParticle)
-//         {
-//             if (isA<processorPolyPatch>(pbMesh[patch(face())]))
-//               {
-//                 td.switchProcessor = true;
-//               }
-            
-//             if (isA<wallPolyPatch>(pbMesh[patch(face())]))
-//                {
-//                  Info << "Hitting wall patch..." << endl;
-//                  stepFraction_ = 1.0;
-//                  //                 const wallPolyPatch & wpp = static_cast<const wallPolyPatch&> (pbMesh[patch(face())]);
-//                  //                 hitWallPatch(wpp, td);
-//              }
-//         }
-//     }
-    
-
-//     return td.keepParticle;
-// }
 
 
 // Pre-action before hitting patches
@@ -218,9 +181,6 @@ void Foam::mcParticle::hitWallPatch
   // Tangential friction coefficient: 
   // 1 = totally friction (stop); 0 = smooth (no loss)
   UParticle_ -= td.mcpc().mu()*Ut;
-
-  Info << "After hitting wall, UParticle = " << UParticle() << endl;
-  Info << "stepFraction: " << stepFraction() << endl;
 }
 
 
@@ -238,7 +198,6 @@ void Foam::mcParticle::hitPatch
     mcParticle::trackData& td
 )
 {
-  Info << "action for unknown patch type." << endl;
   td.keepParticle = false;
 }
 

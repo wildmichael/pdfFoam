@@ -44,7 +44,7 @@ Author: Heng Xiao with Patrick Jenny, 2010-08-29
 #include "autoPtr.H"
 #include "interpolationCellPoint.H"
 #include "contiguous.H"
-
+#include "meshTools.H"
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -67,11 +67,12 @@ class mcParticle
 
         //- mean velocity based on particles
         vector Updf_;
+        //- Mean Reynolds stress based on partiles
+       symmTensor Taupdf_;
   
         //- particle velocity (mean + flutuation) (primary variable)
         vector UParticle_;
 
-        //- fluid velocity @ particle location (not stored)
         //- particle fluctuation velocity w.r.t Updf (not stored)
 
        //- current time step
@@ -169,15 +170,23 @@ public:
             //- Return mass
             inline scalar m() const;
 
-            //- Return velocity PDF
+            //- Return pdf velocity (particle velocity in this cell)
             inline const vector& Updf() const;
+
+            inline vector& Updf();
+
+            inline const symmTensor& Taupdf() const;
+
+            inline symmTensor& Taupdf();
 
             //- Return total particle velocity;
             inline const vector& UParticle() const; 
+
+            //- Fluid velocity @ particle location
+            inline const vector& UFap() const;
             
             //- particle time step
             inline scalar& dt();
-
 
         // Tracking
 

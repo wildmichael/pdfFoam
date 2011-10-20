@@ -111,15 +111,32 @@ inline const Foam::vector& Foam::mcParticle::Updf() const
     return Updf_;
 }
 
+inline Foam::vector& Foam::mcParticle::Updf()
+{
+    return Updf_;
+}
+
+inline const Foam::symmTensor& Foam::mcParticle::Taupdf() const
+{
+    return Taupdf_;
+}
+
+inline Foam::symmTensor& Foam::mcParticle::Taupdf()
+{
+    return Taupdf_;
+}
+
+
 inline const Foam::vector& Foam::mcParticle::UParticle() const
 {
     return UParticle_;
 }
 
-am::vector& Foam::mcParticle::UFap() const
+inline const Foam::vector& Foam::mcParticle::UFap() const
 {
     return UFap_;
 }
+
 
 inline Foam::scalar& Foam::mcParticle::dt()
 {

@@ -85,5 +85,7 @@
     (
      mesh, 
      U,
+     rho,
+     k,
      mcParticleCloudName
     );

@@ -63,21 +63,38 @@ class mcParticleCloud
   const fvMesh& mesh_;
   
   const volVectorField& Ufv_;
+  const volScalarField& rhofv_;
+  const volScalarField& kfv_;
+  IOdictionary particleProperties_;
   
   scalar dtCloud_;
+  scalar AvgTimeScale_;
+
 
   //- random number for Wiener process (diffusion) 
   Random random_;
-
-  IOdictionary particleProperties_;
+  //- Number of particles per cell (initially)
+  label Npc_;
 
   //- statistical moments (mass, momentum, energy)
-  //- needed to obtain UPdf, and TauPdf fields
-  volScalarField M0;
-  volVectorField M1;
-  volSymmTensorField M2;
+  //- needed to obtain Updf, and Taupdf fields
+  volScalarField M0_;
+  volVectorField M1_;
+  volSymmTensorField M2_;
+
+  // Mesh based velocity and Reynolds stress, obtained from particle
+  // quantities.
+  volVectorField UcPdf_;
+  volSymmTensorField TaucPdf_;
 
   // Private Member Functions
+
+  //- ensure moments M0, M1, M2 are cnosistently read
+  void checkMoments();
+
+  //- update moments and the quantities remembered by particles
+  void updateCloudPDF(scalar existWt);
+  void updateParticlePDF();
 
   //- Disallow default bitwise copy construct
   mcParticleCloud(const mcParticleCloud&);
@@ -95,6 +112,8 @@ public:
         (
             const fvMesh&,
             const volVectorField& U,
+            const volScalarField& rho,
+            const volScalarField& k,
             const word& cloudName = "defaultCloud",
             bool readFields = true
         );
@@ -105,10 +124,11 @@ public:
       // Access
 
       inline const fvMesh& mesh() const;
-      inline scalar dtCloud();
       inline scalar e() const;
       inline scalar mu() const;
 
+      inline scalar dtCloud();
+      inline label Npc();
   
       Random &random() {return random_;}
 
@@ -117,6 +137,18 @@ public:
 
   //- initial release of particles
   void initReleaseParticles();
+
+  // Randomly generate N particles in celli, with provided cell-based
+  // values and the scale of velocity fluctuation
+  void particleGenInCell
+  (
+   label celli, 
+   label N, 
+   scalar m, 
+   vector Updf, 
+   vector uscales
+   );
+
 
   //- Update end position (for tracking)
   void updateParticleProperties();

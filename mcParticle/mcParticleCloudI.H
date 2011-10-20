@@ -49,4 +49,9 @@ inline Foam::scalar Foam::mcParticleCloud::dtCloud()
   return dtCloud_;
 }
 
+inline Foam::label Foam::mcParticleCloud::Npc()
+{ 
+  return Npc_;
+}
+
 // ************************************************************************* //
