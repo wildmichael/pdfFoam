@@ -341,7 +341,8 @@ Foam::mcParticleCloud::mcParticleCloud
     prepareOmegaModel_(true),
     OmegaModel_(),
     mixingModel_(),
-    reactionModel_()
+    reactionModel_(),
+    isAxiSymmetric_(false)
 {
     // Find scalar fields
     if (dict_.found("scalarFields"))
@@ -474,7 +475,6 @@ Foam::mcParticleCloud::mcParticleCloud
     reactionModel_ = mcReactionModel::New(mesh_, dict);
 
     // Now determine whether this is an axi-symmetric case
-    bool isAxiSymmetric_ = false;
     label nAxiSymmetric = 0;
     if (mesh_.nGeometricD() <= 2)
     {
