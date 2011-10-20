@@ -138,6 +138,11 @@ class mcParticleCloud
   volScalarField psicPdf_;
   volSymmTensorField TaucPdf_;
 
+  //- constants
+
+  dimensionedScalar coeffRhoCorr_;
+  dimensionedScalar coeffUCorr_;
+
   // Private Member Functions
 
   //- ensure moments M0, M1, M2 are cnosistently read

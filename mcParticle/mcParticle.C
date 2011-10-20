@@ -74,7 +74,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         cellPointWeight cpwx(mesh, position(), celli, face());
         vector gradRhoFap = td.gradRhoInterp().interpolate(cpwx);
 
-        vector destParticle = position() + dt * (correctedUp + gradRhoFap);
+        vector destParticle = position() + dt * (correctedUp - gradRhoFap);
         vector prevPos = position();
         dt *= trackToFace(destParticle, td);
 
@@ -89,6 +89,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         scalar kFap = td.kInterp().interpolate(cpw);
         scalar epsilonFap = td.epsilonInterp().interpolate(cpw);
         scalar psiCap = td.psiInterp().interpolate(cpw);
+        vector diffUap = td.diffUInterp().interpolate(cpw);
         
         // interpolate fluid velocity to particle location This
         // quantity is a data member the class. 
@@ -97,7 +98,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         // center values. Will implemente later. 
         UFap_ = td.UInterp().interpolate(cpw);
 
-        //Wiener process
+        //Wiener process (question mark)
         vector dW = sqrt(dt) * vector
           (
            td.mcpc().random().GaussNormal(),
@@ -108,7 +109,8 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         // Update velocity (rhof should be rho-particle) 
         UParticle_ += - gradPFap/rhoFap * dt
           - (0.5 + 0.75 * C0) * epsilonFap / kFap * (UParticle_- Updf_) * dt
-          + sqrt(C0 * epsilonFap) * dW;
+          + sqrt(C0 * epsilonFap) * dW
+          + diffUap * dt/deltaT;
 
         psi_ += -0.5 * Cpsi *  epsilonFap / kFap * (psi_ - psiCap) * dt;
 

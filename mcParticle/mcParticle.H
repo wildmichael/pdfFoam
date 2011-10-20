@@ -106,6 +106,7 @@ public:
             const interpolationCellPoint<scalar>& epsilonInterp_;
             const interpolationCellPoint<scalar>& psiInterp_;
             const interpolationCellPoint<vector>& gradRhoInterp_;
+            const interpolationCellPoint<vector>& diffUInterp_;
 
 
     public:
@@ -124,7 +125,8 @@ public:
        const interpolationCellPoint<scalar>& kInterp,
        const interpolationCellPoint<scalar>& epsilonInterp,
        const interpolationCellPoint<scalar>& psiInterp,
-       const interpolationCellPoint<vector>& gradRhoInterp_
+       const interpolationCellPoint<vector>& gradRhoInterp,
+       const interpolationCellPoint<vector>& diffUInterp
        );
 
       // Member functions
@@ -144,6 +146,8 @@ public:
       inline const interpolationCellPoint<scalar>& psiInterp() const;
 
       inline const interpolationCellPoint<vector>& gradRhoInterp() const;
+
+      inline const interpolationCellPoint<vector>& diffUInterp() const;
     };
 
 

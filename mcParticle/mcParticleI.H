@@ -34,7 +34,8 @@ inline Foam::mcParticle::trackData::trackData
     const interpolationCellPoint<scalar>& kInterp,
     const interpolationCellPoint<scalar>& epsilonInterp,
     const interpolationCellPoint<scalar>& psiInterp,
-    const interpolationCellPoint<vector>& gradRhoInterp
+    const interpolationCellPoint<vector>& gradRhoInterp,
+    const interpolationCellPoint<vector>& diffUInterp
 )
 :
     mcpc_(mcpc),
@@ -44,7 +45,8 @@ inline Foam::mcParticle::trackData::trackData
     kInterp_(kInterp),
     epsilonInterp_(epsilonInterp),
     psiInterp_(psiInterp),
-    gradRhoInterp_(gradRhoInterp)
+    gradRhoInterp_(gradRhoInterp),
+    diffUInterp_(diffUInterp)
 {}
 
 
@@ -119,6 +121,12 @@ inline const Foam::interpolationCellPoint<Foam::vector>&
 Foam::mcParticle::trackData::gradRhoInterp() const
 {
     return gradRhoInterp_;
+}
+
+inline const Foam::interpolationCellPoint<Foam::vector>&
+Foam::mcParticle::trackData::diffUInterp() const
+{
+    return diffUInterp_;
 }
 
 inline Foam::scalar Foam::mcParticle::m() const

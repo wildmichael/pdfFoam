@@ -93,11 +93,16 @@ Foam::mcParticleCloud::mcParticleCloud
 
     dtCloud_(mesh.time().deltaT().value()),
   //    AvgTimeScale_(mesh.time().endTime().value()),
-    AvgTimeScale_(20.0),
-    random_(55555+12345*Pstream::myProcNo()),
-    Npc_(particleProperties_.lookupOrAddDefault<label>("particlesPerCell", 50)),
-    Nc_(mesh_.nCells()),
-    histNp_(size()),
+  AvgTimeScale_
+  (
+   particleProperties_.lookupOrAddDefault<scalar>
+                  ("averageTimeScale", 0.1*mesh.time().endTime().value())
+   ),
+  
+  random_(55555+12345*Pstream::myProcNo()),
+  Npc_(particleProperties_.lookupOrAddDefault<label>("particlesPerCell", 50)),
+  Nc_(mesh_.nCells()),
+  histNp_(size()),
 
     SMALL_MASS("SMALL_MASS", dimMass, SMALL),
 
@@ -230,7 +235,20 @@ Foam::mcParticleCloud::mcParticleCloud
        IOobject::AUTO_WRITE
        ),
      M2_/max(M0_, SMALL_MASS)
-     )
+     ),
+
+  coeffRhoCorr_
+  (
+    "cRhoCorr", 
+    dimTime,
+    particleProperties_.lookupOrAddDefault<scalar>("coeffRhoCorrection", 1.0e-7)
+   ),
+  coeffUCorr_
+  (
+    "cUCorr", 
+    dimless,
+    particleProperties_.lookupOrAddDefault<scalar>("coeffUCorrection", 0.001)
+  )
 {
   if (size() > 0) // if particle data not found
     {
@@ -252,6 +270,7 @@ Foam::mcParticleCloud::mcParticleCloud
 
   findGhostLayers();
   
+  Info << "Particle Properties Dict:" << nl << particleProperties_ << nl << endl;
   mesh_.time().write();
 }
 
@@ -579,13 +598,13 @@ void Foam::mcParticleCloud::findGhostLayers()
 
 void Foam::mcParticleCloud::evolve()
 {
-     dimensionedScalar coeffCorr("coeffCorr", dimLength*dimLength/dimTime, 1.0e-7);
+
     const volScalarField& rho = mesh_.lookupObject<const volScalarField>("rho");
     const volVectorField& U = mesh_.lookupObject<const volVectorField>("U");
     const volVectorField& gradP = mesh_.lookupObject<const volVectorField>("grad(p)");
     const volScalarField& k = mesh_.lookupObject<const volScalarField>("k");
     const volScalarField& epsilon = mesh_.lookupObject<const volScalarField>("epsilon");
-
+    
     volScalarField diffRho
         (
             IOobject
@@ -600,10 +619,27 @@ void Foam::mcParticleCloud::evolve()
             zeroGradientFvPatchScalarField::typeName
          );
 
-    diffRho.internalField() = -(rhocPdf_ - rho)/rho;
-    diffRho.correctBoundaryConditions();
-    volVectorField gradRho = fvc::grad(diffRho) * coeffCorr;
 
+    diffRho.internalField() = (rhocPdf_ - rho)/rho;
+    diffRho.correctBoundaryConditions();
+    volVectorField gradRho = fvc::grad(diffRho) * coeffRhoCorr_;
+
+    volVectorField diffU
+        (
+            IOobject
+                (
+                 "diffU",
+                 mesh_,
+                 IOobject::NO_READ,
+                 IOobject::NO_WRITE
+                 ),
+            mesh_,
+            dimVelocity,
+            zeroGradientFvPatchScalarField::typeName
+         );
+
+    diffU = (Ufv_ - UcPdf_) * coeffUCorr_;
+    diffU.correctBoundaryConditions();
 
     interpolationCellPoint<scalar> rhoInterp(rho);
     //interpolationCellPointFaceFlux UInterp(U);
@@ -613,9 +649,11 @@ void Foam::mcParticleCloud::evolve()
     interpolationCellPoint<scalar> epsilonInterp(epsilon);
     interpolationCellPoint<scalar> psiInterp(psicPdf_);
     interpolationCellPoint<vector> gradRhoInterp(gradRho);
+    interpolationCellPoint<vector> diffUInterp(diffU);
+
 
     mcParticle::trackData td(*this, rhoInterp, UInterp, gradPInterp, kInterp, 
-                             epsilonInterp, psiInterp, gradRhoInterp);
+                             epsilonInterp, psiInterp, gradRhoInterp, diffUInterp);
 
     Cloud<mcParticle>::move(td);
 
