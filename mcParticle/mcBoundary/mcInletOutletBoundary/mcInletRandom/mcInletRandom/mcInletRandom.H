@@ -177,7 +177,7 @@ public:
         //- The unconditional standard deviation of the velocity
         scalar& uRms() { return uRms_; }
 
-        //- The conditional mean velocity
+        //- The conditional mean velocity (normalization factor)
         inline scalar UCondMean() const { return UCondMean_; }
 
     // Public member functions

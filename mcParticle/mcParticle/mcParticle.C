@@ -181,7 +181,10 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         UParticle_ += - gradPFap/rho_ * deltaT
             - (0.5 * C1 + 0.75 * C0) * Omega_ * (UParticle_- UFap_) * deltaT
             + sqrt(C0 * kFap * Omega_) * dW
+            // Correct mean velocity
             + diffUap * deltaT
+            // Scale to ensure consistency on TKE (using interpolated
+            // kFap/kPdfap gives very bad results)
             + (UParticle_ - UFap_)  * deltaT / mcpc.kRelaxTime().value()
               * (sqrt(mcpc.kfv()()[cell()]/mcpc.kcPdf()[cell()]) - 1.0);
     }
