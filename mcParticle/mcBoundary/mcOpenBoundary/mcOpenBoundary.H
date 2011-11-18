@@ -74,14 +74,18 @@ class mcOpenBoundary :
         //- Mapping of cells adjacent to this patch to a list of face indices
         dynamicLabelListPtrMap cellFaces_;
 
-        //- Flux boundary field
-        const scalarField& phi_;
-
     // Private Member Functions
 
         // Disallow default bitwise copy construct and assignment
         mcOpenBoundary(const mcOpenBoundary&);
         void operator=(const mcOpenBoundary&);
+
+protected:
+
+    // Protected data
+
+        //- Flux boundary field
+        const scalarField& phi_;
 
 public:
 

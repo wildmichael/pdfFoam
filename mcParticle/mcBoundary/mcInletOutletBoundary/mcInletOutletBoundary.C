@@ -239,7 +239,6 @@ void Foam::mcInletOutletBoundary::correct
 #endif
     label np = 0;
     const polyPatch& pp = patch();
-    const vectorField& Sf = mesh().Sf().boundaryField()[patchID()];
     const scalarField& magSf = mesh().magSf().boundaryField()[patchID()];
     const vectorField& U = cloud.Ufv().boundaryField()[patchID()];
     const scalarField& rho = cloud.rhocPdf().boundaryField()[patchID()];
@@ -254,7 +253,7 @@ void Foam::mcInletOutletBoundary::correct
     forAll(pp, faceI)
     {
         label cellI = pp.faceCells()[faceI];
-        if ((Sf[faceI] & U[faceI]) > 0)
+        if (phi_[faceI] > 0)
         {
             // Mean velocity points out of the domain, so this is an outlet
             continue;
