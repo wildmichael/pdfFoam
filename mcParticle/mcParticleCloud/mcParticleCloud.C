@@ -68,6 +68,34 @@ const Foam::compressible::turbulenceModel* getTurbulenceModel
 }
 
 
+//- @todo This is a hack to fix the implementation in OpenFOAM < 2.0.x
+template<class T>
+void uniqueOrder_FIX
+(
+    const Foam::UList<T>& lst,
+    Foam::labelList& order
+)
+{
+    using namespace Foam;
+    sortedOrder(lst, order);
+
+    if (order.size() > 1)
+    {
+        label n = 0;
+        for (label i = 0; i < order.size() - 1; ++i)
+        {
+            if (lst[order[i]] != lst[order[i+1]])
+            {
+                order[n++] = order[i];
+            }
+        }
+        // DONT FORGET THE LAST ELEMENT!
+        order[n++] = order[order.size()-1];
+        order.setSize(n);
+    }
+}
+
+
 const Foam::dimensionedScalar SMALL_MASS
 (
     "SMALL_MASS",
@@ -1174,7 +1202,7 @@ void Foam::mcParticleCloud::initScalarFields()
         dict_.lookup("scalarFields") >> scalarNames_;
         // Check for duplicates
         labelList order;
-        uniqueOrder(scalarNames_, order);
+        uniqueOrder_FIX(scalarNames_, order);
         if (scalarNames_.size() != order.size())
         {
             FatalErrorIn
@@ -1230,7 +1258,7 @@ void Foam::mcParticleCloud::initScalarFields()
         dict_.lookup("mixedScalars") >> mixedScalarNames;
         // Check for duplicates
         labelList order;
-        uniqueOrder(mixedScalarNames, order);
+        uniqueOrder_FIX(mixedScalarNames, order);
         if (mixedScalarNames.size() != order.size())
         {
             FatalErrorIn
