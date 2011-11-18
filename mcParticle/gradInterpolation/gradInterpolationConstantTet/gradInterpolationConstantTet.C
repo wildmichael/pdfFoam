@@ -28,7 +28,6 @@ License
 #include "polyMesh.H"
 #include "volPointInterpolation.H"
 #include "linear.H"
-#include "tetrahedronTools.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -46,37 +45,21 @@ gradInterpolationConstantTet<Type>::gradInterpolationConstantTet
     gradInterpolation<Type>(psi),
     psip_(volPointInterpolation::New(psi.mesh()).interpolate(psi)),
     psis_(linearInterpolate(psi)),
-    tets_
-    (
-        tetrahedronTools::decomposePointFaceCell<richTetPointRef>
-        (
-            psi.mesh()
-        ).xfer()
-    ),
-    cellTets_(this->pMesh_.cells().size())
-{
-    const cellList& cells = this->pMesh_.cells();
-    label tetI = 0;
-    forAll(cells, cellI)
-    {
-        const cell& c = cells[cellI];
-        label nTets = 0;
-        forAll(c, faceI)
-        {
-            nTets += this->pMeshFaces_[c[faceI]].size();
-        }
-        cellTets_[cellI].reset
-        (
-            new SubList<richTetPointRef>
-            (
-                tets_,
-                nTets,
-                tetI
-            )
-        );
-        tetI += nTets;
-    }
-}
+    tetDecomp_(new tetFacePointCellDecomposition<richTetPointRef>(psi.mesh()))
+{}
+
+template<class Type>
+gradInterpolationConstantTet<Type>::gradInterpolationConstantTet
+(
+    const tetFacePointCellDecomposition<richTetPointRef>& tetDecomp,
+    const GeometricField<Type, fvPatchField, volMesh>& psi
+)
+:
+    gradInterpolation<Type>(psi),
+    psip_(volPointInterpolation::New(psi.mesh()).interpolate(psi)),
+    psis_(linearInterpolate(psi)),
+    tetDecomp_(tetDecomp)
+{}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
@@ -90,53 +73,16 @@ gradInterpolationConstantTet<Type>::interpolate
     const label faceI
 ) const
 {
-    const cell& c = this->pMesh_.cells()[cellI];
     typename Foam::outerProduct<Foam::vector, Type>::type grad;
-    label tetI =
-        tetrahedronTools::findTetrahedron(cellTets_[cellI](), position);
+    label tetI = tetDecomp_().find(position, cellI);
     if (tetI > -1)
     {
-        // find the face this tet "stands" on
-        label n = 0;
-        label cellFaceI = 0;
-        label facePointI = -1;
-        for (; cellFaceI != c.size(); ++cellFaceI)
-        {
-            const face& f = this->pMeshFaces_[c[cellFaceI]];
-            label s = f.size();
-            if (tetI < n+s)
-            {
-                facePointI = tetI - n;
-                break;
-            }
-            n += s;
-        }
-        if (facePointI < 0)
-        {
-            FatalErrorIn("gradInterpolationConstantTet<Type>::interpolate"
-                "(const vector&, const label, const label)")
-                << "Failed to find face and point belonging to tetrahedron\n"
-                << endl << abort(FatalError);
-        }
-        label gFaceI = c[cellFaceI];
+        label gFaceI = tetDecomp_().tetrahedronFace()[tetI];
         const face& f = this->pMeshFaces_[gFaceI];
-#ifdef FULLDEBUG
-        if (facePointI >= f.size())
-        {
-            FatalErrorIn("gradInterpolationConstantTet<Type>::interpolate"
-                "(const vector&, const label, const label)")
-                << "Computed facePointI is larger than face size\n"
-                << endl << abort(FatalError);
-        }
-#endif
-        label ptBI = f[facePointI];
-        label ptCI = f[f.rcIndex(facePointI)];
-        if (cellI != pMesh.faceOwner()[faceI])
-        {
-            Swap(ptBI, ptCI);
-        }
+        label ptBI = f[tetDecomp_().tetrahedronPoints()[tetI].first()];
+        label ptCI = f[tetDecomp_().tetrahedronPoints()[tetI].second()];
         const vectorField& gradNi =
-            cellTets_[cellI]()[tetI].gradNi();
+            tetDecomp_().tetrahedra()[tetI].gradNi();
         grad =
         (
             gradNi[3]*this->psi_[cellI]
@@ -170,9 +116,6 @@ gradInterpolationConstantTet<Type>::interpolate
                         "const label"
                     ") const")
             << "Failed to find tetrahedron containing point " << position << nl
-            << "The cell " << cellI << ": "
-            << c.points(this->pMeshFaces_, this->pMeshPoints_) << nl
-            << "The tetrahedra are: " << cellTets_[cellI]() << nl
             << endl << abort(FatalError);
     }
     return grad;

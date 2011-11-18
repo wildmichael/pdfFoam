@@ -52,6 +52,8 @@ SourceFiles
 #include "surfaceMesh.H"
 #include "fvsPatchField.H"
 #include "IOLostParticles.H"
+#include "richTetPointRef.H"
+#include "tetFacePointCellDecomposition.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -105,6 +107,8 @@ class mcParticleCloud:
 
         //- The mesh
         const fvMesh& mesh_;
+        //- The decomposed mesh
+        tetFacePointCellDecomposition<richTetPointRef> tetDecomp_;
         //- The control dictionary
         dictionary dict_;
         //- The time object

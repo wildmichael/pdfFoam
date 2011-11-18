@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2011 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2009-2010 OpenCFD Ltd.
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -23,55 +23,55 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "tetrahedronTools.H"
+#include "tetFacePointCellDecomposition.H"
 
-// * * * * * * * * * * * * * Local Helper Functions  * * * * * * * * * * * * //
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-namespace // anonymous
-{
-
-
-} // anonymous namespace
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 template<class Tetrahedron>
-inline Foam::autoPtr<Tetrahedron> Foam::tetrahedronTools::tetFromPointsFaceCell
-(
-    const polyMesh& pMesh,
-    label cellI,
-    label cellFaceI,
-    label facePointI
-)
+Foam::tetFacePointCellDecomposition<Tetrahedron>
+::tetFacePointCellDecomposition(const polyMesh& pMesh)
+:
+    pMesh_(pMesh),
+    tets_(decompose(pMesh_)().xfer()),
+    cellTets_(pMesh.cells().size()),
+    tetFace_(tets_.size()),
+    tetPoints_(tets_.size())
 {
-    const pointField& pMeshPoints = pMesh.points();
-    const cell& c = pMesh.cells()[cellI];
-    label faceI = c[cellFaceI];
-    const face& f = pMesh.faces()[faceI];
-    bool own = cellI == pMesh.faceOwner()[faceI];
-
-    const point& ptA = pMesh.faceCentres()[faceI];
-    const point& ptB = pMeshPoints[f[facePointI]];
-    const point& ptC = pMeshPoints[f[f.rcIndex(facePointI)]];
-    const point& ptD = pMesh.cellCentres()[cellI];
-
-    autoPtr<Tetrahedron> tetPtr;
-    if (own)
+    const cellList& cells = this->pMesh_.cells();
+    const faceList& faces = this->pMesh_.faces();
+    label tetI = 0;
+    forAll(cells, cellI)
     {
-        tetPtr.reset(new Tetrahedron(ptA, ptB, ptC, ptD));
+        const cell& c = cells[cellI];
+        DynamicList<label> ctets;
+        forAll(c, faceI)
+        {
+            label gFaceI = c[faceI];
+            const face& f = faces[gFaceI];
+            forAll(f, i)
+            {
+                ctets.append(tetI);
+                tetFace_[tetI] = gFaceI;
+                tetPoints_[tetI].first() = i;
+                tetPoints_[tetI].second() = f.rcIndex(i);
+                if (cellI != this->pMesh_.faceOwner()[gFaceI])
+                {
+                    tetPoints_[tetI] = tetPoints_[tetI].reversePair();
+                }
+                ++tetI;
+            }
+        }
+        cellTets_[cellI].transfer(ctets);
     }
-    else
-    {
-        tetPtr.reset(new Tetrahedron(ptA, ptC, ptB, ptD));
-    }
-
-    return tetPtr;
 }
 
 
+// * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
+
 template<class Tetrahedron>
-inline Foam::List<Tetrahedron>
-Foam::tetrahedronTools::decomposePointFaceCell
+Foam::autoPtr<Foam::List<Tetrahedron> >
+Foam::tetFacePointCellDecomposition<Tetrahedron>::decompose
 (
     const polyMesh& pMesh
 )
@@ -88,7 +88,8 @@ Foam::tetrahedronTools::decomposePointFaceCell
             nTets += pMeshFaces[c[cellFaceI]].size();
         }
     }
-    List<Tetrahedron> tets(nTets);
+    autoPtr<List<Tetrahedron> > tetsPtr(new List<Tetrahedron>(nTets));
+    List<Tetrahedron>& tets = tetsPtr();
     label tetI = 0;
     forAll(cells, cellI)
     {
@@ -100,13 +101,12 @@ Foam::tetrahedronTools::decomposePointFaceCell
             {
                 if (tetI==nTets)
                 {
-                    FatalErrorIn("tetrahedronTools::decomposePointFaceCell"
-                        "(const polyMesh&)")
+                    FatalErrorIn("tetFacePointCellDecomposition::decompose()")
                         << "Somehow miscounted tetrahedra in mesh.\n"
                         << endl << abort(FatalError);
                 }
                 tets[tetI++] =
-                    tetFromPointsFaceCell<Tetrahedron>
+                    tetFromFacePointsCell
                     (
                         pMesh,
                         cellI,
@@ -116,25 +116,39 @@ Foam::tetrahedronTools::decomposePointFaceCell
             }
         }
     }
-    return tets;
+    return tetsPtr;
 }
 
+// * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
 
 template<class Tetrahedron>
-inline Foam::label Foam::tetrahedronTools::findTetrahedron
+Foam::label Foam::tetFacePointCellDecomposition<Tetrahedron>::find
 (
-    const UList<Tetrahedron>& tets,
-    const point& pt
-)
+    const point& pt,
+    label cellHint
+) const
 {
-    forAll(tets, tetI)
+    if (cellHint > -1)
     {
-        if (tets[tetI].inside(pt))
+        const labelList& ctets = cellTets_[cellHint];
+        forAll(ctets, cteti)
         {
-            return tetI;
+            label teti = ctets[cteti];
+            if (tets_[teti].inside(pt))
+            {
+                return teti;
+            }
+        }
+    }
+    forAll(tets_, teti)
+    {
+        if (tets_[teti].inside(pt))
+        {
+            return teti;
         }
     }
     return -1;
 }
+
 
 // ************************************************************************* //

@@ -160,6 +160,7 @@ Foam::mcParticleCloud::mcParticleCloud
 :
     Cloud<mcParticle>(mesh, cloudName, false),
     mesh_(mesh),
+    tetDecomp_(mesh),
     dict_(dict),
     runTime_(mesh.time()),
     turbModel_
@@ -909,7 +910,7 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     interpolationCellPointFace<vector> UInterp(Ufv_);
     interpolationCellPointFace<vector> gradPInterp(gradP);
     interpolationCellPointFace<scalar> kInterp(kfv());
-    gradInterpolationConstantTet<scalar> gradRhoInterp(diffRho);
+    gradInterpolationConstantTet<scalar> gradRhoInterp(tetDecomp_, diffRho);
     interpolationCellPointFace<vector> diffUInterp(diffU);
     interpolationCellPointFace<scalar> kcPdfInterp(kcPdf_);
 

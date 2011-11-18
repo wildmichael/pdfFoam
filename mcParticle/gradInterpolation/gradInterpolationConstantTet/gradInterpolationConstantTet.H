@@ -40,6 +40,7 @@ SourceFiles
 
 #include "gradInterpolation.H"
 #include "richTetPointRef.H"
+#include "tetFacePointCellDecomposition.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -63,11 +64,8 @@ class gradInterpolationConstantTet
         //- Linearly interpolated volfield
         const GeometricField<Type, fvsPatchField, surfaceMesh> psis_;
 
-        //- The tetrahedron decomposion
-        const List<richTetPointRef> tets_;
-
-        //- The tetrahedra by cell
-        List<autoPtr<SubList<richTetPointRef> > > cellTets_;
+        //- The mesh decomposition
+        tmp<tetFacePointCellDecomposition<richTetPointRef> > tetDecomp_;
 
 
 public:
@@ -81,6 +79,13 @@ public:
         //- Construct from components
         gradInterpolationConstantTet
         (
+            const GeometricField<Type, fvPatchField, volMesh>& psi
+        );
+
+        //- Construct given a tet decomposition
+        gradInterpolationConstantTet
+        (
+            const tetFacePointCellDecomposition<richTetPointRef>& tetDecomp,
             const GeometricField<Type, fvPatchField, volMesh>& psi
         );
 
