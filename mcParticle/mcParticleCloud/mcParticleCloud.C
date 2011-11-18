@@ -851,7 +851,7 @@ Foam::scalar Foam::mcParticleCloud::evolve()
         ),
         mesh_,
         dimensionedScalar("diffRho", dimless, 0.0),
-        fixedValueFvPatchField<scalar>::typeName
+        zeroGradientFvPatchField<scalar>::typeName
     );
 
 
