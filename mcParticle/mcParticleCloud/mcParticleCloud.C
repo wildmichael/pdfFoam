@@ -33,6 +33,7 @@ License
 #include "compressible/RAS/RASModel/RASModel.H"
 #include "compressible/LES/LESModel/LESModel.H"
 #include "mcProcessorBoundary.H"
+#include "gradInterpolationConstantTet.H"
 
 // * * * * * * * * * * * * * Local Helper Functions  * * * * * * * * * * * * //
 
@@ -883,10 +884,8 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     );
 
 
-    diffRho.internalField() = (pndcPdf_ - rhocPdf_)/rhocPdf_;
+    diffRho.internalField() = coeffRhoCorr_*(pndcPdf_ - rhocPdf_)/rhocPdf_;
     diffRho.correctBoundaryConditions();
-
-    volVectorField gradRho = fvc::grad(diffRho) * coeffRhoCorr_;
 
     volVectorField diffU
     (
@@ -910,7 +909,7 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     interpolationCellPointFace<vector> UInterp(Ufv_);
     interpolationCellPointFace<vector> gradPInterp(gradP);
     interpolationCellPointFace<scalar> kInterp(kfv());
-    interpolationCellPointFace<vector> gradRhoInterp(gradRho);
+    gradInterpolationConstantTet<scalar> gradRhoInterp(diffRho);
     interpolationCellPointFace<vector> diffUInterp(diffU);
     interpolationCellPointFace<scalar> kcPdfInterp(kcPdf_);
 

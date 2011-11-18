@@ -78,7 +78,7 @@ Foam::mcParticle::trackData::trackData
     const interpolationCellPointFace<vector>& UInterp,
     const interpolationCellPointFace<vector>& gradPInterp,
     const interpolationCellPointFace<scalar>& kInterp,
-    const interpolationCellPointFace<vector>& gradRhoInterp,
+    const gradInterpolationConstantTet<scalar>& gradRhoInterp,
     const interpolationCellPointFace<vector>& diffUInterp
 )
 :

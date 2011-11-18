@@ -20,5 +20,7 @@ mcBoundary/mcInletOutletBoundary/mcInletOutletBoundary.C
 mcBoundary/mcInletOutletBoundary/mcInletRandom/mcInletRandom/mcInletRandom.C
 mcBoundary/mcInletOutletBoundary/mcInletRandom/mcInversionInletRandom/mcInversionInletRandom.C
 mcBoundary/mcInletOutletBoundary/mcInletRandom/mcSamplingInletRandom/mcSamplingInletRandom.C
+gradInterpolation/gradInterpolation/gradInterpolations.C
+gradInterpolation/gradInterpolationConstantTet/makeGradInterpolationConstantTet.C
 
 LIB = $(FOAM_USER_LIBBIN)/libmcParticle

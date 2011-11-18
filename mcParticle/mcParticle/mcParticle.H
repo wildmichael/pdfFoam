@@ -43,6 +43,7 @@ Author: Heng Xiao with Patrick Jenny, 2010-08-29
 #include "IOstream.H"
 #include "autoPtr.H"
 #include "interpolationCellPointFace.H"
+#include "gradInterpolationConstantTet.H"
 #include "contiguous.H"
 #include "meshTools.H"
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -133,7 +134,7 @@ public:
             const interpolationCellPointFace<vector>& UInterp_;
             const interpolationCellPointFace<vector>& gradPInterp_;
             const interpolationCellPointFace<scalar>& kInterp_;
-            const interpolationCellPointFace<vector>& gradRhoInterp_;
+            const gradInterpolationConstantTet<scalar>& gradRhoInterp_;
             const interpolationCellPointFace<vector>& diffUInterp_;
 
 
@@ -148,7 +149,7 @@ public:
             const interpolationCellPointFace<vector>& UInterp,
             const interpolationCellPointFace<vector>& gradPInterp,
             const interpolationCellPointFace<scalar>& kInterp,
-            const interpolationCellPointFace<vector>& gradRhoInterp,
+            const gradInterpolationConstantTet<scalar>& gradRhoInterp,
             const interpolationCellPointFace<vector>& diffUInterp
         );
 
@@ -163,7 +164,7 @@ public:
         inline const interpolationCellPointFace<scalar>& kInterp() const;
 
 
-        inline const interpolationCellPointFace<vector>& gradRhoInterp() const;
+        inline const gradInterpolationConstantTet<scalar>& gradRhoInterp() const;
 
         inline const interpolationCellPointFace<vector>& diffUInterp() const;
     };

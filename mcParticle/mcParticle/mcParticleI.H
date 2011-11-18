@@ -53,7 +53,7 @@ Foam::mcParticle::trackData::kInterp() const
 }
 
 
-inline const Foam::interpolationCellPointFace<Foam::vector>&
+inline const Foam::gradInterpolationConstantTet<Foam::scalar>&
 Foam::mcParticle::trackData::gradRhoInterp() const
 {
     return gradRhoInterp_;
