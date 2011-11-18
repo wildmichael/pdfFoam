@@ -186,12 +186,12 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
             // Scale to ensure consistency on TKE (using interpolated
             // kFap/kPdfap gives very bad results)
             + (UParticle_ - UFap_)  * deltaT / mcpc.kRelaxTime().value()
-              * (sqrt(mcpc.kfv()()[cell()]/mcpc.kcPdf()[cell()]) - 1.0);
+            * (sqrt(mcpc.kfv()()[c]/mcpc.kcPdf()[c]) - 1.0);
     }
 
     isOnInletBoundary_ = false;
 
-    vector correctedUp = UParticle_; // - Updf_ + UFap_;
+    vector correctedUp = UParticle_;
 
     vector gradRhoFap = td.gradRhoInterp().interpolate
     (
