@@ -559,11 +559,13 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
 
     // Loop through particles to accumulate moments (0, 1, 2 order)
     // as well as particle number
+    interpolationCellPointFace<vector> UInterp(Ufv_);
     forAllConstIter(mcParticleCloud, *this, pIter)
     {
         const mcParticle& p = pIter();
-        vector u = p.UParticle() - p.Updf();
         label cellI = p.cell();
+        vector U = UInterp.interpolate(p.position(), cellI, p.face());
+        vector u = p.UParticle() - U;
 
         ++PaNIC_[cellI];
 
