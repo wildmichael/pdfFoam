@@ -27,7 +27,7 @@ Class
 Description
     Inlet/outlet boundary for Monte Carlo particles
 
-    Mean velocity (getU()) and RMS of the velocity fluctuations (geturms()) are
+    Mean velocity (getU()) and Reynolds Averaged Stress (getR()) are
     initialized from the U and TauCloudPDF fields, respectively. However,
     currently only the isotropic part of TauCloudPDF is used. Generating
     correlated fluctuating velocities is on the to-do list...
@@ -81,9 +81,9 @@ class mcInletOutletBoundary :
         // Do not access directly, use getU() instead.
         vectorField U_;
 
-        //- RMS of fluctuations at boundary in face-normal coordinate system
-        // Do not access directly, use geturms() instead.
-        vectorField urms_;
+        //- RAS at boundary in face-normal coordinate system
+        // Do not access directly, use getR() instead.
+        symmTensorField R_;
 
         //- Random number generators for the wall-normal velocity
         // Do not access directly, use getInRnd() instead.
@@ -100,9 +100,9 @@ class mcInletOutletBoundary :
         // it if necessary
         const vectorField& getU(const mcParticleCloud& cloud);
 
-        //- Get the urms_ data field in face-normal coordinate system and create
+        //- Get the R_ data field in face-normal coordinate system and create
         // it if necessary
-        const vectorField& geturms(const mcParticleCloud& cloud);
+        const symmTensorField& getR(const mcParticleCloud& cloud);
 
         //- Get the inRnd_ list and create it if necessary
         PtrList<mcInletRandom>& getInRnd(mcParticleCloud& cloud);

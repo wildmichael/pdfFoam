@@ -64,11 +64,11 @@ Foam::mcInletOutletBoundary::mcInletOutletBoundary
     fwdTrans_(patch().size()),
     revTrans_(patch().size()),
     U_(),
-    urms_(),
+    R_(),
     inRnd_()
 {
     // compute triangle probability vector (normalized, cummulative sum of
-    // areas), transformations and transform urms_ into wall-normal system
+    // areas), transformations and transform R_ into wall-normal system
     const polyPatch& pp = patch();
     vector ex(1.0, 0.0, 0.0);
     const vectorField& Sf = mesh.Sf().boundaryField()[patchID];
@@ -115,20 +115,17 @@ const Foam::vectorField& Foam::mcInletOutletBoundary::getU
 }
 
 
-const Foam::vectorField& Foam::mcInletOutletBoundary::geturms
+const Foam::symmTensorField& Foam::mcInletOutletBoundary::getR
 (
     const Foam::mcParticleCloud& cloud
 )
 {
-    if (urms_.empty())
+    if (R_.empty())
     {
         const symmTensorField& tau = cloud.TaucPdf().boundaryField()[patchID()];
-        vectorField urms = vector(1., 0., 0.)*sqrt(tau.component(symmTensor::XX))
-                         + vector(0., 1., 0.)*sqrt(tau.component(symmTensor::YY))
-                         + vector(0., 0., 1.)*sqrt(tau.component(symmTensor::ZZ));
-        urms_ = transform(fwdTrans_, urms)();
+        R_ = transform(fwdTrans_, tau)();
     }
-    return urms_;
+    return R_;
 }
 
 
@@ -143,7 +140,7 @@ Foam::mcInletOutletBoundary::getInRnd
         const polyPatch& pp = patch();
         inRnd_.setSize(pp.size());
         const vectorField& U = getU(cloud);
-        const vectorField& urms = geturms(cloud);
+        const symmTensorField& R = getR(cloud);
         Random& rnd = cloud.random();
         forAll(pp, faceI)
         {
@@ -151,7 +148,7 @@ Foam::mcInletOutletBoundary::getInRnd
                 (
                     rnd,
                     U[faceI].x(),
-                    urms[faceI].x(),
+                    sqrt(R[faceI].xx()),
                     subDict("randomGenerator")
                 ));
         }
@@ -200,13 +197,13 @@ Foam::vector Foam::mcInletOutletBoundary::randomVelocity
 {
     Random& rnd = cloud.random();
     const vector& U = getU(cloud)[faceI];
-    const vector& urms = geturms(cloud)[faceI];
+    const symmTensor& R = getR(cloud)[faceI];
     // Normal component has a special distributions, other components are Gaussian
     vector Up = vector
     (
         getInRnd(cloud)[faceI].value(),
-        U.y() + urms.y() * rnd.GaussNormal(),
-        U.z() + urms.z() * rnd.GaussNormal()
+        U.y() + sqrt(R.yy()) * rnd.GaussNormal(),
+        U.z() + sqrt(R.zz()) * rnd.GaussNormal()
     );
     // Return Up in global coordinate system
     return transform(revTrans_[faceI], Up);
@@ -259,7 +256,11 @@ void Foam::mcInletOutletBoundary::correct
             continue;
         }
         mcInletRandom& inrnd = getInRnd(cloud)[faceI];
-        inrnd.updateCoeffs(getU(cloud)[faceI].x(), geturms(cloud)[faceI].x());
+        inrnd.updateCoeffs
+        (
+            getU(cloud)[faceI].x(),
+            sqrt(getR(cloud)[faceI].xx())
+        );
         // Volume and mass of every particle generated
         scalar Vp = mesh().V()[cellI]/Npc;
         scalar mp = rho[faceI]*Vp;
