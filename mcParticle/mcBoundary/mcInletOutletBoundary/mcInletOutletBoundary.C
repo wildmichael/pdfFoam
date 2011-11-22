@@ -32,6 +32,7 @@ License
 #include "fvsPatchField.H"
 #include "Random.H"
 #include "transformField.H"
+#include "compressible/RAS/RASModel/RASModel.H"
 #include <algorithm>
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
@@ -122,8 +123,29 @@ const Foam::symmTensorField& Foam::mcInletOutletBoundary::getR
 {
     if (R_.empty())
     {
-        const symmTensorField& tau = cloud.TaucPdf().boundaryField()[patchID()];
-        R_ = transform(fwdTrans_, tau)();
+        const symmTensorField& tau =
+            cloud.TaucPdf().boundaryField()[patchID()];
+        // clipping to compensate for bad divergence errors
+        const compressible::turbulenceModel& tm = cloud.turbulenceModel();
+        scalar k0;
+        if (isA<compressible::RASModel>(tm))
+        {
+            k0 = refCast<const Foam::compressible::RASModel>(tm).k0().value();
+        }
+        else
+        {
+            k0 = SMALL;
+        }
+        R_ = max
+        (
+            transform(fwdTrans_, tau),
+            symmTensor
+            (
+                k0, -GREAT, -GREAT,
+                    k0,     -GREAT,
+                            k0
+            )
+        );
     }
     return R_;
 }
