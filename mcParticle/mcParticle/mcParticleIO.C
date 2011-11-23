@@ -36,7 +36,9 @@ Foam::mcParticle::mcParticle
     bool readFields
 )
 :
-    Particle<mcParticle>(cloud, is, readFields)
+    Particle<mcParticle>(cloud, is, readFields),
+    reflectionBoundaryVelocity_(vector::zero),
+    reflectedAtOpenBoundary_(false)
 {
     if (readFields)
     {
@@ -144,6 +146,8 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
         p.shift_ = vector::zero;
         p.ghost_ = 0;
         p.nSteps_ = 0;
+        p.reflectionBoundaryVelocity_ = vector::zero;
+        p.reflectedAtOpenBoundary_ = false;
         i++;
     }
 }
