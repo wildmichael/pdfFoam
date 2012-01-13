@@ -110,6 +110,7 @@ Foam::mcParticle::mcParticle
     m_(m),
     Updf_(Updf),
     UParticle_(UParticle),
+    Utracking_(UParticle),
     UFap_(UFap),
     Omega_(0.0),
     rho_(0.0),
@@ -121,7 +122,11 @@ Foam::mcParticle::mcParticle
     isOnInletBoundary_(false),
     reflectedAtOpenBoundary_(false),
     Phi_(Phi)
-{}
+{
+    const polyMesh& mesh = c.mesh();
+    meshTools::constrainDirection(mesh, mesh.geometricD(), Utracking_);
+    Co_ = computeCourantNo(*this);
+}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
