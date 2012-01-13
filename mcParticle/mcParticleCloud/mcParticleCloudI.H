@@ -73,6 +73,11 @@ Foam::mcParticleCloud::epsilonfv() const
     return turbModel_.epsilon();
 }
 
+inline const Foam::volScalarField& Foam::mcParticleCloud::rhocPdfInst() const
+{
+    return rhocPdfInst_;
+}
+
 inline const Foam::volScalarField& Foam::mcParticleCloud::rhocPdf() const
 {
     return rhocPdf_;
@@ -95,6 +100,20 @@ inline const Foam::volSymmTensorField&
 Foam::mcParticleCloud::TaucPdf() const
 {
     return TaucPdf_;
+}
+
+
+inline const Foam::volScalarField&
+Foam::mcParticleCloud::pndcPdf() const
+{
+    return pndcPdf_;
+}
+
+
+inline const Foam::volScalarField&
+Foam::mcParticleCloud::pndcPdfInst() const
+{
+    return pndcPdfInst_;
 }
 
 

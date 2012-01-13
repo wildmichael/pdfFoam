@@ -39,7 +39,7 @@ Foam::mcParticle::trackData::UInterp() const
 }
 
 
-inline const Foam::interpolationCellPointFace<Foam::vector>&
+inline const Foam::gradInterpolationConstantTet<Foam::scalar>&
 Foam::mcParticle::trackData::gradPInterp() const
 {
     return gradPInterp_;
@@ -50,13 +50,6 @@ inline const Foam::interpolationCellPointFace<Foam::scalar>&
 Foam::mcParticle::trackData::kInterp() const
 {
     return kInterp_;
-}
-
-
-inline const Foam::gradInterpolationConstantTet<Foam::scalar>&
-Foam::mcParticle::trackData::gradRhoInterp() const
-{
-    return gradRhoInterp_;
 }
 
 
@@ -100,6 +93,18 @@ inline const Foam::vector& Foam::mcParticle::UParticle() const
 inline Foam::vector& Foam::mcParticle::UParticle()
 {
     return UParticle_;
+}
+
+
+inline const Foam::vector& Foam::mcParticle::Ucorrection() const
+{
+    return Ucorrection_;
+}
+
+
+inline Foam::vector& Foam::mcParticle::Ucorrection()
+{
+    return Ucorrection_;
 }
 
 

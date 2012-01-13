@@ -74,12 +74,11 @@ Foam::scalar computeCourantNo(const Foam::mcParticle& p)
 Foam::mcParticle::trackData::trackData
 (
     mcParticleCloud& mcpc,
-    const interpolationCellPointFace<scalar>& rhoInterp,
-    const interpolationCellPointFace<vector>& UInterp,
-    const interpolationCellPointFace<vector>& gradPInterp,
-    const interpolationCellPointFace<scalar>& kInterp,
-    const gradInterpolationConstantTet<scalar>& gradRhoInterp,
-    const interpolationCellPointFace<vector>& diffUInterp
+    const interpolationCellPointFace<scalar>&   rhoInterp,
+    const interpolationCellPointFace<vector>&   UInterp,
+    const gradInterpolationConstantTet<scalar>& gradPInterp,
+    const interpolationCellPointFace<scalar>&   kInterp,
+    const interpolationCellPointFace<vector>&   diffUInterp
 )
 :
     Particle<mcParticle>::trackData(mcpc),
@@ -87,7 +86,6 @@ Foam::mcParticle::trackData::trackData
     UInterp_(UInterp),
     gradPInterp_(gradPInterp),
     kInterp_(kInterp),
-    gradRhoInterp_(gradRhoInterp),
     diffUInterp_(diffUInterp)
 {}
 
@@ -110,6 +108,7 @@ Foam::mcParticle::mcParticle
     m_(m),
     Updf_(Updf),
     UParticle_(UParticle),
+    Ucorrection_(vector::zero),
     Utracking_(UParticle),
     UFap_(UFap),
     Omega_(0.0),
@@ -196,16 +195,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
 
     isOnInletBoundary_ = false;
 
-    vector correctedUp = UParticle_;
-
-    vector gradRhoFap = td.gradRhoInterp().interpolate
-    (
-        position(),
-        cell(),
-        face()
-    );
-
-    Utracking_ = correctedUp - gradRhoFap;
+    Utracking_ = UParticle_ + Ucorrection_;
     meshTools::constrainDirection(mesh, mesh.solutionD(), Utracking_);
 
     point destPos = position() + tEnd * Utracking_;
@@ -317,6 +307,7 @@ void Foam::mcParticle::transformProperties (const tensor& T)
     Particle<mcParticle>::transformProperties(T);
     // Only transform fluctuating velocity
     UParticle_ = transform(T, UParticle_);
+    Ucorrection_ = transform(T, Ucorrection_);
     Utracking_ = transform(T, Utracking_);
 }
 
@@ -334,6 +325,7 @@ Foam::string Foam::mcParticle::info() const
         << "X     = " << position() << ", "
         << "cell  = " << cell() << ", "
         << "m     = " << m() << nl
+        << "Ucorrection = " << Ucorrection() << ", "
         << "Utracking = " << Utracking() << ", "
         << "U     = " << UParticle()  << ", "
         << "UFap  = " << UFap() << ", "

@@ -43,6 +43,7 @@ SourceFiles
 #include "mcBoundary.H"
 #include "mcOmegaModel.H"
 #include "mcMixingModel.H"
+#include "mcPositionCorrection.H"
 #include "mcReactionModel.H"
 #include "dictionary.H"
 #include "Random.H"
@@ -174,6 +175,10 @@ class mcParticleCloud:
 
         //- Extracted, time-averaged density field
         volScalarField& rhocPdf_;
+        //- Extracted, instantaneous density field
+        volScalarField rhocPdfInst_;
+        //- Extracted, instantaneous particle-number density
+        volScalarField pndcPdfInst_;
         //- Extracted, time-averaged particle-number density
         volScalarField pndcPdf_;
         //- Extracted, time-averaged velocity
@@ -187,8 +192,6 @@ class mcParticleCloud:
 
         // Model parameters
 
-            //- Density-correction coefficient
-            dimensionedScalar coeffRhoCorr_;
             //- Mean velocity relaxation time
             dimensionedScalar URelaxTime_;
             //- Mean TKE relaxation time
@@ -205,6 +208,8 @@ class mcParticleCloud:
         autoPtr<mcMixingModel> mixingModel_;
         //- The reaction model object
         autoPtr<mcReactionModel> reactionModel_;
+        //- The position correction object
+        autoPtr<mcPositionCorrection> positionCorrection_;
 
         //- Is this a axi-symmetric case?
         bool isAxiSymmetric_;
@@ -296,6 +301,8 @@ public:
         inline const tmp<volScalarField> kfv() const;
         //- The turbulent dissipation field
         inline const tmp<volScalarField> epsilonfv() const;
+        //- The instantaneous PADF density field
+        inline const volScalarField& rhocPdfInst() const;
         //- The PDF density field
         inline const volScalarField& rhocPdf() const;
         //- The TKE PDF field
@@ -304,6 +311,10 @@ public:
         inline const List<volScalarField*>& PhicPdf() const;
         //- The turbulent stress tensor PDF field
         inline const volSymmTensorField& TaucPdf() const;
+        //- The particle number (mass) density
+        inline const volScalarField& pndcPdf() const;
+        //- The instantaneous particle number (mass) density
+        inline const volScalarField& pndcPdfInst() const;
         //- The TKE relaxation time
         inline const dimensionedScalar& kRelaxTime() const;
         //- The desired number of particles per cell

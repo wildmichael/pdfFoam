@@ -275,6 +275,38 @@ Foam::mcParticleCloud::mcParticleCloud
                 dict_.lookupOrDefault<word>("rhoName", "rho")))
     ),
 
+    rhocPdfInst_
+    (
+        IOobject
+        (
+            "rhoCloudPDFInst",
+            runTime_.timeName(),
+            mesh,
+            IOobject::READ_IF_PRESENT,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimDensity,
+        mMom_/mesh_.V(),
+        rhocPdf_.boundaryField()
+    ),
+
+    pndcPdfInst_
+    (
+        IOobject
+        (
+            "pndCloudPDFInst",
+            runTime_.timeName(),
+            mesh,
+            IOobject::READ_IF_PRESENT,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimDensity,
+        mMom_/mesh_.V(),
+        rhocPdf_.boundaryField()
+    ),
+
     pndcPdf_
     (
         IOobject
@@ -339,13 +371,6 @@ Foam::mcParticleCloud::mcParticleCloud
     ),
 
     PhicPdf_(),
-
-    coeffRhoCorr_
-    (
-        "cRhoCorr",
-        dimTime,
-        dict_.lookupOrAddDefault<scalar>("coeffRhoCorrection", 1.0e-7)
-    ),
     URelaxTime_
     (
         "URelaxTime",
@@ -373,6 +398,7 @@ Foam::mcParticleCloud::mcParticleCloud
     OmegaModel_(),
     mixingModel_(),
     reactionModel_(),
+    positionCorrection_(),
     isAxiSymmetric_(false),
     CourantCoeffs_
     (
@@ -394,6 +420,7 @@ Foam::mcParticleCloud::mcParticleCloud
     OmegaModel_ = mcOmegaModel::New(mesh_, dict);
     mixingModel_ = mcMixingModel::New(mesh_, dict);
     reactionModel_ = mcReactionModel::New(mesh_, dict);
+    positionCorrection_ = mcPositionCorrection::New(mesh_, dict);
 
     // Now determine whether this is an axi-symmetric case
     label nAxiSymmetric = 0;
@@ -616,10 +643,15 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
     // Do time-averaging of moments and compute mean fields
     mMom_  = existWt * mMom_  + newWt * mMomInstant;
     DimensionedField<scalar, volMesh> mMomBounded = max(mMom_, SMALL_MASS);
+    pndcPdfInst_.internalField() = mMomInstant / mesh_.V();
+    pndcPdfInst_.correctBoundaryConditions();
     pndcPdf_.internalField() = mMom_ / mesh_.V();
+    pndcPdf_.correctBoundaryConditions();
 
     VMom_  = existWt * VMom_  + newWt * VMomInstant;
     DimensionedField<scalar, volMesh> VMomBounded = max(VMom_, SMALL_VOLUME);
+    rhocPdfInst_.internalField() = mMomInstant/max(VMomInstant, SMALL_VOLUME);
+    rhocPdfInst_.correctBoundaryConditions();
     rhocPdf_.internalField()   = mMom_ / VMomBounded;
     rhocPdf_.correctBoundaryConditions();
 
@@ -869,26 +901,8 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     // lower bound for k
     kcPdf_ = max(kcPdf_, kMin_);
 
-    const volVectorField gradP =
-        fvc::grad(pfv_ - 2./3.*rhocPdf_*kfv());
-
-    volScalarField diffRho
-    (
-        IOobject
-        (
-            "diffRho",
-            mesh_,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh_,
-        dimensionedScalar("diffRho", dimless, 0.0),
-        zeroGradientFvPatchField<scalar>::typeName
-    );
-
-
-    diffRho.internalField() = coeffRhoCorr_*(pndcPdf_ - rhocPdf_)/rhocPdf_;
-    diffRho.correctBoundaryConditions();
+    // physical pressure
+    const volScalarField p = pfv_ - 2./3.*rhocPdf_*kfv();
 
     volVectorField diffU
     (
@@ -907,14 +921,12 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     diffU = (Ufv_ - UcPdf_) / URelaxTime_;
     diffU.correctBoundaryConditions();
 
-    interpolationCellPointFace<scalar> rhoInterp(rhocPdf_);
-    //interpolationCellPointFaceFlux UInterp(U);
-    interpolationCellPointFace<vector> UInterp(Ufv_);
-    interpolationCellPointFace<vector> gradPInterp(gradP);
-    interpolationCellPointFace<scalar> kInterp(kfv());
-    gradInterpolationConstantTet<scalar> gradRhoInterp(tetDecomp_, diffRho);
-    interpolationCellPointFace<vector> diffUInterp(diffU);
-    interpolationCellPointFace<scalar> kcPdfInterp(kcPdf_);
+    interpolationCellPointFace<scalar>   rhoInterp(rhocPdf_);
+    interpolationCellPointFace<vector>   UInterp(Ufv_);
+    gradInterpolationConstantTet<scalar> gradPInterp(tetDecomp_, p);
+    interpolationCellPointFace<scalar>   kInterp(kfv());
+    interpolationCellPointFace<vector>   diffUInterp(diffU);
+    interpolationCellPointFace<scalar>   kcPdfInterp(kcPdf_);
 
     // Correct boundary conditions
     forAll(boundaryHandlers_, boundaryI)
@@ -922,9 +934,16 @@ Foam::scalar Foam::mcParticleCloud::evolve()
         boundaryHandlers_[boundaryI].correct(*this, false);
     }
 
+    forAllIter(mcParticleCloud, *this, pIter)
+    {
+        pIter().nSteps() = 0;
+        pIter().Ucorrection() = vector::zero;
+    }
+
     OmegaModel_().correct(*this);
     mixingModel_().correct(*this);
     reactionModel_().correct(*this);
+    positionCorrection_().correct(*this);
 
     scalar existWt = 1.0/(1.0 + (runTime_.deltaT()/AvgTimeScale_).value());
 
@@ -935,14 +954,8 @@ Foam::scalar Foam::mcParticleCloud::evolve()
         UInterp,
         gradPInterp,
         kInterp,
-        gradRhoInterp,
         diffUInterp
     );
-
-    forAllIter(mcParticleCloud, *this, pIter)
-    {
-        pIter().nSteps() = 0;
-    }
 
     Cloud<mcParticle>::move(td);
 
@@ -1181,7 +1194,9 @@ void Foam::mcParticleCloud::particleGenInCell
 void Foam::mcParticleCloud::initMoments()
 {
     mMom_  = mesh_.V() * rhocPdf_;
+    rhocPdfInst_.internalField() = rhocPdf_.internalField();
     pndcPdf_.internalField() = rhocPdf_.internalField();
+    pndcPdfInst_.internalField() = rhocPdf_.internalField();
 
     VMom_  = mMom_ / rhocPdf_;
 

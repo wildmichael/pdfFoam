@@ -73,6 +73,9 @@ class mcParticle
         //- particle velocity (mean + flutuation) (primary variable)
         vector UParticle_;
 
+        //- particle correction velocity
+        vector Ucorrection_;
+
         //- particle tracking velocity leading to destination position
         vector Utracking_;
 
@@ -130,12 +133,11 @@ public:
 
         // Interpolators for continuous phase fields
 
-            const interpolationCellPointFace<scalar>& rhoInterp_;
-            const interpolationCellPointFace<vector>& UInterp_;
-            const interpolationCellPointFace<vector>& gradPInterp_;
-            const interpolationCellPointFace<scalar>& kInterp_;
-            const gradInterpolationConstantTet<scalar>& gradRhoInterp_;
-            const interpolationCellPointFace<vector>& diffUInterp_;
+            const interpolationCellPointFace<scalar>&   rhoInterp_;
+            const interpolationCellPointFace<vector>&   UInterp_;
+            const gradInterpolationConstantTet<scalar>& gradPInterp_;
+            const interpolationCellPointFace<scalar>&   kInterp_;
+            const interpolationCellPointFace<vector>&   diffUInterp_;
 
 
     public:
@@ -145,12 +147,11 @@ public:
         trackData
         (
             mcParticleCloud& mcpc,
-            const interpolationCellPointFace<scalar>& rhoInterp,
-            const interpolationCellPointFace<vector>& UInterp,
-            const interpolationCellPointFace<vector>& gradPInterp,
-            const interpolationCellPointFace<scalar>& kInterp,
-            const gradInterpolationConstantTet<scalar>& gradRhoInterp,
-            const interpolationCellPointFace<vector>& diffUInterp
+            const interpolationCellPointFace<scalar>&   rhoInterp,
+            const interpolationCellPointFace<vector>&   UInterp,
+            const gradInterpolationConstantTet<scalar>& gradPInterp,
+            const interpolationCellPointFace<scalar>&   kInterp,
+            const interpolationCellPointFace<vector>&   diffUInterp
         );
 
         // Member functions
@@ -159,12 +160,9 @@ public:
 
         inline const interpolationCellPointFace<vector>& UInterp() const;
 
-        inline const interpolationCellPointFace<vector>& gradPInterp() const;
+        inline const gradInterpolationConstantTet<scalar>& gradPInterp() const;
 
         inline const interpolationCellPointFace<scalar>& kInterp() const;
-
-
-        inline const gradInterpolationConstantTet<scalar>& gradRhoInterp() const;
 
         inline const interpolationCellPointFace<vector>& diffUInterp() const;
     };
@@ -225,6 +223,12 @@ public:
 
             //- Return total particle velocity;
             inline vector& UParticle();
+
+            //- Return particle correction velocity
+            inline const vector& Ucorrection() const;
+
+            //- Return particle correction velocity
+            inline vector& Ucorrection();
 
             //- Return velocity with which the particle is being tracked
             inline const vector& Utracking() const;
