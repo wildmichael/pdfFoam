@@ -113,6 +113,7 @@ Foam::mcParticle::mcParticle
     UFap_(UFap),
     Omega_(0.0),
     rho_(0.0),
+    eta_(1.0),
     shift_(shift),
     Co_(0.0),
     reflectionBoundaryVelocity_(vector::zero),
@@ -147,7 +148,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
     const polyMesh& mesh = mcpc.pMesh();
     const polyBoundaryMesh& pbMesh = mesh.boundaryMesh();
 
-    scalar deltaT = mesh.time().deltaT().value();
+    scalar deltaT = eta_*mesh.time().deltaT().value();
     scalar tEnd = (1.0 - stepFraction())*deltaT;
     scalar dtMax = tEnd;
 

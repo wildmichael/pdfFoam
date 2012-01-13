@@ -89,6 +89,9 @@ class mcParticle
        //- density
        scalar rho_;
 
+       //- eta
+       scalar eta_;
+
        //- separation (only for ghost cells)
        vector shift_;
 
@@ -253,6 +256,12 @@ public:
 
             //- density
             inline scalar& rho();
+
+            //- time stepping adjusting parameter
+            inline scalar eta() const;
+
+            //- time stepping adjusting parameter
+            inline scalar& eta();
 
             //- whether this particle is ghost
             inline label ghost() const;

@@ -131,7 +131,7 @@ inline bool Foam::mcParticleCloud::less::operator()
     mcParticle* two
 ) const
 {
-    return one->m() < two->m();
+    return (one->eta()*one->m()) < (two->eta()*two->m());
 }
 
 
@@ -141,7 +141,7 @@ inline bool Foam::mcParticleCloud::more::operator()
     mcParticle* two
 ) const
 {
-    return one->m() > two->m();
+    return (one->eta()*one->m()) > (two->eta()*two->m());
 }
 
 
@@ -421,6 +421,7 @@ Foam::mcParticleCloud::mcParticleCloud
     mixingModel_ = mcMixingModel::New(mesh_, dict);
     reactionModel_ = mcReactionModel::New(mesh_, dict);
     positionCorrection_ = mcPositionCorrection::New(mesh_, dict);
+    localTimeStepping_ = mcLocalTimeStepping::New(mesh_, dict);
 
     // Now determine whether this is an axi-symmetric case
     label nAxiSymmetric = 0;
@@ -478,7 +479,7 @@ Foam::mcParticleCloud::mcParticleCloud
     m0_ = 0.;
     forAllConstIter(mcParticleCloud, *this, pIter)
     {
-        m0_ += pIter().m();
+        m0_ += pIter().eta()*pIter().m();
     }
 
     // Ensure particles takes the updated PDF values
@@ -623,15 +624,15 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
 
         ++PaNIC_[cellI];
 
-        const scalar m = p.m();
-        mMomInstant[cellI]  += m;
-        VMomInstant[cellI]  += m / p.rho();
-        UMomInstant[cellI]  += m * p.UParticle();
+        const scalar meta = p.m() * p.eta();
+        mMomInstant[cellI]  += meta;
+        VMomInstant[cellI]  += meta / p.rho();
+        UMomInstant[cellI]  += meta * p.UParticle();
         forAll(PhicPdf_, PhiI)
         {
-            PhiMomInstant[PhiI][cellI]  += m * p.Phi()[PhiI];
+            PhiMomInstant[PhiI][cellI]  += meta * p.Phi()[PhiI];
         }
-        uuMomInstant[cellI] += m * symm(u * u);
+        uuMomInstant[cellI] += meta * symm(u * u);
     }
 
     scalar newWt = 1.0 - existWt;
@@ -856,12 +857,12 @@ void Foam::mcParticleCloud::eliminateParticles(label celli)
             if (random().scalar01() < 0.5)
             {
                 popA.append(p);
-                mA += p->m();
+                mA += p->eta()*p->m();
             }
             else
             {
                 popB.append(p);
-                mB += p->m();
+                mB += p->eta()*p->m();
             }
         }
     }
@@ -953,6 +954,7 @@ Foam::scalar Foam::mcParticleCloud::evolve()
         pIter().Ucorrection() = vector::zero;
     }
 
+    localTimeStepping_().correct(*this);
     OmegaModel_().correct(*this);
     mixingModel_().correct(*this);
     reactionModel_().correct(*this);
@@ -1062,7 +1064,7 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     scalar m1 = 0;
     forAllConstIter(mcParticleCloud, *this, pIter)
     {
-        m1 += pIter().m();
+        m1 += pIter().eta()*pIter().m();
     }
     // Difference of the masses
     scalar diffM = m1-m0_;
@@ -1093,6 +1095,12 @@ void Foam::mcParticleCloud::initReleaseParticles()
         }
 
         particleGenInCell(celli, Npc_, m, Updf, uscales, Phi);
+    }
+    // correct mass according to local time-stepping
+    localTimeStepping_().correct(*this);
+    forAllIter(mcParticleCloud, *this, pIter)
+    {
+        pIter().m() /= pIter().eta();
     }
     OmegaModel_().correct(*this);
     reactionModel_().correct(*this);

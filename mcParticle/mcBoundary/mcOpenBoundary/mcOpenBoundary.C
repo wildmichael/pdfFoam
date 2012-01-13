@@ -116,7 +116,7 @@ void Foam::mcOpenBoundary::correct
                     if (!(phi_[faceI] < 0.))
                     {
                         scalar xp = n[faceI]&(Cf[faceI]-pIter().position());
-                        if (xp < x0[faceI])
+                        if (xp < pIter().eta()*x0[faceI])
                         {
                             // FIXME Does deletion invalidate the iteration?
                             // Not sure how IDLListBase implements this...

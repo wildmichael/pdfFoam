@@ -41,6 +41,7 @@ SourceFiles
 #include "DLPtrList.H"
 #include "mcParticle.H"
 #include "mcBoundary.H"
+#include "mcLocalTimeStepping.H"
 #include "mcOmegaModel.H"
 #include "mcMixingModel.H"
 #include "mcPositionCorrection.H"
@@ -211,6 +212,8 @@ class mcParticleCloud:
         autoPtr<mcReactionModel> reactionModel_;
         //- The position correction object
         autoPtr<mcPositionCorrection> positionCorrection_;
+        //- The local time stepping object
+        autoPtr<mcLocalTimeStepping> localTimeStepping_;
 
         //- Is this a axi-symmetric case?
         bool isAxiSymmetric_;

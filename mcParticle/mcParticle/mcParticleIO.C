@@ -52,6 +52,7 @@ Foam::mcParticle::mcParticle
                 >> UFap_
                 >> Omega_
                 >> rho_
+                >> eta_
                 >> shift_
                 >> Co_
                 >> ghost_
@@ -68,7 +69,7 @@ Foam::mcParticle::mcParticle
                 sizeof(m_) + sizeof(Updf_) +
                 sizeof(UParticle_) + sizeof(Ucorrection_) +
                 sizeof(Utracking_) + sizeof(UFap_) +
-                sizeof(Omega_) + sizeof(rho_) +
+                sizeof(Omega_) + sizeof(rho_) + sizeof(eta_) +
                 sizeof(shift_) + sizeof(Co_) + sizeof(ghost_) +
                 sizeof(nSteps_) + sizeof(isOnInletBoundary_)
             );
@@ -129,6 +130,9 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
     IOField<scalar> rho(c.fieldIOobject("rho", IOobject::MUST_READ));
     c.checkFieldIOobject(c, rho);
 
+    IOField<scalar> eta(c.fieldIOobject("eta", IOobject::MUST_READ));
+    c.checkFieldIOobject(c, eta);
+
     label i = 0;
     forAllIter(Cloud<mcParticle>, c, iter)
     {
@@ -145,6 +149,7 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
             p.Phi_[PhiI] = PhiFields[PhiI][i];
         }
         p.rho_ = rho[i];
+        p.eta_ = eta[i];
         p.shift_ = vector::zero;
         p.ghost_ = 0;
         p.nSteps_ = 0;
@@ -195,6 +200,8 @@ void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
     }
     IOField<scalar> rho(c.fieldIOobject("rho", IOobject::NO_READ), np);
 
+    IOField<scalar> eta(c.fieldIOobject("eta", IOobject::NO_READ), np);
+
     label i = 0;
     forAllConstIter(Cloud<mcParticle>, c, iter)
     {
@@ -211,6 +218,7 @@ void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
             PhiFields[PhiI][i] = p.Phi_[PhiI];
         }
         rho[i] = p.rho_;
+        eta[i] = p.eta_;
         i++;
     }
 
@@ -225,6 +233,7 @@ void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
         PhiFields[PhiI].write();
     }
     rho.write();
+    eta.write();
 }
 
 
@@ -243,6 +252,7 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
             << token::SPACE << p.UFap_
             << token::SPACE << p.Omega_
             << token::SPACE << p.rho_
+            << token::SPACE << p.eta_
             << token::SPACE << p.shift_
             << token::SPACE << p.Co_
             << token::SPACE << p.ghost_
@@ -259,7 +269,7 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
             sizeof(p.m_) + sizeof(p.Updf_) +
             sizeof(p.UParticle_) + sizeof(p.Ucorrection_) +
             sizeof(p.Utracking_) + sizeof(p.UFap_) +
-            sizeof(p.Omega_) + sizeof(p.rho_) +
+            sizeof(p.Omega_) + sizeof(p.rho_) + sizeof(p.eta_) +
             sizeof(p.shift_) + sizeof(p.Co_) + sizeof(p.ghost_) +
             sizeof(p.nSteps_) + sizeof(p.isOnInletBoundary_)
         );

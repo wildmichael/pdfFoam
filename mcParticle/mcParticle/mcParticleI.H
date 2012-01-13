@@ -155,6 +155,15 @@ inline Foam::scalar& Foam::mcParticle::rho()
   return rho_;
 }
 
+inline Foam::scalar Foam::mcParticle::eta() const
+{
+  return eta_;
+}
+
+inline Foam::scalar& Foam::mcParticle::eta()
+{
+  return eta_;
+}
 
 inline Foam::label Foam::mcParticle::ghost() const
 {
