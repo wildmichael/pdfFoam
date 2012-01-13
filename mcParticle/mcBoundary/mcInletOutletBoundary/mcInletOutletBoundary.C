@@ -304,6 +304,7 @@ void Foam::mcInletOutletBoundary::correct
             phi[PhiI] = (*PhicPdf[PhiI])[faceI];
         }
 
+        List<mcParticle*> genParticles(N);
         for (label i=0; i<N; ++i)
         {
             vector Up = randomVelocity(cloud, faceI);
@@ -320,6 +321,7 @@ void Foam::mcInletOutletBoundary::correct
             );
             p->isOnInletBoundary() = true;
             cloud.addParticle(p);
+            genParticles[i] = p;
 #ifdef FULLDEBUG
             if (debug > 1)
             {
@@ -328,6 +330,7 @@ void Foam::mcInletOutletBoundary::correct
             }
 #endif
         }
+        cloud.adjustAxiSymmetricMass(genParticles);
     }
     if (debug)
     {

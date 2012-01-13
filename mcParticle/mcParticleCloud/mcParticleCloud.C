@@ -1100,6 +1100,8 @@ void Foam::mcParticleCloud::particleGenInCell
     vector dimb = cellbb.max() - minb;
 
     label Npgen = 0;
+    DynamicList<mcParticle*> genParticles;
+    genParticles.reserve(N);
     for (int i = 0; i < 100 * N; i++)
     {
         // Relative coordinate [0, 1] in this cell
@@ -1149,12 +1151,15 @@ void Foam::mcParticleCloud::particleGenInCell
             );
 
             addParticle(ptr);
+            genParticles.append(ptr);
             ++Npgen;
         }
 
         // until enough particles are generated.
         if (Npgen >= N) break;
     }
+
+    adjustAxiSymmetricMass(genParticles);
 
     if (Npgen < N)
     {
@@ -1429,6 +1434,31 @@ void Foam::mcParticleCloud::notifyLostParticle(const Foam::mcParticle& p)
 {
     // TODO Distribute mass to other particles in cell
     lostParticles_.add(p);
+}
+
+
+void Foam::mcParticleCloud::adjustAxiSymmetricMass
+(
+    UList<mcParticle*>& particles
+)
+{
+    if (!isAxiSymmetric_)
+    {
+        return;
+    }
+    scalarList r(particles.size());
+    scalar sumR = 0.;
+    forAll(particles, i)
+    {
+        const mcParticle& p = *particles[i];
+        r[i] = mag(p.position() - (p.position()&axis_)*axis_);
+        sumR += r[i];
+    }
+    scalar alpha = particles.size()/sumR;
+    forAll(particles, i)
+    {
+        particles[i]->m() *= alpha*r[i];
+    }
 }
 
 // ************************************************************************* //

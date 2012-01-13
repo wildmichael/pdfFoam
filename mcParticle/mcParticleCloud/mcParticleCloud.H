@@ -367,6 +367,9 @@ public:
         void assertPopulationHealth() const;
         //- Post a notification that a particle has been lost
         void notifyLostParticle(const mcParticle& p);
+
+        //- Adjust the mass of generated particles for axi-symmetric cases
+        void adjustAxiSymmetricMass(UList<mcParticle*>& particles);
 };
 
 
