@@ -769,12 +769,10 @@ void Foam::mcParticleCloud::particleNumberControl()
     {
         if (cellPopFlag[celli] == TOOFEW)
         {
-            sort(cellParticleAddr_[celli], more());
             cloneParticles(celli);
         }
         else if ( cellPopFlag[celli] == TOOMANY )
         {
-            sort(cellParticleAddr_[celli],  less());
             eliminateParticles(celli);
         }
     }
@@ -813,6 +811,8 @@ void Foam::mcParticleCloud::cloneParticles(label celli)
     label n = Npc_ - round(PaNIC_[celli]); // no. particle to reproduce
     n = min(round(PaNIC_[celli]), n);
 
+    sort(cellParticleAddr_[celli], more());
+
     for (label particleI=0; particleI < n; particleI++)
     {
         mcParticle& p = *(cellParticleAddr_[celli][particleI]);
@@ -839,52 +839,67 @@ void Foam::mcParticleCloud::eliminateParticles(label celli)
     label ncur = round(PaNIC_[celli]);
     label nx =  ncur - Npc_; // no. particle to eliminate
 
-    // sum of inverse masses
-    scalar invM = 0.;
-    forAll(cellParticleAddr_[celli], particleI)
+    // All particles in celli
+    mcParticleList& popAll = cellParticleAddr_[celli];
+    // The two randomly selected populations
+    SLList<mcParticle*> popA, popB;
+    // Masses of the random populations
+    scalar mA = 0., mB = 0.;
+
+    // Probability to select a particle into any of the random populations
+    scalar P = (2.*nx)/ncur;
+
+    // Create two populations of size nx (in average)
+    forAllIter(mcParticleList, popAll, pIter)
     {
-        mcParticle& p = *cellParticleAddr_[celli][particleI];
-        invM += 1./p.m();
+        if (random().scalar01() < P)
+        {
+            mcParticle* p = *pIter;
+            if (random().scalar01() < 0.5)
+            {
+                popA.append(p);
+                mA += p->m();
+            }
+            else
+            {
+                popB.append(p);
+                mB += p->m();
+            }
+        }
     }
 
+    // Randomly pick one of the populations for deletion
+    // (proportional to relative mass of the other population)
+    SLList<mcParticle*> *popDel, *popKeep;
+    P = mB/(mA + mB);
+    scalar s;
+    if (random().scalar01() < P)
+    {
+        s = 1./P;
+        popDel = &popA;
+        popKeep = &popB;
+    }
+    else
+    {
+        s = (mA + mB)/mA;
+        popDel = &popB;
+        popKeep = &popA;
+    }
+
+    // Scale masses of particles in popKeep
+    forAllIter(SLList<mcParticle*>, *popKeep, pIter)
+    {
+        (**pIter).m() *= s;
+    }
+
+    // Delete particles in popDel
     label nKilled = 0;
-    // size of the pool we eliminated particles from
-    label nPool = 0;
-    scalar massKilled = 0.0;
-    // lower bound after which elimination is stopped
-    const scalar Nmin = round(cloneAt_ * Npc_);
-    forAll(cellParticleAddr_[celli], particleI)
+    forAllIter(SLList<mcParticle*>, *popDel, pIter)
     {
-        nPool = particleI;
-        mcParticle& p = *cellParticleAddr_[celli][particleI];
-        // elimination probability
-        scalar Pelim = nx / (p.m() * invM);
-        if (random().scalar01() < Pelim)
-        {
-            ++nKilled;
-            massKilled += p.m();
-            deleteParticle(p);
-            cellParticleAddr_[celli][particleI] = NULL;
-        }
-        // emergency stop
-        if ((ncur - nKilled) < Nmin)
-        {
-            break;
-        }
+        ++nKilled;
+        deleteParticle(**pIter);
     }
-    ++nPool;
-    PaNIC_[celli] -= nKilled;
 
-    // Compensate for the deleted mass
-    scalar massCompensate = massKilled / (nPool - nKilled);
-    for (label particleI=0; particleI < nPool; particleI++)
-    {
-        mcParticle* pPtr =  cellParticleAddr_[celli][particleI];
-        if (pPtr)
-        {
-            pPtr->m() += massCompensate;
-        }
-    }
     if (debug)
     {
         Info<< "Eliminated " << nKilled << " of " << ncur
