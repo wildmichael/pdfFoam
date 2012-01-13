@@ -29,5 +29,6 @@ mcPositionCorrection/mcEllipticRelaxationPositionCorrection/mcEllipticRelaxation
 mcPositionCorrection/mcMuradogluPositionCorrection/mcMuradogluPositionCorrection.C
 mcLocalTimeStepping/mcLocalTimeStepping/mcLocalTimeStepping.C
 mcLocalTimeStepping/mcCellLocalTimeStepping/mcCellLocalTimeStepping.C
+mcLocalTimeStepping/mcParticleLocalTimeStepping/mcParticleLocalTimeStepping.C
 
 LIB = $(FOAM_USER_LIBBIN)/libmcParticle
