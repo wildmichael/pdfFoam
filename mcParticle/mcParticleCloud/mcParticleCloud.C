@@ -287,7 +287,7 @@ Foam::mcParticleCloud::mcParticleCloud
         ),
         mesh_,
         dimDensity,
-        mMom_/mesh_.V(),
+        rhocPdf_,
         rhocPdf_.boundaryField()
     ),
 
@@ -462,6 +462,9 @@ Foam::mcParticleCloud::mcParticleCloud
     initBCHandlers();
     checkParticlePropertyDict();
 
+    // Take care of statistical moments (make sure they are consistent)
+    checkMoments();
+
     // Populate cloud
     if (size() > 0) // if particle data found
     {
@@ -477,8 +480,6 @@ Foam::mcParticleCloud::mcParticleCloud
     {
         m0_ += pIter().m();
     }
-    // Take care of statistical moments (make sure they are consistent)
-    checkMoments();
 
     // Ensure particles takes the updated PDF values
     updateParticlePDF();
@@ -522,16 +523,10 @@ void Foam::mcParticleCloud::checkMoments()
     {
         Info<< "Moments read correctly." << endl;
     }
-    else if (size() > 0)
+    else
     {
         Info<< "Moments are missing. Forced re-initialization." << endl;
         initMoments();
-    }
-    else
-    {
-        FatalErrorIn("mcParticleCloud::checkMoments()")
-            << "Not all moment fields available and no particles present."
-            << endl;
     }
 }
 
