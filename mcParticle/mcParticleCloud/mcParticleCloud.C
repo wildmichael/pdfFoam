@@ -813,6 +813,8 @@ void Foam::mcParticleCloud::cloneParticles(label celli)
 
     sort(cellParticleAddr_[celli], more());
 
+    vectorList positions = randomPointsInCell(n, celli);
+
     for (label particleI=0; particleI < n; particleI++)
     {
         mcParticle& p = *(cellParticleAddr_[celli][particleI]);
@@ -820,6 +822,7 @@ void Foam::mcParticleCloud::cloneParticles(label celli)
         p.m() /= 2.0;
         // create a new particle like myself
         autoPtr<mcParticle> ptrNew = p.clone();
+        ptrNew().position() = positions[particleI];
 
         addParticle(ptrNew.ptr());
     }
@@ -1116,77 +1119,43 @@ void Foam::mcParticleCloud::particleGenInCell
     label  ghost
 )
 {
-    boundBox cellbb
-    (
-        pointField
-        (
-            mesh_.points(),
-            mesh_.cellPoints()[celli]
-        ),
-        false
-    );
-
-    vector minb = cellbb.min();
-    vector dimb = cellbb.max() - minb;
 
     label Npgen = 0;
     DynamicList<mcParticle*> genParticles;
     genParticles.reserve(N);
-    for (int i = 0; i < 100 * N; i++)
+
+    vectorList positions = randomPointsInCell(N, celli);
+
+    for (label i=0; i<N; ++i)
     {
-        // Relative coordinate [0, 1] in this cell
-        vector xi = random().vector01();
-        // Random offset from min point
-        scalar rx = min(max(10.0*SMALL, xi.x()), 1.0-10.0*SMALL);
-        scalar ry = min(max(10.0*SMALL, xi.y()), 1.0-10.0*SMALL);
-        scalar rz = min(max(10.0*SMALL, xi.z()), 1.0-10.0*SMALL);
-        vector offsetRnd(rx*dimb.x(), ry*dimb.y(), rz*dimb.z());
-
-        // Generate a particle position
-        vector position = minb + offsetRnd;
-
-        // If the case has reduced dimensionality, put the coordinate of the
-        // reduced dimension onto the coordinate plane
-        if (mesh_.nGeometricD() <= 2)
-        {
-            meshTools::constrainDirection(mesh_, mesh_.geometricD(), position);
-        }
-
-        // Initially put $N particle per cell
-        if (mesh_.pointInCell(position, celli))
-        {
-            // What is the distribution of u?
-            // How to enforce the component-wise correlations < u_i, u_j >?
-            // TODO generate correlated fluctuations
-            vector u(
-                random().GaussNormal() * uscales.x(),
-                random().GaussNormal() * uscales.y(),
-                random().GaussNormal() * uscales.z()
-                );
-            vector UParticle = u + Updf;
-            vector UFap = Ufv_[celli];
-
-            mcParticle* ptr = new mcParticle
-            (
-                *this,
-                position,
-                celli,
-                m,
-                Updf,
-                UParticle,
-                UFap,
-                Phi,
-                shift,
-                ghost
+        // What is the distribution of u?
+        // How to enforce the component-wise correlations < u_i, u_j >?
+        // TODO generate correlated fluctuations
+        vector u(
+            random().GaussNormal() * uscales.x(),
+            random().GaussNormal() * uscales.y(),
+            random().GaussNormal() * uscales.z()
             );
+        vector UParticle = u + Updf;
+        vector UFap = Ufv_[celli];
 
-            addParticle(ptr);
-            genParticles.append(ptr);
-            ++Npgen;
-        }
+        mcParticle* ptr = new mcParticle
+        (
+            *this,
+            positions[i],
+            celli,
+            m,
+            Updf,
+            UParticle,
+            UFap,
+            Phi,
+            shift,
+            ghost
+        );
 
-        // until enough particles are generated.
-        if (Npgen >= N) break;
+        addParticle(ptr);
+        genParticles.append(ptr);
+        ++Npgen;
     }
 
     adjustAxiSymmetricMass(genParticles);
@@ -1459,6 +1428,54 @@ void Foam::mcParticleCloud::printParticleCo()
     Info<< "Particle Courant Number in cloud " << name()
         << " mean: " << meanPartCoNum
         << " max: " << maxPartCoNum << endl;
+}
+
+
+Foam::vectorList
+Foam::mcParticleCloud::randomPointsInCell(label n, label celli)
+{
+    autoPtr<vectorList> ppoints(new vectorList(n, point::zero));
+    vectorList& points = ppoints();
+
+    boundBox cellbb
+    (
+        pointField
+        (
+            mesh_.points(),
+            mesh_.cellPoints()[celli]
+        ),
+        false
+    );
+
+    vector minb = cellbb.min();
+    vector dimb = cellbb.max() - minb;
+
+    for (label i=0; i<n;)
+    {
+        // Relative coordinate [0, 1] in this cell
+        vector xi = random().vector01();
+        // Random offset from min point
+        scalar rx = min(max(10.0*SMALL, xi.x()), 1.0-10.0*SMALL);
+        scalar ry = min(max(10.0*SMALL, xi.y()), 1.0-10.0*SMALL);
+        scalar rz = min(max(10.0*SMALL, xi.z()), 1.0-10.0*SMALL);
+        vector offsetRnd(rx*dimb.x(), ry*dimb.y(), rz*dimb.z());
+
+        // Generate a particle position
+        vector position = minb + offsetRnd;
+
+        // If the case has reduced dimensionality, put the coordinate of the
+        // reduced dimension onto the coordinate plane
+        if (mesh_.nGeometricD() <= 2)
+        {
+            meshTools::constrainDirection(mesh_, mesh_.geometricD(), position);
+        }
+
+        if (mesh_.pointInCell(position, celli))
+        {
+            points[i++] = position;
+        }
+    }
+    return ppoints;
 }
 
 

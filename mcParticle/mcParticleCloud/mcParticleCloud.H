@@ -55,6 +55,7 @@ SourceFiles
 #include "IOLostParticles.H"
 #include "richTetPointRef.H"
 #include "tetFacePointCellDecomposition.H"
+#include "vectorList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -260,6 +261,9 @@ class mcParticleCloud:
 
         //- Compute and print the mean and maximum particle Courant number
         void printParticleCo();
+
+        //- Generate a @a n random points in cell @a celli
+        vectorList randomPointsInCell(label n, label celli);
 
         //- Disallow default bitwise copy construct
         mcParticleCloud(const mcParticleCloud&);
