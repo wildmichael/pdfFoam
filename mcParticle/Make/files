@@ -24,5 +24,6 @@ gradInterpolation/gradInterpolation/gradInterpolations.C
 gradInterpolation/gradInterpolationConstantTet/makeGradInterpolationConstantTet.C
 mcPositionCorrection/mcPositionCorrection/mcPositionCorrection.C
 mcPositionCorrection/mcSimplePositionCorrection/mcSimplePositionCorrection.C
+mcPositionCorrection/mcLimitedSimplePositionCorrection/mcLimitedSimplePositionCorrection.C
 
 LIB = $(FOAM_USER_LIBBIN)/libmcParticle
