@@ -382,10 +382,12 @@ Foam::mcParticleCloud::mcParticleCloud
             mesh_.pointsInstance(),
             mesh_
         ),
-        mesh_.surfaceInterpolation::deltaCoeffs() * mesh_.Sf() / mesh_.magSf()
+        mesh_.surfaceInterpolation::deltaCoeffs()*mesh_.Sf()/mesh_.magSf()
     ),
     lostParticles_(*this)
 {
+    CourantCoeffs_.boundaryField() /= 2.;
+
     initScalarFields();
 
     // Now that the fields exist, create the models
