@@ -109,14 +109,31 @@ gradInterpolationConstantTet<Type>::interpolate
     }
     else
     {
-        FatalErrorIn("gradInterpolationConstantTet<Type>::interpolate"
-                    "("
-                        "const vector&, "
-                        "const label, "
-                        "const label"
-                    ") const")
-            << "Failed to find tetrahedron containing point " << position << nl
-            << endl << abort(FatalError);
+        label realCellI = this->pMesh_.findCell(position);
+        if (realCellI > -1)
+        {
+            FatalErrorIn("gradInterpolationConstantTet<Type>::interpolate"
+                        "("
+                            "const vector&, "
+                            "const label, "
+                            "const label"
+                        ") const")
+                << "Failed to find tetrahedron containing point " << position << nl
+                << "which is in cell " << realCellI << nl
+                << endl << abort(FatalError);
+        }
+        else
+        {
+            FatalErrorIn("gradInterpolationConstantTet<Type>::interpolate"
+                        "("
+                            "const vector&, "
+                            "const label, "
+                            "const label"
+                        ") const")
+                << "Failed to find tetrahedron containing point " << position << nl
+                << "which is outside the domain.\n"
+                << endl << abort(FatalError);
+        }
     }
     return grad;
 }
