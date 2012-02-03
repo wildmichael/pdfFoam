@@ -207,7 +207,14 @@ Foam::point Foam::mcInletOutletBoundary::randomPoint
         a1 = 1.0 - a1;
         a2 = 1.0 - a2;
     }
-    return a1*points[idx1] + a2*points[idx2] + (1.0-a1-a2)*C - SMALL*Sf;
+    point p = a1*points[idx1] + a2*points[idx2] + (1.0-a1-a2)*C - SMALL*Sf;
+    // If the case has reduced dimensionality, put the coordinate of the
+    // reduced dimension onto the coordinate plane
+    if (mesh().nGeometricD() <= 2)
+    {
+        meshTools::constrainDirection(mesh(), mesh().geometricD(), p);
+    }
+    return p;
 }
 
 
