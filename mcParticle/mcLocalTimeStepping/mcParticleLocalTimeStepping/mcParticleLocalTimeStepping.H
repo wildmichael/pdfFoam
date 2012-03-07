@@ -25,10 +25,10 @@ Class
     Foam::mcParticleLocalTimeStepping
 
 Description
-    Cell-based local time-stepping
+    Particle-based local time-stepping
 
-    As described in Hegetschweiler, 2010 (doi:10.3929/ethz-a-006409982).
-    Note that there are various error in mentioned document.
+    Every particle gets an individual local timestep based on its Courant
+    number and a global CFL condition: eta = CFL / Co
 
 SourceFiles
     mcParticleLocalTimeStepping.C
@@ -59,7 +59,7 @@ class mcParticleLocalTimeStepping :
 {
     // Private Data
 
-        //- Courant number
+        //- The Courant number used for local time stepping
         scalar CourantU_;
 
     // Private Member Functions
