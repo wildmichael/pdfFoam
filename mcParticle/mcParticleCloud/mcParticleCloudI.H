@@ -170,4 +170,18 @@ void Foam::mcParticleCloud::hitPatch
     boundaryHandlers_[patchI].hitPatch(p, td);
 }
 
+
+inline const Foam::mcLocalTimeStepping&
+Foam::mcParticleCloud::localTimeStepping() const
+{
+    return localTimeStepping_();
+}
+
+
+inline Foam::mcLocalTimeStepping&
+Foam::mcParticleCloud::localTimeStepping()
+{
+    return localTimeStepping_();
+}
+
 // ************************************************************************* //

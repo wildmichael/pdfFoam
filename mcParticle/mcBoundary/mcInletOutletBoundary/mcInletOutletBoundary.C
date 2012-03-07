@@ -33,6 +33,7 @@ License
 #include "Random.H"
 #include "transformField.H"
 #include "compressible/RAS/RASModel/RASModel.H"
+#include "DynamicList.H"
 #include <algorithm>
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
@@ -273,7 +274,6 @@ void Foam::mcInletOutletBoundary::correct
     {
         PhicPdf[PhiI] = &cloud.PhicPdf()[PhiI]->boundaryField()[patchID()];
     }
-    Random& rnd = cloud.random();
     scalar dt = mesh().time().deltaT().value();
     scalar Npc = cloud.Npc();
     forAll(pp, faceI)
@@ -290,20 +290,10 @@ void Foam::mcInletOutletBoundary::correct
             getU(cloud)[faceI].x(),
             sqrt(getR(cloud)[faceI].xx())
         );
-        // Volume and mass of every particle generated
-        scalar Vp = mesh().V()[cellI]/Npc;
-        scalar mp = rho[faceI]*Vp;
-        // Volume flowing into domain across faceI during dt
-        scalar Vin = inrnd.UCondMean()*magSf[faceI]*dt;
-        // Number of particles to generate
-        scalar Nf = Vin/Vp;
-        label N = floor(Nf);
-        N += rnd.scalar01() < (Nf-N);
-        if (N < 1)
-        {
-            continue;
-        }
-        np += N;
+        // Mass of every particle generated
+        scalar mp = rho[faceI]*mesh().V()[cellI]/Npc;
+        // Mass flowing into domain across faceI during dt
+        scalar mIn = rho[faceI]*inrnd.UCondMean()*magSf[faceI]*dt;
 
         scalarField phi(PhicPdf.size());
         forAll(PhicPdf, PhiI)
@@ -311,8 +301,11 @@ void Foam::mcInletOutletBoundary::correct
             phi[PhiI] = (*PhicPdf[PhiI])[faceI];
         }
 
-        List<mcParticle*> genParticles(N);
-        for (label i=0; i<N; ++i)
+        DynamicList<mcParticle*> genParticles;
+        genParticles.reserve(mIn/mp);
+        scalar mGen = 0;
+        bool prepare = true;
+        while (mGen < mIn)
         {
             vector Up = randomVelocity(cloud, faceI);
             mcParticle* p = new mcParticle
@@ -327,8 +320,13 @@ void Foam::mcInletOutletBoundary::correct
                 phi
             );
             p->isOnInletBoundary() = true;
+            cloud.localTimeStepping().correct(cloud, *p, prepare);
+            prepare = false;
+            p->m() /= p->eta();
             cloud.addParticle(p);
-            genParticles[i] = p;
+            genParticles.append(p);
+            mGen += p->m();
+            ++np;
 #ifdef FULLDEBUG
             if (debug > 1)
             {
@@ -336,6 +334,11 @@ void Foam::mcInletOutletBoundary::correct
                     << tab << mp << nl;
             }
 #endif
+        }
+        scalar mCorrect = mIn/mGen;
+        forAll(genParticles, i)
+        {
+            genParticles[i]->m() *= mCorrect;
         }
         cloud.adjustAxiSymmetricMass(genParticles);
     }

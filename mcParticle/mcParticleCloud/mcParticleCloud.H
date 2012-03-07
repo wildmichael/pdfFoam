@@ -388,6 +388,12 @@ public:
 
         //- Adjust the mass of generated particles for axi-symmetric cases
         void adjustAxiSymmetricMass(UList<mcParticle*>& particles);
+
+        //- The local time-stepping model
+        inline const mcLocalTimeStepping& localTimeStepping() const;
+
+        //- The local time-stepping model
+        inline mcLocalTimeStepping& localTimeStepping();
 };
 
 
