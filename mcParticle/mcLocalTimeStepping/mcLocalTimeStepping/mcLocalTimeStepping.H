@@ -50,6 +50,7 @@ namespace Foam
 {
 
 class mcParticleCloud;
+class mcParticle;
 
 /*---------------------------------------------------------------------------*\
                      Class mcLocalTimeStepping Declaration
@@ -59,11 +60,22 @@ class mcLocalTimeStepping :
     public mcModel
 {
 
+    // Private Data
+
+        bool active_;
+
     // Private Member Functions
 
         // Disallow default bitwise copy construct and assignment
         mcLocalTimeStepping(const mcLocalTimeStepping&);
         void operator=(const mcLocalTimeStepping&);
+
+protected:
+
+    // Protected Member Functions
+
+        //- Update the internal fields
+        virtual void setupInternals(const mcParticleCloud& cloud);
 
 public:
 
@@ -112,6 +124,17 @@ public:
 
         //- Apply the position correction
         virtual void correct(mcParticleCloud& cloud);
+
+        //- Apply the position correction to a single particle
+        virtual void correct
+        (
+            mcParticleCloud& cloud,
+            mcParticle& p,
+            bool prepare=true
+        );
+
+        //- Return whether local time-stepping is effective
+        bool active() const { return active_; }
 
 };
 

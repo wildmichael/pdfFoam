@@ -64,8 +64,10 @@ class mcParticleLocalTimeStepping :
 
     // Private Member Functions
 
-        //- Update the eta field
-        void updateEta(const mcParticleCloud& cloud);
+        //- The upper cut-off for the local time-stepping parameter
+        scalar upperBound_;
+
+    // Private Member Functions
 
         // Disallow default bitwise copy construct and assignment
         mcParticleLocalTimeStepping(const mcParticleLocalTimeStepping&);
@@ -87,9 +89,13 @@ public:
 
     // Member Functions
 
-        //- Apply the position correction
-        virtual void correct(mcParticleCloud& cloud);
-
+        //- Apply the position correction to a single particle
+        virtual void correct
+        (
+            mcParticleCloud& cloud,
+            mcParticle& p,
+            bool prepare=true
+        );
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

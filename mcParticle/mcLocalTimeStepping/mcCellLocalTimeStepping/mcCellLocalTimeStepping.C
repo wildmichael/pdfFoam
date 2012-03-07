@@ -28,7 +28,6 @@ License
 #include "addToRunTimeSelectionTable.H"
 #include "compressible/RAS/RASModel/RASModel.H"
 #include "fvCFD.H"
-#include "interpolationCellPointFace.H"
 #include "mcParticleCloud.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
@@ -83,7 +82,7 @@ Foam::mcCellLocalTimeStepping::mcCellLocalTimeStepping
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::mcCellLocalTimeStepping::updateEta
+void Foam::mcCellLocalTimeStepping::setupInternals
 (
     const Foam::mcParticleCloud& cloud
 )
@@ -154,21 +153,32 @@ void Foam::mcCellLocalTimeStepping::updateEta
     etaInt -= etaMin;
     etaInt = (etaMax_ - etaMin)/gMax(etaInt)*etaInt + etaMin;
     eta_.correctBoundaryConditions();
+    etaInterp_.reset(new interpolationCellPointFace<scalar>(eta_));
 }
 
 
 void Foam::mcCellLocalTimeStepping::correct
 (
-    Foam::mcParticleCloud& cloud
+    Foam::mcParticleCloud& cloud,
+    Foam::mcParticle& p,
+    bool prepare
 )
 {
-    updateEta(cloud);
-    interpolationCellPointFace<scalar> etaInterp(eta_);
-    forAllIter(mcParticleCloud, cloud, pIter)
+    if (prepare)
     {
-        mcParticle& p = pIter();
-        p.eta() = etaInterp.interpolate(p.position(), p.cell(), p.face());
+        setupInternals(cloud);
     }
+    else
+    {
+        if (!etaInterp_.valid())
+        {
+            FatalErrorIn("mcCellLocalTimeStepping::correct"
+                "(mcParticleCloud&,mcParticle&,bool)")
+                << "Interpolator not initialized"
+                << exit(FatalError);
+        }
+    }
+    p.eta() = etaInterp_().interpolate(p.position(), p.cell(), p.face());
 }
 
 // ************************************************************************* //

@@ -66,14 +66,12 @@ Foam::mcParticleLocalTimeStepping::mcParticleLocalTimeStepping
 
 void Foam::mcParticleLocalTimeStepping::correct
 (
-    Foam::mcParticleCloud& cloud
+    Foam::mcParticleCloud&,
+    Foam::mcParticle& p,
+    bool prepare
 )
 {
-    forAllIter(mcParticleCloud, cloud, pIter)
-    {
-        mcParticle& p = pIter();
-        p.eta() = p.Co() > SMALL ? CourantU_ / p.Co() : 1.0;
-    }
+    p.eta() = p.Co() > SMALL ? CourantU_ / p.Co() : 1.0;
 }
 
 // ************************************************************************* //

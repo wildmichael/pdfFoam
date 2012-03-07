@@ -43,6 +43,7 @@ Author
 
 #include "mcLocalTimeStepping.H"
 
+#include "interpolationCellPointFace.H"
 #include "volFields.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -68,14 +69,21 @@ class mcCellLocalTimeStepping :
         //- Local to global time step ratio field
         volScalarField eta_;
 
-    // Private Member Functions
+        //- Interpolator for Omega
+        autoPtr<interpolationCellPointFace<scalar> > etaInterp_;
 
-        //- Update the eta field
-        void updateEta(const mcParticleCloud& cloud);
+    // Private Member Functions
 
         // Disallow default bitwise copy construct and assignment
         mcCellLocalTimeStepping(const mcCellLocalTimeStepping&);
         void operator=(const mcCellLocalTimeStepping&);
+
+protected:
+
+    // Protected Member Functions
+
+        //- Update the eta field and the interpolator
+        virtual void setupInternals(const mcParticleCloud& cloud);
 
 public:
 
@@ -93,9 +101,13 @@ public:
 
     // Member Functions
 
-        //- Apply the position correction
-        virtual void correct(mcParticleCloud& cloud);
-
+        //- Apply the position correction to a single particle
+        virtual void correct
+        (
+            mcParticleCloud& cloud,
+            mcParticle& p,
+            bool prepare=true
+        );
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

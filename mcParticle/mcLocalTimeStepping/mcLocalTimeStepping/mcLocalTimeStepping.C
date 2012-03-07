@@ -25,6 +25,7 @@ License
 
 #include "mcLocalTimeStepping.H"
 
+#include "mcParticleCloud.H"
 #include "Switch.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
@@ -46,7 +47,8 @@ Foam::mcLocalTimeStepping::mcLocalTimeStepping
     const Foam::dictionary& dict
 )
 :
-    mcModel(db, dict)
+    mcModel(db, dict),
+    active_(true)
 {}
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
@@ -63,10 +65,12 @@ Foam::autoPtr<Foam::mcLocalTimeStepping> Foam::mcLocalTimeStepping::New
     Switch::switchType enable = Switch::asEnum(name, true);
     if (enable != Switch::INVALID && !Switch::asBool(enable))
     {
-        return autoPtr<mcLocalTimeStepping>
+        autoPtr<mcLocalTimeStepping> result
         (
             new mcLocalTimeStepping(db, dictionary::null)
         );
+        result().active_ = false;
+        return result;
     }
 
     mcLocalTimeSteppingConstructorTable::iterator cstrIter =
@@ -91,9 +95,25 @@ Foam::autoPtr<Foam::mcLocalTimeStepping> Foam::mcLocalTimeStepping::New
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
+void Foam::mcLocalTimeStepping::setupInternals(const mcParticleCloud& cloud)
+{}
+
+
+void Foam::mcLocalTimeStepping::correct(mcParticleCloud& cloud)
+{
+    setupInternals(cloud);
+    forAllIter(mcParticleCloud, cloud, pIter)
+    {
+        this->correct(cloud, pIter());
+    }
+}
+
+
 void Foam::mcLocalTimeStepping::correct
 (
-    Foam::mcParticleCloud& cloud
+    mcParticleCloud&,
+    mcParticle&,
+    bool prepare
 )
 {}
 
