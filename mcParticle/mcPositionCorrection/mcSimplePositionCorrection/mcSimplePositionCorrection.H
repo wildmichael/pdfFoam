@@ -28,7 +28,10 @@ Description
     Simple position correction model
 
     Uses the face area of the cell bounding box and the magnitude of the mean
-    velocity to scale the correction velocity.
+    velocity to scale the correction velocity. The idea behind the former is
+    that the mass exchange should be independent of the face area. The reasoning
+    for the latter is that the transferred momentum during deltaT should be
+    independent of the transport.
 
 SourceFiles
     mcSimplePositionCorrection.C
