@@ -56,10 +56,8 @@ Foam::mcParticleLocalTimeStepping::mcParticleLocalTimeStepping
 )
 :
     mcLocalTimeStepping(db, dict),
-    CourantU_
-    (
-        max(lookupOrAddDefault<scalar>("CourantU", 0.3), 1e-6)
-    )
+    CourantU_(max(lookupOrAddDefault<scalar>("CourantU", 0.3), 1e-6)),
+    upperBound_(lookupOrDefault<scalar>("upperBound", 10))
 {}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
@@ -71,7 +69,7 @@ void Foam::mcParticleLocalTimeStepping::correct
     bool prepare
 )
 {
-    p.eta() = p.Co() > SMALL ? CourantU_ / p.Co() : 1.0;
+    p.eta() = min(CourantU_ / stabilise(p.Co(), VSMALL), upperBound_);
 }
 
 // ************************************************************************* //
