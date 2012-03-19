@@ -124,7 +124,7 @@ mcSimplePositionCorrection
 void Foam::mcSimplePositionCorrection::correct
 (
     Foam::mcParticleCloud& cloud
-    )
+)
 {
     const scalarField& pndInt = cloud.pndcPdf().dimensionedInternalField();
     const scalarField& rhoInt = cloud.rhocPdf().dimensionedInternalField();
