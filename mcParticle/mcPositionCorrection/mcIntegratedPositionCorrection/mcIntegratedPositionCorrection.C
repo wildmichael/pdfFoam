@@ -56,11 +56,18 @@ mcIntegratedPositionCorrection
 :
     mcPositionCorrection(db, dict),
 
-    Ctau_
+    Crho_
     (
-        "Ctau",
-        dimTime,
-        lookupOrAddDefault<scalar>("Ctau", 10.*mesh().time().deltaT().value())
+        "Crho",
+        dimless,
+        lookupOrAddDefault<scalar>("Crho", 10.*mesh().time().deltaT().value())
+    ),
+
+    Cp_
+    (
+        "Cp",
+        dimTime/dimArea,
+        lookupOrAddDefault<scalar>("Cp", 10.*mesh().time().deltaT().value())
     ),
 
     pPosCorr_
@@ -109,26 +116,22 @@ void Foam::mcIntegratedPositionCorrection::correct
     const dimensionedScalar& deltaT = mesh().time().deltaT();
     const volScalarField& rho = cloud.rhocPdf();
     const volScalarField& pnd = cloud.pndcPdf();
+    const volVectorField& U = cloud.Ufv();
 
+    volScalarField rhs =
+        (Crho_*rho + (1-Crho_)*pnd - 2*pnd + pnd.oldTime())/(deltaT*deltaT)
+      + fvc::div(pnd*fvc::ddt(U), "posCorr::div(pmd*ddt(U))")
+      + fvc::div(Crho_*U*(rho - pnd), "posCorr::div(U*(rho-pmd))")/deltaT;
     // correction factor to make the RHS of the Poisson equation integrate
     // to zero
-    dimensionedScalar beta =
-        fvc::domainIntegrate(rho) /fvc::domainIntegrate(pnd);
-    //dimensionedScalar beta =
-    //    fvc::domainIntegrate(pnd - rho)/gSum(mesh().V());
-    //beta.dimensions() /= dimVolume;
-    // the error correction drift
-    volScalarField Q = (beta*pnd - rho);
-    //volScalarField Q = (pnd - rho - beta);
+    dimensionedScalar beta = fvc::domainIntegrate(rhs) / gSum(mesh().V());
+    beta.dimensions() /= dimVolume;
 
-    //! @todo Check derivation because there @b must be a minus sign in the RHS
     // solve Poisson equation for pPosCorr
     fvScalarMatrix pPosCorrEqn
     (
-        fvm::laplacian(pPosCorr_) == -(exp(-deltaT/Ctau_)/(Ctau_*Ctau_))*Q
+        fvm::ddt(Cp_, pPosCorr_) - fvm::laplacian(pPosCorr_) == -rhs + beta
     );
-    pPosCorrEqn.setReference(pRefCell_, pRefValue_);
-    pPosCorrEqn.relax();
     pPosCorrEqn.solve();
 
     // time-integrator for correction velocity

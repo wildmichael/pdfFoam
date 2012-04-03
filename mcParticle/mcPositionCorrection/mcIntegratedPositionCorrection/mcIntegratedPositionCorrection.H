@@ -29,21 +29,21 @@ Description
 
     Reasoning:
     - continuity:
-          ddt(pmd) + div((Umean + Uc)*pmd) == 0                             (1)
-    - relax pmd error:
-          ddt(pmd) == -(pmd - rho)/tau                                      (2)
-    - analytical solution of (2):
-          pmd(t) = rho + (pmd(t=t0) - rho)*exp(-(t-t0)/tau)                 (3)
-    - time-integrator:
-          ddt(pmd*Uc) == -grad(pc)                                          (4)
-    - take divergence and assume stationary state:
-          ddt(pmd)/tau == -laplacian(pc)                                    (5)
-    - substitute (3) into (5):
-          laplacian(pc) == (pmd(t=t0) - rho)/(tau*tau)*exp(-(t-t0)/tau)     (6)
-    - solve (6) for pc and then (4) for Uc
-
-Todo
-    There seems to be a problem with the sign of the RHS of (6).
+        ddt(pmd) + div((Umean + Uc)*pmd) == 0                               (1)
+    - time integrator:
+        ddt(pmd, Uc) == -grad(pc)                                           (2)
+    - take divergence of (2), substitute (1):
+        laplacian(pc) == d2dt2(pmd) + div(ddt(pmd, Umean))
+                      == d2dt2(pmd) + div(pmd*ddt(Umean) + Umean*ddt(pmd))  (3)
+    - assuming that pmd(t+deltaT) == rho:
+        laplacian(pc) ==  (rho - 2*pmd + pmd.oldTime())/(deltaT*deltaT)
+                        + div(pmd*ddt(Umean) + Umean*(rho - pmd)/deltaT)    (4)
+    - underrelax rho as (Crho*rho + (1-Crho)*pmd), add compressibility Cp
+      to (4):
+        ddt(Cp,pc) == laplacian(pc)
+                    - (Crho*rho - (1+Crho)*pmd + pmd.oldtime())/(deltaT*deltaT)
+                    + div(pmd*ddt(Umean) + Crho*Umean*(rho - pmd)/deltaT)   (5)
+    - solve (5), then (2)
 
 SourceFiles
     mcIntegratedPositionCorrection.C
@@ -77,7 +77,8 @@ class mcIntegratedPositionCorrection :
     // Private Data
 
         //- Density-correction coefficients
-        dimensionedScalar Ctau_;
+        dimensionedScalar Crho_;
+        dimensionedScalar Cp_;
 
         //- Correction pressure
         volScalarField pPosCorr_;
