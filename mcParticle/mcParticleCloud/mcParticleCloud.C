@@ -992,33 +992,20 @@ Foam::scalar Foam::mcParticleCloud::evolve()
         assertPopulationHealth();
     }
 
-    scalar rhoRes = 0./*,
-           URes   = 0.,
-           kRes   = 0.*/;
-
-    forAll(rhocPdf_, cellI)
-    {
-        rhoRes += fabs((pndcPdf_[cellI]-rhocPdf_[cellI])/rhocPdf_[cellI]);
-#if 0
-        URes += mag
+    scalarField rhoErr =
         (
-            cmptDivide
-            (
-                UcPdf_[cellI] - Ufv_[cellI],
-                stabilise(Ufv_[cellI], 100*SMALL)
-            )
-        );
-        scalar k = kfv()()[cellI];
-        kRes += fabs((kcPdf_[cellI] - k)/k);
-#endif
+            pndcPdf_.internalField()
+          - rhocPdf_.internalField()
+        )/rhocPdf_.internalField();
+    scalar rhoRes = gAverage(mag(rhoErr));
+    if (Pstream::master())
+    {
+        Info<< "Cloud " << name()
+            << " pmd relative error: averageMag = " << rhoRes
+            << ", min = " << gMin(rhoErr)
+            << ", max = " << gMax(rhoErr)
+            << endl;
     }
-    reduce(rhoRes, sumOp<scalar>());
-#if 0
-    reduce(URes, sumOp<scalar>());
-    reduce(kRes, sumOp<scalar>());
-#endif
-    Info<< "Cloud " << name() << " residuals: rho = " << rhoRes
-        /*<< ", U = " << URes << ", k = " << kRes */<< endl;
 
     label nLostPart = lostParticles_.size();
     reduce(nLostPart, sumOp<label>());
@@ -1073,7 +1060,7 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     Info<< "    The difference of the mass is "<< diffM << endl;
     Info<< "    The relative difference of the mass (in percent) is "
         << diffM/m0_*100  << endl;
-    return rhoRes/*+URes+kRes*/;
+    return rhoRes;
 }
 
 
