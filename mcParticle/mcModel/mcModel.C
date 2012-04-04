@@ -44,9 +44,7 @@ Foam::mcModel::mcModel
 )
 :
     dictionary(dict),
-    db_(db),
-    scalarFields_(),
-    mixedScalarFields_()
+    db_(db)
 {}
 
 // ************************************************************************* //

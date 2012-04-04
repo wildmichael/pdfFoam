@@ -65,10 +65,6 @@ class mcModel :
 
         //- Object registry
         const objectRegistry& db_;
-        //- List of scalar fields extracted from the cloud needed by the model
-        List<volScalarField*> scalarFields_;
-        //- List of scalar fields extracted from the cloud that need mixing
-        labelList mixedScalarFields_;
 
     // Private Member Functions
 
