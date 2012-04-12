@@ -50,10 +50,11 @@ namespace Foam
 Foam::mcMuradogluPositionCorrection::mcMuradogluPositionCorrection
 (
     const Foam::objectRegistry& db,
+    const Foam::dictionary& parentDict,
     const Foam::dictionary& dict
 )
 :
-    mcEllipticRelaxationPositionCorrection(db, dict),
+    mcEllipticRelaxationPositionCorrection(db, parentDict, dict),
 
     phi_
     (

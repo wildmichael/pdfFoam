@@ -92,9 +92,10 @@ public:
             mcLocalTimeStepping,
             (
                 const Foam::objectRegistry& db,
+                const dictionary& parentDict,
                 const dictionary& mcLocalTimeSteppingDict
             ),
-            (db, mcLocalTimeSteppingDict)
+            (db, parentDict, mcLocalTimeSteppingDict)
         );
 
     // Constructors
@@ -103,6 +104,7 @@ public:
         mcLocalTimeStepping
         (
             const Foam::objectRegistry& db,
+            const dictionary& parentDict,
             const dictionary& mcLocalTimeSteppingDict
         );
 
@@ -113,7 +115,7 @@ public:
         static autoPtr<mcLocalTimeStepping> New
         (
             const Foam::objectRegistry& db,
-            const dictionary& mcLocalTimeSteppingDict
+            const dictionary& dict
         );
 
     //- Destructor

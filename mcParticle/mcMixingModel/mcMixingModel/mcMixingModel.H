@@ -80,9 +80,10 @@ public:
             mcMixingModel,
             (
                 const objectRegistry& db,
+                const dictionary& parentDict,
                 const dictionary& mcMixingModelDict
             ),
-            (db, mcMixingModelDict)
+            (db, parentDict, mcMixingModelDict)
         );
 
     // Constructors
@@ -91,6 +92,7 @@ public:
         mcMixingModel
         (
             const objectRegistry& db,
+            const dictionary& parentDict,
             const dictionary& mcMixingModelDict
         );
 

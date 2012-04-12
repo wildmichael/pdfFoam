@@ -41,10 +41,11 @@ namespace Foam
 Foam::mcMixingModel::mcMixingModel
 (
     const Foam::objectRegistry& db,
-    const Foam::dictionary& dict
+    const Foam::dictionary& parentDict,
+    const Foam::dictionary& mcMixingModelDict
 )
 :
-    mcModel(db, dict)
+    mcModel(db, parentDict, mcMixingModelDict)
 {}
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
@@ -71,8 +72,15 @@ Foam::autoPtr<Foam::mcMixingModel> Foam::mcMixingModel::New
             << exit(FatalError);
     }
 
-    const dictionary& coeffs = dict.subDict(mixingType+"Coeffs");
-    return autoPtr<mcMixingModel>(cstrIter()(db, coeffs));
+    return autoPtr<mcMixingModel>
+    (
+        cstrIter()
+        (
+            db,
+            dict,
+            dict.subOrEmptyDict(mixingType+"MixingModelCoeffs")
+        )
+    );
 }
 
 // ************************************************************************* //

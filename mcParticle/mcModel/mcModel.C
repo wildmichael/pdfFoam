@@ -40,10 +40,11 @@ namespace Foam
 Foam::mcModel::mcModel
 (
     const Foam::objectRegistry& db,
-    const Foam::dictionary& dict
+    const Foam::dictionary& parentDict,
+    const Foam::dictionary& mcModelDict
 )
 :
-    dictionary(dict),
+    dictionary(parentDict, mcModelDict),
     db_(db)
 {}
 

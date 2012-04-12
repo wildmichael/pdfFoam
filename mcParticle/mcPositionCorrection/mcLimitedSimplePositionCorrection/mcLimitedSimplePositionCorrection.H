@@ -84,6 +84,7 @@ public:
         mcLimitedSimplePositionCorrection
         (
             const objectRegistry& db,
+            const dictionary& parentDict,
             const dictionary& mcLimitedSimplePositionCorrectionDict
         );
 

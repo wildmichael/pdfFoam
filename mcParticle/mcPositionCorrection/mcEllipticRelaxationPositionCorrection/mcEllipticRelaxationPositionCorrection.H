@@ -102,6 +102,7 @@ public:
         mcEllipticRelaxationPositionCorrection
         (
             const objectRegistry& db,
+            const dictionary& parentDict,
             const dictionary& mcEllipticRelaxationPositionCorrectionDict
         );
 

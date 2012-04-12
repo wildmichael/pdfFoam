@@ -49,11 +49,12 @@ namespace Foam
 Foam::mcColdReactionModel::mcColdReactionModel
 (
     const Foam::objectRegistry& db,
-    const Foam::dictionary& dict
+    const Foam::dictionary& parentDict,
+    const Foam::dictionary& mcColdReactionModelDict
 )
 :
-    mcReactionModel(db, dict),
-    rho_(dict.lookupOrDefault<scalar>("density", 1.0))
+    mcReactionModel(db, parentDict, mcColdReactionModelDict),
+    rho_(lookupOrDefault<scalar>("density", 1.0, true))
 {}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //

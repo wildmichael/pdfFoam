@@ -85,6 +85,7 @@ public:
         mcRASOmegaModel
         (
             const objectRegistry& db,
+            const dictionary& parentDict,
             const dictionary& mcRASOmegaModelDict
         );
 

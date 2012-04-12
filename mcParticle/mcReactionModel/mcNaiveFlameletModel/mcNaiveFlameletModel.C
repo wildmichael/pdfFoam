@@ -49,11 +49,12 @@ namespace Foam
 Foam::mcNaiveFlameletModel::mcNaiveFlameletModel
 (
     const Foam::objectRegistry& db,
-    const Foam::dictionary& dict
+    const Foam::dictionary& parentDict,
+    const Foam::dictionary& mcNaiveFlameletModelDict
 )
 :
-    mcReactionModel(db, dict),
-    zName_(lookupOrDefault<word>("zName", "z")),
+    mcReactionModel(db, parentDict, mcNaiveFlameletModelDict),
+    zName_(lookupOrDefault<word>("zName", "z", true)),
     zIdx_(-1)
 {}
 

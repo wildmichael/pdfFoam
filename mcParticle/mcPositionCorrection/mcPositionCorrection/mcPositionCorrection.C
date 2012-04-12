@@ -43,10 +43,11 @@ namespace Foam
 Foam::mcPositionCorrection::mcPositionCorrection
 (
     const Foam::objectRegistry& db,
-    const Foam::dictionary& dict
+    const Foam::dictionary& parentDict,
+    const Foam::dictionary& mcPositionCorrectionDict
 )
 :
-    mcModel(db, dict),
+    mcModel(db, parentDict, mcPositionCorrectionDict),
     mesh_(refCast<const fvMesh>(db))
 {}
 
@@ -66,7 +67,7 @@ Foam::autoPtr<Foam::mcPositionCorrection> Foam::mcPositionCorrection::New
     {
         return autoPtr<mcPositionCorrection>
         (
-            new mcPositionCorrection(db, dictionary::null)
+            new mcPositionCorrection(db, dict, dictionary::null)
         );
     }
 
@@ -86,7 +87,12 @@ Foam::autoPtr<Foam::mcPositionCorrection> Foam::mcPositionCorrection::New
 
     return autoPtr<mcPositionCorrection>
     (
-        cstrIter()(db, dict.subDict(posCorrType+"Coeffs"))
+        cstrIter()
+        (
+            db,
+            dict,
+            dict.subOrEmptyDict(posCorrType+"PositionCorrectionCoeffs")
+        )
     );
 }
 

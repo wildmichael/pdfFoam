@@ -84,7 +84,8 @@ public:
         mcParticleLocalTimeStepping
         (
             const Foam::objectRegistry& db,
-            const dictionary& dict
+            const dictionary& parentDict,
+            const dictionary& mcParticleLocalTimeSteppingDict
         );
 
     // Member Functions

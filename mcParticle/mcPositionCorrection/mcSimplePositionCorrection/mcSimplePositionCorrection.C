@@ -51,10 +51,11 @@ Foam::mcSimplePositionCorrection::
 mcSimplePositionCorrection
 (
     const Foam::objectRegistry& db,
-    const Foam::dictionary& dict
+    const Foam::dictionary& parentDict,
+    const Foam::dictionary& mcSimplePositionCorrectionDict
 )
 :
-    mcPositionCorrection(db, dict),
+    mcPositionCorrection(db, parentDict, mcSimplePositionCorrectionDict),
 
     C_
     (

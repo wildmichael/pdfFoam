@@ -51,10 +51,11 @@ Foam::mcEllipticRelaxationPositionCorrection::
 mcEllipticRelaxationPositionCorrection
 (
     const Foam::objectRegistry& db,
+    const Foam::dictionary& parentDict,
     const Foam::dictionary& dict
 )
 :
-    mcPositionCorrection(db, dict),
+    mcPositionCorrection(db, parentDict, dict),
 
     Q_
     (

@@ -51,10 +51,11 @@ Foam::mcIntegratedPositionCorrection::
 mcIntegratedPositionCorrection
 (
     const Foam::objectRegistry& db,
-    const Foam::dictionary& dict
+    const Foam::dictionary& parentDict,
+    const Foam::dictionary& mcIntegratedPositionCorrectionDict
 )
 :
-    mcPositionCorrection(db, dict),
+    mcPositionCorrection(db, parentDict, mcIntegratedPositionCorrectionDict),
 
     Crho_
     (

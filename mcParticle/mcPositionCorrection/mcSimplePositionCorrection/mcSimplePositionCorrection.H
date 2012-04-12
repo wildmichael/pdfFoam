@@ -90,6 +90,7 @@ public:
         mcSimplePositionCorrection
         (
             const objectRegistry& db,
+            const dictionary& parentDict,
             const dictionary& mcSimplePositionCorrectionDict
         );
 

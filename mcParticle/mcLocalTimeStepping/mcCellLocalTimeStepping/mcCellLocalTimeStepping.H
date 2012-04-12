@@ -96,7 +96,8 @@ public:
         mcCellLocalTimeStepping
         (
             const Foam::objectRegistry& db,
-            const dictionary& dict
+            const dictionary& parentDict,
+            const dictionary& mcCellLocalTimeSteppingDict
         );
 
     // Member Functions

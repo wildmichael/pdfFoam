@@ -41,10 +41,11 @@ namespace Foam
 Foam::mcOmegaModel::mcOmegaModel
 (
     const Foam::objectRegistry& db,
-    const Foam::dictionary& dict
+    const Foam::dictionary& parentDict,
+    const Foam::dictionary& mcOmegaModelDict
 )
 :
-    mcModel(db, dict)
+    mcModel(db, parentDict, mcOmegaModelDict)
 {}
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
@@ -71,7 +72,15 @@ Foam::autoPtr<Foam::mcOmegaModel> Foam::mcOmegaModel::New
             << exit(FatalError);
     }
 
-    return autoPtr<mcOmegaModel>(cstrIter()(db, dict));
+    return autoPtr<mcOmegaModel>
+    (
+        cstrIter()
+        (
+            db,
+            dict,
+            dict.subOrEmptyDict(omegaType+"OmegaModelCoeffs")
+        )
+    );
 }
 
 // ************************************************************************* //

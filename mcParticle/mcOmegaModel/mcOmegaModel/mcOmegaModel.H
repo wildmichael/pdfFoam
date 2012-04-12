@@ -82,9 +82,10 @@ public:
             mcOmegaModel,
             (
                 const Foam::objectRegistry& db,
+                const dictionary& parentDict,
                 const dictionary& mcOmegaModelDict
             ),
-            (db, mcOmegaModelDict)
+            (db, parentDict, mcOmegaModelDict)
         );
 
     // Constructors
@@ -93,6 +94,7 @@ public:
         mcOmegaModel
         (
             const Foam::objectRegistry& db,
+            const dictionary& parentDict,
             const dictionary& mcOmegaModelDict
         );
 
@@ -103,7 +105,7 @@ public:
         static autoPtr<mcOmegaModel> New
         (
             const Foam::objectRegistry& db,
-            const dictionary& mcOmegaModelDict
+            const dictionary& dict
         );
 
     //- Destructor

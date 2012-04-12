@@ -101,9 +101,10 @@ public:
             mcPositionCorrection,
             (
                 const Foam::objectRegistry& db,
+                const dictionary& parentDict,
                 const dictionary& mcPositionCorrectionDict
             ),
-            (db, mcPositionCorrectionDict)
+            (db, parentDict, mcPositionCorrectionDict)
         );
 
     // Constructors
@@ -112,6 +113,7 @@ public:
         mcPositionCorrection
         (
             const Foam::objectRegistry& db,
+            const dictionary& parentDict,
             const dictionary& mcPositionCorrectionDict
         );
 

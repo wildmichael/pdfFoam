@@ -83,7 +83,8 @@ public:
         mcModel
         (
             const objectRegistry& db,
-            const dictionary& dict
+            const dictionary& parentDict,
+            const dictionary& mcModelDict
         );
 
     //- Destructor

@@ -52,10 +52,11 @@ namespace Foam
 Foam::mcParticleLocalTimeStepping::mcParticleLocalTimeStepping
 (
     const Foam::objectRegistry& db,
-    const Foam::dictionary& dict
+    const Foam::dictionary& parentDict,
+    const Foam::dictionary& mcParticleLocalTimeSteppingDict
 )
 :
-    mcLocalTimeStepping(db, dict),
+    mcLocalTimeStepping(db, parentDict, mcParticleLocalTimeSteppingDict),
     CourantU_(max(lookupOrAddDefault<scalar>("CourantU", 0.3), 1e-6)),
     upperBound_(lookupOrDefault<scalar>("upperBound", 10))
 {}

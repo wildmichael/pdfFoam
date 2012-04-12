@@ -50,11 +50,12 @@ namespace Foam
 Foam::mcIEMMixingModel::mcIEMMixingModel
 (
     const Foam::objectRegistry& db,
-    const Foam::dictionary& dict
+    const Foam::dictionary& parentDict,
+    const Foam::dictionary& mcIEMMixingModelDict
 )
 :
-    mcMixingModel(db, dict),
-    Cmix2_(0.5*lookupOrDefault<scalar>("Cmix", 2.0))
+    mcMixingModel(db, parentDict, mcIEMMixingModelDict),
+    Cmix2_(0.5*lookupOrDefault<scalar>("Cmix", 2.0, true))
 {}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //

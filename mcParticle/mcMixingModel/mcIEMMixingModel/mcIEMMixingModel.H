@@ -82,6 +82,7 @@ public:
         mcIEMMixingModel
         (
             const objectRegistry& db,
+            const dictionary& parentDict,
             const dictionary& mcIEMMixingModelDict
         );
 

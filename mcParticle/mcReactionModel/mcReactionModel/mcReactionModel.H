@@ -81,9 +81,10 @@ public:
             mcReactionModel,
             (
                 const objectRegistry& db,
+                const dictionary& parentDict,
                 const dictionary& mcReactionModelDict
             ),
-            (db, mcReactionModelDict)
+            (db, parentDict, mcReactionModelDict)
         );
 
     // Constructors
@@ -92,6 +93,7 @@ public:
         mcReactionModel
         (
             const objectRegistry& db,
+            const dictionary& parentDict,
             const dictionary& mcReactionModelDict
         );
 

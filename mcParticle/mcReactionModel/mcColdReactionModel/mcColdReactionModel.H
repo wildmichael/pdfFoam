@@ -74,6 +74,7 @@ public:
         mcColdReactionModel
         (
             const objectRegistry& db,
+            const dictionary& parentDict,
             const dictionary& mcColdReactionModelDict
         );
 

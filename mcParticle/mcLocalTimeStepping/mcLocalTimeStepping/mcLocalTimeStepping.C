@@ -44,10 +44,11 @@ namespace Foam
 Foam::mcLocalTimeStepping::mcLocalTimeStepping
 (
     const Foam::objectRegistry& db,
-    const Foam::dictionary& dict
+    const Foam::dictionary& parentDict,
+    const Foam::dictionary& mcLocalTimeSteppingDict
 )
 :
-    mcModel(db, dict),
+    mcModel(db, parentDict, mcLocalTimeSteppingDict),
     active_(true)
 {}
 
@@ -67,7 +68,7 @@ Foam::autoPtr<Foam::mcLocalTimeStepping> Foam::mcLocalTimeStepping::New
     {
         autoPtr<mcLocalTimeStepping> result
         (
-            new mcLocalTimeStepping(db, dictionary::null)
+            new mcLocalTimeStepping(db, dict, dictionary::null)
         );
         result().active_ = false;
         return result;
@@ -89,7 +90,12 @@ Foam::autoPtr<Foam::mcLocalTimeStepping> Foam::mcLocalTimeStepping::New
 
     return autoPtr<mcLocalTimeStepping>
     (
-        cstrIter()(db, dict.subDict(name+"LocalTimeSteppingCoeffs"))
+        cstrIter()
+        (
+            db,
+            dict,
+            dict.subOrEmptyDict(name+"LocalTimeSteppingCoeffs")
+        )
     );
 }
 
@@ -104,7 +110,7 @@ void Foam::mcLocalTimeStepping::correct(mcParticleCloud& cloud)
     setupInternals(cloud);
     forAllIter(mcParticleCloud, cloud, pIter)
     {
-        this->correct(cloud, pIter());
+        this->correct(cloud, pIter(), false);
     }
 }
 

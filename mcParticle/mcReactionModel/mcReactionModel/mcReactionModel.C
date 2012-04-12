@@ -40,10 +40,11 @@ namespace Foam
 Foam::mcReactionModel::mcReactionModel
 (
     const Foam::objectRegistry& db,
-    const Foam::dictionary& dict
+    const Foam::dictionary& parentDict,
+    const Foam::dictionary& mcReactionModelDict
 )
 :
-    mcModel(db, dict)
+    mcModel(db, parentDict, mcReactionModelDict)
 {}
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
@@ -69,8 +70,15 @@ Foam::autoPtr<Foam::mcReactionModel> Foam::mcReactionModel::New
             << mcReactionModelConstructorTablePtr_->sortedToc()
             << exit(FatalError);
     }
-    const dictionary& coeffs = dict.subDict(reactionType+"Coeffs");
-    return autoPtr<mcReactionModel>(cstrIter()(db, coeffs));
+    return autoPtr<mcReactionModel>
+    (
+        cstrIter()
+        (
+            db,
+            dict,
+            dict.subOrEmptyDict(reactionType+"ReactionModelCoeffs")
+        )
+    );
 }
 
 // ************************************************************************* //

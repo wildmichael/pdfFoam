@@ -109,6 +109,7 @@ public:
         mcIntegratedPositionCorrection
         (
             const objectRegistry& db,
+            const dictionary& parentDict,
             const dictionary& mcIntegratedPositionCorrectionDict
         );
 
