@@ -96,6 +96,20 @@ void uniqueOrder_FIX
     }
 }
 
+//- @todo This is a hack to work around annoying bug in OpenFOAM < 2.0
+template<class DF>
+void readIfPresent(DF& df)
+{
+    using namespace Foam;
+    if
+    (
+        (df.readOpt() == IOobject::READ_IF_PRESENT && df.headerOk())
+     || df.readOpt() == IOobject::MUST_READ
+    )
+    {
+        df.readField(dictionary(df.readStream(df.typeName)), "value");
+    }
+}
 
 const Foam::dimensionedScalar SMALL_MASS
 (
@@ -412,6 +426,12 @@ Foam::mcParticleCloud::mcParticleCloud
     ),
     lostParticles_(*this)
 {
+    // HACK work around annoying bug in OpenFOAM < 2.0
+    readIfPresent(mMom_);
+    readIfPresent(VMom_);
+    readIfPresent(UMom_);
+    readIfPresent(uuMom_);
+
     CourantCoeffs_.boundaryField() /= 2.;
 
     initScalarFields();
@@ -515,6 +535,7 @@ void Foam::mcParticleCloud::checkMoments()
                 mesh_,
                 dimensionedScalar(name, dimMass, 0)
             ));
+        readIfPresent(PhiMom_[PhiI]);
         if (!PhiMom_[PhiI].headerOk())
         {
             readOk = false;
