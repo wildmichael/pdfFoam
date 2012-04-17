@@ -25,25 +25,9 @@ Class
     Foam::mcIntegratedPositionCorrection
 
 Description
-    Position correction scheme using time-integration
-
-    Reasoning:
-    - continuity:
-        ddt(pmd) + div((Umean + Uc)*pmd) == 0                               (1)
-    - time integrator:
-        ddt(pmd, Uc) == -grad(pc)                                           (2)
-    - take divergence of (2), substitute (1):
-        laplacian(pc) == d2dt2(pmd) + div(ddt(pmd, Umean))
-                      == d2dt2(pmd) + div(pmd*ddt(Umean) + Umean*ddt(pmd))  (3)
-    - assuming that pmd(t+deltaT) == rho:
-        laplacian(pc) ==  (rho - 2*pmd + pmd.oldTime())/(deltaT*deltaT)
-                        + div(pmd*ddt(Umean) + Umean*(rho - pmd)/deltaT)    (4)
-    - underrelax rho as (Crho*rho + (1-Crho)*pmd), add compressibility Cp
-      to (4):
-        ddt(Cp,pc) == laplacian(pc)
-                    - (Crho*rho - (1+Crho)*pmd + pmd.oldtime())/(deltaT*deltaT)
-                    + div(pmd*ddt(Umean) + Crho*Umean*(rho - pmd)/deltaT)   (5)
-    - solve (5), then (2)
+    Position correction scheme using a global Poisson equation to find a
+    correction pressure whose negative gradient is integrated in time to obtain
+    the correction velocity.
 
 SourceFiles
     mcIntegratedPositionCorrection.C
@@ -77,8 +61,7 @@ class mcIntegratedPositionCorrection :
     // Private Data
 
         //- Density-correction coefficients
-        dimensionedScalar Crho_;
-        dimensionedScalar Cp_;
+        dimensionedScalar C_;
 
         //- Correction pressure
         volScalarField pPosCorr_;

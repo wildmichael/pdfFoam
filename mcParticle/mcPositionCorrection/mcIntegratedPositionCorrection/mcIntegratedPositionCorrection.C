@@ -57,25 +57,18 @@ mcIntegratedPositionCorrection
 :
     mcPositionCorrection(db, parentDict, mcIntegratedPositionCorrectionDict),
 
-    Crho_
+    C_
     (
-        "Crho",
-        dimless,
-        lookupOrAddDefault<scalar>("Crho", 10.*mesh().time().deltaT().value())
-    ),
-
-    Cp_
-    (
-        "Cp",
-        dimTime/dimArea,
-        lookupOrAddDefault<scalar>("Cp", 10.*mesh().time().deltaT().value())
+        "C",
+        dimless/dimTime/dimTime,
+        lookupOrAddDefault<scalar>("C", 10)
     ),
 
     pPosCorr_
     (
         IOobject
         (
-            lookupOrDefault<word>("pPosCorrName", "pPosCorr"),
+            lookupOrAddDefault<word>("pPosCorrName", "pPosCorr"),
             db.time().timeName(),
             db,
             IOobject::MUST_READ,
@@ -88,7 +81,7 @@ mcIntegratedPositionCorrection
     (
         IOobject
         (
-            lookupOrDefault<word>("UPosCorrName", "UPosCorr"),
+            lookupOrAddDefault<word>("UPosCorrName", "UPosCorr"),
             db.time().timeName(),
             db,
             IOobject::MUST_READ,
@@ -97,6 +90,10 @@ mcIntegratedPositionCorrection
         mesh()
     )
 {
+    if (debug)
+    {
+        Info<< dictionary::name() << " = " << *this << endl;
+    }
     setRefCell
     (
         pPosCorr_,
@@ -114,15 +111,10 @@ void Foam::mcIntegratedPositionCorrection::correct
     Foam::mcParticleCloud& cloud
 )
 {
-    const dimensionedScalar& deltaT = mesh().time().deltaT();
     const volScalarField& rho = cloud.rhocPdf();
-    const volScalarField& pnd = cloud.pndcPdf();
-    const volVectorField& U = cloud.Ufv();
+    const volScalarField& pnd = cloud.pndcPdfInst();
 
-    volScalarField rhs =
-        (Crho_*rho + (1-Crho_)*pnd - 2*pnd + pnd.oldTime())/(deltaT*deltaT)
-      + fvc::div(pnd*fvc::ddt(U), "posCorr::div(pmd*ddt(U))")
-      + fvc::div(Crho_*U*(rho - pnd), "posCorr::div(U*(rho-pmd))")/deltaT;
+    volScalarField rhs = rho - pnd;
     // correction factor to make the RHS of the Poisson equation integrate
     // to zero
     dimensionedScalar beta = fvc::domainIntegrate(rhs) / gSum(mesh().V());
@@ -131,12 +123,14 @@ void Foam::mcIntegratedPositionCorrection::correct
     // solve Poisson equation for pPosCorr
     fvScalarMatrix pPosCorrEqn
     (
-        fvm::ddt(Cp_, pPosCorr_) - fvm::laplacian(pPosCorr_) == -rhs + beta
+        fvm::laplacian(pPosCorr_) == C_*(rhs - beta)
     );
+    pPosCorrEqn.setReference(pRefCell_, pRefValue_);
+    pPosCorrEqn.relax();
     pPosCorrEqn.solve();
 
     // time-integrator for correction velocity
-    solve(fvm::ddt(pnd, UPosCorr_) == -fvc::grad(pPosCorr_));
+    solve(fvm::ddt(rho, UPosCorr_) == -fvc::grad(pPosCorr_));
 
     // apply
     interpolationCellPointFace<vector> UPosCorrInterp(UPosCorr_);
