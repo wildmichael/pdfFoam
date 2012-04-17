@@ -56,6 +56,12 @@ Foam::mcRASOmegaModel::mcRASOmegaModel
 )
 :
     mcOmegaModel(db, parentDict, mcRASOmegaModelDict),
+    kMin_
+    (
+        "kMin",
+        dimVelocity*dimVelocity,
+        lookupOrAddDefault<scalar>("kMin", 0)
+    ),
     Omega_(),
     OmegaInterp_()
 {}
@@ -78,7 +84,13 @@ void Foam::mcRASOmegaModel::setupInterpolator
     else
     {
         // Otherwise compute Omega from epsilon/k
-        Omega_.reset(new volScalarField(turbModel.epsilon() / turbModel.k()));
+        Omega_.reset
+        (
+            new volScalarField
+            (
+                turbModel.epsilon() / max(turbModel.k(), kMin_)
+            )
+        );
     }
     OmegaInterp_.reset( new interpolationCellPointFace<scalar>(Omega_));
 }

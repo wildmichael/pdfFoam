@@ -27,6 +27,11 @@ Class
 Description
     Omega model based on data from the RAS model
 
+    The coefficient
+    constant/thermophysicalProperties::RASOmegaModelCoeffs::kMin can be used
+    to put a lower bound on the TKE when computing the turbulence frequency
+    from epsilon/k.
+
 SourceFiles
     mcRASOmegaModel.C
 
@@ -58,6 +63,9 @@ class mcRASOmegaModel :
     public mcOmegaModel
 {
     // Private Data
+
+        //- Model coefficients
+        dimensionedScalar kMin_;
 
         //- Omega field
         autoPtr<volScalarField> Omega_;
