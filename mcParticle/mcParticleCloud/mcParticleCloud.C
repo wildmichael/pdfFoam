@@ -1019,14 +1019,11 @@ Foam::scalar Foam::mcParticleCloud::evolve()
           - rhocPdf_.internalField()
         )/rhocPdf_.internalField();
     scalar rhoRes = gAverage(mag(rhoErr));
-    if (Pstream::master())
-    {
-        Info<< "Cloud " << name()
-            << " pmd relative error: averageMag = " << rhoRes
-            << ", min = " << gMin(rhoErr)
-            << ", max = " << gMax(rhoErr)
-            << endl;
-    }
+    Info<< "Cloud " << name()
+        << " pmd relative error: averageMag = " << rhoRes
+        << ", min = " << gMin(rhoErr)
+        << ", max = " << gMax(rhoErr)
+        << endl;
 
     label nLostPart = lostParticles_.size();
     reduce(nLostPart, sumOp<label>());
