@@ -60,8 +60,8 @@ mcIntegratedPositionCorrection
     C_
     (
         "C",
-        dimless/dimTime/dimTime,
-        lookupOrAddDefault<scalar>("C", 10)
+        dimless,
+        lookupOrAddDefault<scalar>("C", 1e-5)
     ),
 
     pPosCorr_
@@ -111,6 +111,7 @@ void Foam::mcIntegratedPositionCorrection::correct
     Foam::mcParticleCloud& cloud
 )
 {
+    const dimensionedScalar& deltaT = mesh().time().deltaT();
     const volScalarField& rho = cloud.rhocPdf();
     const volScalarField& pnd = cloud.pndcPdfInst();
 
@@ -123,7 +124,7 @@ void Foam::mcIntegratedPositionCorrection::correct
     // solve Poisson equation for pPosCorr
     fvScalarMatrix pPosCorrEqn
     (
-        fvm::laplacian(pPosCorr_) == C_*(rhs - beta)
+        fvm::laplacian(pPosCorr_) == C_/sqr(deltaT)*(rhs - beta)
     );
     pPosCorrEqn.setReference(pRefCell_, pRefValue_);
     pPosCorrEqn.relax();
