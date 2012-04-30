@@ -38,6 +38,7 @@ Foam::mcParticle::mcParticle
 :
     Particle<mcParticle>(cloud, is, readFields),
     reflectionBoundaryVelocity_(vector::zero),
+    reflected_(false),
     reflectedAtOpenBoundary_(false)
 {
     if (readFields)
@@ -45,7 +46,12 @@ Foam::mcParticle::mcParticle
         if (is.format() == IOstream::ASCII)
         {
             m_ = readScalar(is);
-            is  >> UParticle_
+            is  >> positionOld_
+                >> celliOld_
+                >> faceiOld_
+                >> procOld_
+                >> UParticle_
+                >> UParticleOld_
                 >> Ucorrection_
                 >> Utracking_
                 >> Omega_
@@ -57,6 +63,7 @@ Foam::mcParticle::mcParticle
                 >> ghost_
                 >> nSteps_
                 >> isOnInletBoundary_
+                >> reflected_
                 >> reflectedAtOpenBoundary_
                 >> Phi_
                 ;
@@ -141,6 +148,7 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
         p.ghost_ = 0;
         p.nSteps_ = 0;
         p.isOnInletBoundary_ = false;
+        p.reflected_ = false;
         p.reflectedAtOpenBoundary_ = false;
         p.Phi_.setSize(PhiFields.size());
         forAll(PhiFields, PhiI)
@@ -230,7 +238,12 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
     {
         os  << static_cast<const Particle<mcParticle>&>(p)
             << token::SPACE << p.m_
+            << token::SPACE << p.positionOld_
+            << token::SPACE << p.celliOld_
+            << token::SPACE << p.faceiOld_
+            << token::SPACE << p.procOld_
             << token::SPACE << p.UParticle_
+            << token::SPACE << p.UParticleOld_
             << token::SPACE << p.Ucorrection_
             << token::SPACE << p.Utracking_
             << token::SPACE << p.Omega_
@@ -242,6 +255,7 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
             << token::SPACE << p.ghost_
             << token::SPACE << p.nSteps_
             << token::SPACE << p.isOnInletBoundary_
+            << token::SPACE << p.reflected_
             << token::SPACE << p.reflectedAtOpenBoundary_
             << token::SPACE << p.Phi_;
     }

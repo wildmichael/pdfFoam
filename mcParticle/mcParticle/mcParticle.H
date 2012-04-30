@@ -69,11 +69,26 @@ class mcParticle
 
     // Private member data
 
+        //- old particle position
+        point positionOld_;
+
+        //- old cell
+        label celliOld_;
+
+        //- old face
+        label faceiOld_;
+
+        //- old processor
+        label procOld_;
+
         //- mass (statistical weight)
         scalar m_;
 
         //- particle velocity (mean + flutuation) (primary variable)
         vector UParticle_;
+
+        //- old particle velocity
+        vector UParticleOld_;
 
         //- particle correction velocity
         vector Ucorrection_;
@@ -110,6 +125,9 @@ class mcParticle
         // and must be assigned a random stepFraction
         bool isOnInletBoundary_;
 
+        //- Whether this particle has been reflected at any type of patch
+        bool reflected_;
+
         //- Whether this particle has been reflected at an mcOpenBoundary
         bool reflectedAtOpenBoundary_;
 
@@ -125,6 +143,32 @@ class mcParticle
 public:
 
     friend class Cloud<mcParticle>;
+
+    //- Class used to pass tracking data to the trackToFace function
+    class trackData:
+        public Particle<mcParticle>::trackData
+    {
+        //- The cloud
+        mcParticleCloud& cloud_;
+
+        //- The time span over which to track the particle (deltaT)
+        scalar trackTime_;
+
+    public:
+
+        // Constructors
+
+        trackData(mcParticleCloud& mcpc, scalar trackTime);
+
+        // Access
+
+            //- The time span over which to track the particle (deltaT)
+            scalar trackTime() const { return trackTime_; }
+
+            //- Return a reference to the cloud
+            mcParticleCloud& cloud() { return cloud_; }
+    };
+
 
     // Constructors
 
@@ -161,6 +205,36 @@ public:
 
         // Access
 
+            //- Face index if the particle is on a face otherwise -1
+            using Particle<mcParticle>::face;
+
+            //- Face index if the particle is on a face otherwise -1
+            inline label& face();
+
+            //- Return the old position
+            inline const point& positionOld() const;
+
+            //- Return the old position
+            inline point& positionOld();
+
+            //- Return the old cell
+            inline label cellOld() const;
+
+            //- Return the old cell
+            inline label& cellOld();
+
+            //- Return the old face
+            inline label faceOld() const;
+
+            //- Return the old face
+            inline label& faceOld();
+
+            //- Return the old processor
+            inline label procOld() const;
+
+            //- Return the old processor
+            inline label& procOld();
+
             //- Return mass
             inline scalar m() const;
 
@@ -175,6 +249,12 @@ public:
             //- Return total particle velocity;
             inline vector& UParticle();
 
+            //- Return old particle velocity
+            inline const vector& UParticleOld() const;
+
+            //- Return old particle velocity
+            inline vector& UParticleOld();
+
             //- Return particle correction velocity
             inline const vector& Ucorrection() const;
 
@@ -183,6 +263,9 @@ public:
 
             //- Return velocity with which the particle is being tracked
             inline const vector& Utracking() const;
+
+            //- Return velocity with which the particle is being tracked
+            inline vector& Utracking();
 
             //- Turbulent frequency
             inline scalar Omega() const;
@@ -240,6 +323,12 @@ public:
 
             //- whether this particle is located on a inlet boundary
             inline bool& isOnInletBoundary();
+
+            //- Whether this particle has been reflected at any type of patch
+            inline bool reflected() const;
+
+            //- Whether this particle has been reflected at any type of patch
+            inline bool& reflected();
 
             //- Whether this particle has been reflected at an mcOpenBoundary
             inline bool reflectedAtOpenBoundary() const;

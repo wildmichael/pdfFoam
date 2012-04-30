@@ -69,6 +69,34 @@ const Foam::compressible::turbulenceModel* getTurbulenceModel
 }
 
 
+void constrainParticle
+(
+    Foam::mcParticleCloud& cloud,
+    Foam::scalar dt,
+    Foam::mcParticle& p
+)
+{
+    using namespace Foam;
+    const polyMesh& mesh = cloud.mesh();
+    vector& u = p.Utracking();
+    meshTools::constrainDirection(mesh, mesh.solutionD(), u);
+
+    if (cloud.isAxiSymmetric())
+    {
+        point destPos = p.position() + dt*u;
+        vector n = cloud.axis() ^ destPos;
+        n /= mag(n);
+        tensor T = rotationTensor(n, cloud.centrePlaneNormal());
+        p.transformProperties(T);
+        destPos = transform(T, destPos);
+        // constrain to kill numerical artifacts
+        meshTools::constrainDirection(mesh, mesh.geometricD(), destPos);
+        // constrained tracking velocity to destPos
+        u = (destPos - p.position())/dt;
+    }
+}
+
+
 //- @todo This is a hack to fix the implementation in OpenFOAM < 2.0.x
 template<class T>
 void uniqueOrder_FIX
@@ -897,12 +925,35 @@ Foam::scalar Foam::mcParticleCloud::evolve()
         boundaryHandlers_[boundaryI].correct(*this, false);
     }
 
+    // First half-step
+    //////////////////
+
+    scalar deltaT = runTime_.deltaT().value();
+
+    forAllIter(mcParticleCloud, *this, pIter)
+    {
+        mcParticle& p = pIter();
+        p.nSteps() = 0;
+        p.Utracking() = p.UParticle() + p.Ucorrection();
+        constrainParticle(*this, deltaT/2, p);
+        p.reflected() = false;
+        // Store old data
+        p.UParticleOld() = p.UParticle();
+        p.positionOld() = p.position();
+        p.cellOld() = p.cell();
+        p.faceOld() = p.face();
+        p.procOld() = Pstream::myProcNo();
+    }
+
+    mcParticle::trackData td1(*this, deltaT/2.);
+    Cloud<mcParticle>::move(td1);
+
+    // Evaluate models at deltaT/2
     forAllIter(mcParticleCloud, *this, pIter)
     {
         pIter().nSteps() = 0;
         pIter().Ucorrection() = vector::zero;
     }
-
     localTimeStepping_().correct(*this);
     OmegaModel_().correct(*this);
     mixingModel_().correct(*this);
@@ -910,14 +961,90 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     velocityModel_().correct(*this);
     positionCorrection_().correct(*this);
 
-    scalar existWt = 1.0/(1.0 + (runTime_.deltaT()/AvgTimeScale_).value());
+    // Estimate particle velocity as 0.5*(U^{n}+U^{n+1}) and put particles back
+    // to their original position. For particles that have been reflected,
+    // decay to first-order integration.
 
-    mcParticle::trackData td
-    (
-        *this
-    );
+    // Update velocity, handle reflected particles and send back to original
+    // position and processor
+    List<IDLList<mcParticle> > transferList(Pstream::nProcs());
+    forAllIter(mcParticleCloud, *this, pIter)
+    {
+        mcParticle& p = pIter();
+        if (!p.reflected())
+        {
+            p.Utracking() =
+                0.5*(p.UParticleOld() + p.UParticle()) + p.Ucorrection();
 
-    Cloud<mcParticle>::move(td);
+            p.position() = p.positionOld();
+            p.cell() = p.cellOld();
+            p.face() = p.faceOld();
+
+            constrainParticle(*this, deltaT, p);
+
+            // If this is a parallel run and the particle switch processor in
+            // the first half step, put it in the transfer list
+            if (Pstream::parRun() && p.procOld() != Pstream::myProcNo())
+            {
+                transferList[p.procOld()].append(this->remove(&p));
+            }
+        }
+    }
+
+    // Parallel transfer
+    if (Pstream::parRun())
+    {
+        // List of the numbers of particles to be transfered across the
+        // processor patches
+        labelList nsTransPs(transferList.size());
+
+        forAll(transferList, i)
+        {
+            nsTransPs[i] = transferList[i].size();
+        }
+
+        // List of the numbers of particles to be transfered across the
+        // processor patches for all the processors
+        labelListList allNTrans(Pstream::nProcs());
+        allNTrans[Pstream::myProcNo()] = nsTransPs;
+        combineReduce(allNTrans, combineNsTransPs());
+
+        forAll(transferList, i)
+        {
+            if (transferList[i].size())
+            {
+                OPstream particleStream(Pstream::blocking, i);
+                particleStream << transferList[i];
+            }
+        }
+
+        forAll(allNTrans, i)
+        {
+            label nRecPs = allNTrans[i][Pstream::myProcNo()];
+
+            if (nRecPs)
+            {
+                IPstream particleStream(Pstream::blocking, i);
+                IDLList<mcParticle> newParticles
+                (
+                    particleStream,
+                    typename mcParticle::iNew(*this)
+                );
+
+                forAllIter(IDLList<mcParticle>, newParticles, newpIter)
+                {
+                    mcParticle& newp = newpIter();
+                    addParticle(newParticles.remove(&newp));
+                }
+            }
+        }
+    }
+
+    // Second half-step
+    //////////////////
+
+    mcParticle::trackData td2(*this, deltaT);
+    Cloud<mcParticle>::move(td2);
 
     // Correct boundary conditions
     forAll(boundaryHandlers_, boundaryI)
@@ -926,6 +1053,7 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     }
 
     // Extract statistical averaging to obtain mesh-based quantities
+    scalar existWt = 1.0/(1.0 + deltaT/AvgTimeScale_);
     updateCloudPDF(existWt);
     printParticleCo();
 

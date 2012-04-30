@@ -71,6 +71,14 @@ Foam::scalar computeCourantNo(const Foam::mcParticle& p)
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
+Foam::mcParticle::trackData::trackData(mcParticleCloud& mcpc, scalar trackTime)
+:
+    Particle<mcParticle>::trackData(mcpc),
+    cloud_(mcpc),
+    trackTime_(trackTime)
+{}
+
+
 Foam::mcParticle::mcParticle
 (
     const mcParticleCloud& c,
@@ -113,7 +121,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
     td.switchProcessor = false;
     td.keepParticle = true;
 
-    mcParticleCloud& mcpc = refCast<mcParticleCloud>(td.cloud());
+    mcParticleCloud& mcpc = td.cloud();
 
     if (isOnInletBoundary_)
     {
@@ -123,28 +131,11 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
     const polyMesh& mesh = mcpc.pMesh();
     const polyBoundaryMesh& pbMesh = mesh.boundaryMesh();
 
-    scalar deltaT = eta_*mesh.time().deltaT().value();
-    scalar tEnd = (1.0 - stepFraction())*deltaT;
+    scalar trackTime = eta_*td.trackTime();
+    scalar tEnd = (1.0 - stepFraction())*trackTime;
     scalar dtMax = tEnd;
 
     isOnInletBoundary_ = false;
-
-    Utracking_ = UParticle_ + Ucorrection_;
-    meshTools::constrainDirection(mesh, mesh.solutionD(), Utracking_);
-
-    point destPos = position() + tEnd * Utracking_;
-
-    if (mcpc.isAxiSymmetric())
-    {
-        vector rotatedCentreNormal = mcpc.axis() ^ destPos;
-        rotatedCentreNormal /= mag(rotatedCentreNormal);
-        tensor T = rotationTensor(rotatedCentreNormal, mcpc.centrePlaneNormal());
-        transformProperties(T);
-        destPos = transform(T, destPos);
-        // constrain to kill numerical artifacts
-        meshTools::constrainDirection(mesh, mesh.geometricD(), Utracking_);
-        meshTools::constrainDirection(mesh, mesh.geometricD(), destPos);
-    }
 
     Co_ = computeCourantNo(*this);
 
@@ -153,7 +144,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         if (debug)
         {
             Info<< "Time = " << mesh.time().timeName()
-                << "  deltaT = " << deltaT
+                << "  trackTime = " << trackTime
                 << "  tEnd = " << tEnd
                 << "  stepFraction() = " << stepFraction()
                 << "  origId() = " << origId()
@@ -162,13 +153,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
 
         // set the lagrangian time-step
         scalar dt = min(dtMax, tEnd);
-        destPos = position() + dt * Utracking_;
-
-        // Particle does not move with its actual velocity, but with
-        // FV interpolated velocity plus particle fluctuation
-        // velocity. A particle number correction flux is needed as
-        // well (to ensure consistency with FV density field).
-
+        point destPos = position() + dt * Utracking_;
         scalar tf = trackToFace(destPos, td);
         ++nSteps_;
 
@@ -193,7 +178,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         }
 
         tEnd -= dt;
-        stepFraction() = 1.0 - tEnd/deltaT;
+        stepFraction() = 1.0 - tEnd/trackTime;
 
         if (onBoundary() && td.keepParticle)
         {

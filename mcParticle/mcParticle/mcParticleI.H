@@ -25,6 +25,60 @@ License
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
+inline Foam::label& Foam::mcParticle::face()
+{
+    return facei_;
+}
+
+
+inline const Foam::point& Foam::mcParticle::positionOld() const
+{
+    return positionOld_;
+}
+
+
+inline Foam::point& Foam::mcParticle::positionOld()
+{
+    return positionOld_;
+}
+
+
+inline Foam::label Foam::mcParticle::cellOld() const
+{
+    return celliOld_;
+}
+
+
+inline Foam::label& Foam::mcParticle::cellOld()
+{
+    return celliOld_;
+}
+
+
+inline Foam::label Foam::mcParticle::faceOld() const
+{
+    return faceiOld_;
+}
+
+
+inline Foam::label& Foam::mcParticle::faceOld()
+{
+    return faceiOld_;
+}
+
+
+inline Foam::label Foam::mcParticle::procOld() const
+{
+    return procOld_;
+}
+
+
+inline Foam::label& Foam::mcParticle::procOld()
+{
+    return procOld_;
+}
+
+
 inline Foam::scalar Foam::mcParticle::m() const
 {
     return m_;
@@ -49,6 +103,18 @@ inline Foam::vector& Foam::mcParticle::UParticle()
 }
 
 
+inline const Foam::vector& Foam::mcParticle::UParticleOld() const
+{
+    return UParticle_;
+}
+
+
+inline Foam::vector& Foam::mcParticle::UParticleOld()
+{
+    return UParticle_;
+}
+
+
 inline const Foam::vector& Foam::mcParticle::Ucorrection() const
 {
     return Ucorrection_;
@@ -62,6 +128,12 @@ inline Foam::vector& Foam::mcParticle::Ucorrection()
 
 
 inline const Foam::vector& Foam::mcParticle::Utracking() const
+{
+    return Utracking_;
+}
+
+
+inline Foam::vector& Foam::mcParticle::Utracking()
 {
     return Utracking_;
 }
@@ -175,6 +247,18 @@ inline bool Foam::mcParticle::isOnInletBoundary() const
 inline bool& Foam::mcParticle::isOnInletBoundary()
 {
     return isOnInletBoundary_;
+}
+
+
+inline bool Foam::mcParticle::reflected() const
+{
+    return reflected_;
+}
+
+
+inline bool& Foam::mcParticle::reflected()
+{
+    return reflected_;
 }
 
 
