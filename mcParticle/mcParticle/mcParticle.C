@@ -71,25 +71,6 @@ Foam::scalar computeCourantNo(const Foam::mcParticle& p)
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::mcParticle::trackData::trackData
-(
-    mcParticleCloud& mcpc,
-    const interpolationCellPointFace<scalar>&   rhoInterp,
-    const interpolationCellPointFace<vector>&   UInterp,
-    const gradInterpolationConstantTet<scalar>& gradPInterp,
-    const interpolationCellPointFace<scalar>&   kInterp,
-    const interpolationCellPointFace<vector>&   diffUInterp
-)
-:
-    Particle<mcParticle>::trackData(mcpc),
-    rhoInterp_(rhoInterp),
-    UInterp_(UInterp),
-    gradPInterp_(gradPInterp),
-    kInterp_(kInterp),
-    diffUInterp_(diffUInterp)
-{}
-
-
 Foam::mcParticle::mcParticle
 (
     const mcParticleCloud& c,
@@ -137,8 +118,6 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
     td.keepParticle = true;
 
     mcParticleCloud& mcpc = refCast<mcParticleCloud>(td.cloud());
-    const scalar& C0 = mcpc.C0();
-    const scalar& C1 = mcpc.C1();
 
     if (isOnInletBoundary_)
     {
@@ -151,48 +130,6 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
     scalar deltaT = eta_*mesh.time().deltaT().value();
     scalar tEnd = (1.0 - stepFraction())*deltaT;
     scalar dtMax = tEnd;
-
-    if (stepFraction() < SMALL || isOnInletBoundary_)
-    {
-        if (debug)
-        {
-            Info<< "Updating fluctuating velocity" << endl;
-        }
-        const point& p = position();
-        label c = cell();
-        label f = face();
-
-        // fluid quantities @ particle position
-        vector gradPFap = td.gradPInterp().interpolate(p, c, f);
-        scalar kFap = td.kInterp().interpolate(p, c, f);
-        vector diffUap = td.diffUInterp().interpolate(p, c, f);
-
-        // interpolate fluid velocity to particle location This
-        // quantity is a data member the class.
-        // Note: if would be the best if UInterp is interpolating
-        // velocities based on faces to get UFap instead of cell
-        // center values. Will implemente later.
-        UFap_ = td.UInterp().interpolate(p, c, f);
-
-        // Wiener process (question mark)
-        vector dW = sqrt(deltaT) * vector
-        (
-            mcpc.random().GaussNormal(),
-            mcpc.random().GaussNormal(),
-            mcpc.random().GaussNormal()
-        );
-
-        // Update velocity
-        UParticle_ += - gradPFap/rho_ * deltaT
-            - (0.5 * C1 + 0.75 * C0) * Omega_ * (UParticle_- UFap_) * deltaT
-            + sqrt(C0 * kFap * Omega_) * dW
-            // Correct mean velocity
-            + diffUap * deltaT
-            // Scale to ensure consistency on TKE (using interpolated
-            // kFap/kPdfap gives very bad results)
-            + (UParticle_ - UFap_)  * deltaT / mcpc.kRelaxTime().value()
-            * (sqrt(mcpc.kfv()()[c]/mcpc.kcPdf()[c]) - 1.0);
-    }
 
     isOnInletBoundary_ = false;
 

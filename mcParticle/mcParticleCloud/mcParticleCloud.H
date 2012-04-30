@@ -46,6 +46,7 @@ SourceFiles
 #include "mcMixingModel.H"
 #include "mcPositionCorrection.H"
 #include "mcReactionModel.H"
+#include "mcVelocityModel.H"
 #include "dictionary.H"
 #include "Random.H"
 #include "labelIOField.H"
@@ -110,8 +111,6 @@ class mcParticleCloud:
 
         //- The mesh
         const fvMesh& mesh_;
-        //- The decomposed mesh
-        tetFacePointCellDecomposition<richTetPointRef> tetDecomp_;
         //- The control dictionary
         dictionary dict_;
         //- The time object
@@ -136,10 +135,6 @@ class mcParticleCloud:
         wordList scalarNames_;
         //- The scalars to which to apply the mixing model
         labelList mixedScalars_;
-        //- Simplified Langevin Model constant
-        scalar C0_;
-        //- Coefficient for the dissipation in the SLM
-        scalar C1_;
         //- Particle elimination threshold
         scalar eliminateAt_;
         //- Particle cloning threshold
@@ -194,16 +189,14 @@ class mcParticleCloud:
 
         // Model parameters
 
-            //- Mean velocity relaxation time
-            dimensionedScalar URelaxTime_;
-            //- Mean TKE relaxation time
-            dimensionedScalar kRelaxTime_;
             //- Minimum TKE
             dimensionedScalar kMin_;
 
         //- Enable/Disable the particle number control
         Switch particleNumberControl_;
 
+        //- The particle velocity model
+        autoPtr<mcVelocityModel> velocityModel_;
         //- The turbulent frequncy model object
         autoPtr<mcOmegaModel> OmegaModel_;
         //- The mixing model object
@@ -322,18 +315,12 @@ public:
         inline const volScalarField& pndcPdf() const;
         //- The instantaneous particle number (mass) density
         inline const volScalarField& pndcPdfInst() const;
-        //- The TKE relaxation time
-        inline const dimensionedScalar& kRelaxTime() const;
         //- The desired number of particles per cell
         inline label Npc();
         //- The names of the scalar fiels
         inline const wordList& scalarNames() const;
         //- List of indices of the scalar fields to which mixing is applied
         inline const labelList& mixedScalars() const;
-        //- Simplified Lagnevin Model constant
-        inline scalar C0() const;
-        //- Dissipation coefficient in the SLM
-        inline scalar C1() const;
         //- Whether the case is axi-symmetric
         inline bool isAxiSymmetric() const;
         //- Centerline axis for axi-symmetric cases

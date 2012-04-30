@@ -174,7 +174,6 @@ Foam::mcParticleCloud::mcParticleCloud
 :
     Cloud<mcParticle>(mesh, cloudName, false),
     mesh_(mesh),
-    tetDecomp_(mesh),
     dict_(dict),
     runTime_(mesh.time()),
     turbModel_
@@ -199,8 +198,6 @@ Foam::mcParticleCloud::mcParticleCloud
     random_(55555+12345*Pstream::myProcNo()),
     Npc_(dict_.lookupOrAddDefault<label>("particlesPerCell", 30)),
     scalarNames_(0),
-    C0_(dict_.lookupOrAddDefault<scalar>("C0", 2.1)),
-    C1_(dict_.lookupOrAddDefault<scalar>("C1", 1.0)),
     eliminateAt_(dict_.lookupOrAddDefault<scalar>("eliminateAt", 1.5)),
     cloneAt_(dict_.lookupOrAddDefault<scalar>("cloneAt", 0.67)),
     Nc_(mesh_.nCells()),
@@ -385,20 +382,6 @@ Foam::mcParticleCloud::mcParticleCloud
     ),
 
     PhicPdf_(),
-    URelaxTime_
-    (
-        "URelaxTime",
-        dimTime,
-        dict_.lookupOrAddDefault<scalar>
-                ("URelaxTime", runTime_.deltaT().value()*10.0)
-    ),
-    kRelaxTime_
-    (
-        "kRelaxTime",
-        dimTime,
-        dict_.lookupOrAddDefault<scalar>
-                ("kRelaxTime", runTime_.deltaT().value()*10.0)
-    ),
     kMin_
     (
         "kMin",
@@ -409,6 +392,7 @@ Foam::mcParticleCloud::mcParticleCloud
     (
         dict_.lookupOrAddDefault<Switch>("particleNumberControl", true)
     ),
+    velocityModel_(),
     OmegaModel_(),
     mixingModel_(),
     reactionModel_(),
@@ -437,6 +421,7 @@ Foam::mcParticleCloud::mcParticleCloud
     initScalarFields();
 
     // Now that the fields exist, create the models
+    velocityModel_ = mcVelocityModel::New(mesh_, dict);
     OmegaModel_ = mcOmegaModel::New(mesh_, dict);
     mixingModel_ = mcMixingModel::New(mesh_, dict);
     reactionModel_ = mcReactionModel::New(mesh_, dict);
@@ -700,28 +685,14 @@ void Foam::mcParticleCloud::updateParticlePDF()
 void Foam::mcParticleCloud::checkParticlePropertyDict()
 {
     // Cap clone/eliminate threshold with reasonable values
-    scalar Dt = runTime_.deltaT().value();
-
-    C0_ = max(0.0, C0_);
-    dict_.set("C0", C0_);
-
-    C1_ = max(0.0, min(1.0, C1_));
-    dict_.set("C1", C1_);
-
     eliminateAt_ = max(1.1,  min(eliminateAt_, 2.5));
     dict_.set("eliminateAt", eliminateAt_);
 
     cloneAt_   = max(0.5,  min(cloneAt_, 0.9));
     dict_.set("cloneAt", cloneAt_);
 
-    kRelaxTime_.value()   = max(2.0*Dt,  kRelaxTime_.value());
-    dict_.set("kRelaxTime", kRelaxTime_.value());
-
     kMin_.value()   = max(1e-3,  min(SMALL, kMin_.value()));
     dict_.set("kMin", kMin_.value());
-
-    URelaxTime_.value()   = max(2.0*Dt,  URelaxTime_.value());
-    dict_.set("URelaxTime", URelaxTime_.value());
 
     Info<< "Sanitized cloudProperties dict:" << dict_ << endl;
 }
@@ -932,33 +903,6 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     // lower bound for k
     kcPdf_ = max(kcPdf_, kMin_);
 
-    // physical pressure
-    const volScalarField p = pfv_ - 2./3.*rhocPdf_*kfv();
-
-    volVectorField diffU
-    (
-        IOobject
-        (
-            "diffU",
-            mesh_,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh_,
-        dimVelocity/dimTime,
-        zeroGradientFvPatchScalarField::typeName
-    );
-
-    diffU = (Ufv_ - UcPdf_) / URelaxTime_;
-    diffU.correctBoundaryConditions();
-
-    interpolationCellPointFace<scalar>   rhoInterp(rhocPdf_);
-    interpolationCellPointFace<vector>   UInterp(Ufv_);
-    gradInterpolationConstantTet<scalar> gradPInterp(tetDecomp_, p);
-    interpolationCellPointFace<scalar>   kInterp(kfv());
-    interpolationCellPointFace<vector>   diffUInterp(diffU);
-    interpolationCellPointFace<scalar>   kcPdfInterp(kcPdf_);
-
     // Correct boundary conditions
     forAll(boundaryHandlers_, boundaryI)
     {
@@ -975,18 +919,14 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     OmegaModel_().correct(*this);
     mixingModel_().correct(*this);
     reactionModel_().correct(*this);
+    velocityModel_().correct(*this);
     positionCorrection_().correct(*this);
 
     scalar existWt = 1.0/(1.0 + (runTime_.deltaT()/AvgTimeScale_).value());
 
     mcParticle::trackData td
     (
-        *this,
-        rhoInterp,
-        UInterp,
-        gradPInterp,
-        kInterp,
-        diffUInterp
+        *this
     );
 
     Cloud<mcParticle>::move(td);

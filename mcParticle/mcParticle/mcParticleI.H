@@ -25,41 +25,6 @@ License
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-inline const Foam::interpolationCellPointFace<Foam::scalar>&
-Foam::mcParticle::trackData::rhoInterp() const
-{
-    return rhoInterp_;
-}
-
-
-inline const Foam::interpolationCellPointFace<Foam::vector>&
-Foam::mcParticle::trackData::UInterp() const
-{
-    return UInterp_;
-}
-
-
-inline const Foam::gradInterpolationConstantTet<Foam::scalar>&
-Foam::mcParticle::trackData::gradPInterp() const
-{
-    return gradPInterp_;
-}
-
-
-inline const Foam::interpolationCellPointFace<Foam::scalar>&
-Foam::mcParticle::trackData::kInterp() const
-{
-    return kInterp_;
-}
-
-
-inline const Foam::interpolationCellPointFace<Foam::vector>&
-Foam::mcParticle::trackData::diffUInterp() const
-{
-    return diffUInterp_;
-}
-
-
 inline Foam::scalar Foam::mcParticle::m() const
 {
     return m_;
@@ -115,6 +80,12 @@ inline const Foam::vector& Foam::mcParticle::Utracking() const
 
 
 inline const Foam::vector& Foam::mcParticle::UFap() const
+{
+    return UFap_;
+}
+
+
+inline Foam::vector& Foam::mcParticle::UFap()
 {
     return UFap_;
 }

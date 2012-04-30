@@ -129,48 +129,6 @@ public:
 
     friend class Cloud<mcParticle>;
 
-    //- Class used to pass tracking data to the trackToFace function
-    class trackData:
-        public Particle<mcParticle>::trackData
-    {
-
-        // Interpolators for continuous phase fields
-
-            const interpolationCellPointFace<scalar>&   rhoInterp_;
-            const interpolationCellPointFace<vector>&   UInterp_;
-            const gradInterpolationConstantTet<scalar>& gradPInterp_;
-            const interpolationCellPointFace<scalar>&   kInterp_;
-            const interpolationCellPointFace<vector>&   diffUInterp_;
-
-
-    public:
-
-        // Constructors
-
-        trackData
-        (
-            mcParticleCloud& mcpc,
-            const interpolationCellPointFace<scalar>&   rhoInterp,
-            const interpolationCellPointFace<vector>&   UInterp,
-            const gradInterpolationConstantTet<scalar>& gradPInterp,
-            const interpolationCellPointFace<scalar>&   kInterp,
-            const interpolationCellPointFace<vector>&   diffUInterp
-        );
-
-        // Member functions
-
-        inline const interpolationCellPointFace<scalar>& rhoInterp() const;
-
-        inline const interpolationCellPointFace<vector>& UInterp() const;
-
-        inline const gradInterpolationConstantTet<scalar>& gradPInterp() const;
-
-        inline const interpolationCellPointFace<scalar>& kInterp() const;
-
-        inline const interpolationCellPointFace<vector>& diffUInterp() const;
-    };
-
-
     // Constructors
 
         //- Construct from components
@@ -238,6 +196,9 @@ public:
 
             //- Fluid velocity @ particle location
             inline const vector& UFap() const;
+
+            //- Fluid velocity @ particle location
+            inline vector& UFap();
 
             //- Turbulent frequency
             inline scalar Omega() const;
@@ -334,7 +295,7 @@ public:
             void hitPatch
             (
                 const polyPatch&,
-                mcParticle::trackData& td
+                trackData& td
             )
             {}
 

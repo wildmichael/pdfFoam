@@ -44,18 +44,6 @@ inline const Foam::labelList& Foam::mcParticleCloud::mixedScalars() const
 }
 
 
-inline Foam::scalar Foam::mcParticleCloud::C0() const
-{
-    return C0_;
-}
-
-
-inline Foam::scalar Foam::mcParticleCloud::C1() const
-{
-    return C1_;
-}
-
-
 inline const Foam::volVectorField& Foam::mcParticleCloud::Ufv() const
 {
     return Ufv_;
@@ -114,12 +102,6 @@ inline const Foam::volScalarField&
 Foam::mcParticleCloud::pndcPdfInst() const
 {
     return pndcPdfInst_;
-}
-
-
-inline const Foam::dimensionedScalar& Foam::mcParticleCloud::kRelaxTime() const
-{
-    return kRelaxTime_;
 }
 
 
