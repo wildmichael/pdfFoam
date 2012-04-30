@@ -33,10 +33,10 @@ Description
     http://dx.doi.org/10.1006/jcph.2000.6646.
 
     This model adds correction drift terms for the mean velocity
-    (@c URelaxTime) and the turbulent kinetic energy (@c kRelaxTime). The SLM
-    constant is controlled by the @c C0 dictionary entry (defaults to 2.1).
-    Do not set @c C1, it is here for testing purposes, switching off
-    dissipation if set to 0.
+    (@c system/mcSolution::relaxationTimes::U) and the turbulent kinetic energy
+    (@c system/mcSolution::relaxationTimes::k). The SLM constant is controlled
+    by the @c C0 dictionary entry (defaults to 2.1). Do not set @c C1; it is
+    here for testing purposes only, switching off dissipation if set to 0.
 
 SourceFiles
     mcSLMFullVelocityModel.C
@@ -104,12 +104,6 @@ class mcSLMFullVelocityModel :
 
             //- Coefficient for the dissipation in the SLM
             scalar C1_;
-
-            //- Mean velocity relaxation time
-            dimensionedScalar URelaxTime_;
-
-            //- Mean TKE relaxation time
-            dimensionedScalar kRelaxTime_;
 
     // Private Member Functions
 

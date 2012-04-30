@@ -31,6 +31,26 @@ inline const Foam::fvMesh& Foam::mcParticleCloud::mesh() const
 }
 
 
+inline const Foam::mcSolution& Foam::mcParticleCloud::solutionDict() const
+{
+    return solutionDict_;
+}
+
+
+inline bool Foam::mcParticleCloud::read()
+{
+    solutionDict_.read();
+    return regIOobject::read();
+}
+
+
+inline bool Foam::mcParticleCloud::readIfModified()
+{
+    solutionDict_.readIfModified();
+    return regIOobject::readIfModified();
+}
+
+
 inline const Foam::compressible::turbulenceModel&
 Foam::mcParticleCloud::turbulenceModel() const
 {
@@ -102,12 +122,6 @@ inline const Foam::volScalarField&
 Foam::mcParticleCloud::pndcPdfInst() const
 {
     return pndcPdfInst_;
-}
-
-
-inline Foam::label Foam::mcParticleCloud::Npc()
-{
-    return Npc_;
 }
 
 

@@ -88,16 +88,17 @@ void Foam::mcGhostInletOutletBoundary::populateGhostCells
 #endif
     label np = 0;
     label ng = 0;
+    const label Npc = cloud.solutionDict().particlesPerCell();
     forAll(ghostCellLayer_, faceCelli)
     {
         ++ng;
-        np += cloud.Npc();
+        np += Npc;
 
         label celli = ghostCellLayer_[faceCelli];
         label patchI = patchID();
         scalar m = mesh().V()[celli]
                  * cloud.rhocPdf().boundaryField()[patchI][faceCelli]
-                 / cloud.Npc();
+                 / Npc;
         const vector& Updf = cloud.Ufv().boundaryField()[patchI][faceCelli];
         scalar urms = sqrt(
             2./3.*cloud.kfv()().boundaryField()[patchI][faceCelli]);
@@ -115,10 +116,10 @@ void Foam::mcGhostInletOutletBoundary::populateGhostCells
         // When compiling in Debug mode, generate each particle individually
 #ifdef FULLDEBUG
         label N = 1;
-        for (label i=0; i < cloud.Npc(); ++i)
+        for (label i=0; i < Npc; ++i)
         {
 #else
-        label N = cloud.Npc();
+        label N = Npc;
 #endif
         cloud.particleGenInCell
         (

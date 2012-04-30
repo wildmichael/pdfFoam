@@ -203,6 +203,7 @@ Foam::mcParticleCloud::mcParticleCloud
     Cloud<mcParticle>(mesh, cloudName, false),
     mesh_(mesh),
     dict_(dict),
+    solutionDict_(mesh),
     runTime_(mesh.time()),
     turbModel_
     (
@@ -218,16 +219,8 @@ Foam::mcParticleCloud::mcParticleCloud
         p ? *p : mesh_.lookupObject<volScalarField>
                      (dict_.lookupOrDefault<word>("pName", "p"))
     ),
-    AvgTimeScale_
-    (
-        dict_.lookupOrAddDefault<scalar>
-                ("averageTimeScale", 0.1*runTime_.endTime().value())
-    ),
     random_(55555+12345*Pstream::myProcNo()),
-    Npc_(dict_.lookupOrAddDefault<label>("particlesPerCell", 30)),
     scalarNames_(0),
-    eliminateAt_(dict_.lookupOrAddDefault<scalar>("eliminateAt", 1.5)),
-    cloneAt_(dict_.lookupOrAddDefault<scalar>("cloneAt", 0.67)),
     Nc_(mesh_.nCells()),
     histNp_(size()),
 
@@ -410,16 +403,6 @@ Foam::mcParticleCloud::mcParticleCloud
     ),
 
     PhicPdf_(),
-    kMin_
-    (
-        "kMin",
-        dimVelocity*dimVelocity,
-        dict_.lookupOrAddDefault<scalar>("kMin", 10.0*SMALL)
-    ),
-    particleNumberControl_
-    (
-        dict_.lookupOrAddDefault<Switch>("particleNumberControl", true)
-    ),
     velocityModel_(),
     OmegaModel_(),
     mixingModel_(),
@@ -494,7 +477,6 @@ Foam::mcParticleCloud::mcParticleCloud
     }
 
     initBCHandlers();
-    checkParticlePropertyDict();
 
     // Take care of statistical moments (make sure they are consistent)
     checkMoments();
@@ -698,29 +680,16 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
 }
 
 
-void Foam::mcParticleCloud::checkParticlePropertyDict()
-{
-    // Cap clone/eliminate threshold with reasonable values
-    eliminateAt_ = max(1.1,  min(eliminateAt_, 2.5));
-    dict_.set("eliminateAt", eliminateAt_);
-
-    cloneAt_   = max(0.5,  min(cloneAt_, 0.9));
-    dict_.set("cloneAt", cloneAt_);
-
-    kMin_.value()   = max(1e-3,  min(SMALL, kMin_.value()));
-    dict_.set("kMin", kMin_.value());
-
-    Info<< "Sanitized cloudProperties dict:" << dict_ << endl;
-}
-
-
 // Update particle-cell addressing: for each cell, what are the addresses of
 // the particles I host?
 void Foam::mcParticleCloud::particleNumberControl()
 {
-    if (!particleNumberControl_) return;
+    if (!solutionDict_.enableParticleNumberControl()) return;
 
     List<cellPopStatus> cellPopFlag(Nc_, NORMAL);
+    const label Npc = solutionDict_.particlesPerCell();
+    const scalar cloneAt = solutionDict_.cloneAt();
+    const scalar eliminateAt = solutionDict_.eliminateAt();
 
     forAll(PaNIC_, celli)
     {
@@ -731,11 +700,11 @@ void Foam::mcParticleCloud::particleNumberControl()
         {
             cellPopFlag[celli] = EMPTY;
         }
-        else if ( np < round(Npc_ * cloneAt_) )
+        else if (np < round(Npc*cloneAt))
         {
             cellPopFlag[celli] = TOOFEW;
         }
-        else if (np > round(Npc_* eliminateAt_) )
+        else if (np > round(Npc*eliminateAt))
         {
             cellPopFlag[celli] = TOOMANY;
         }
@@ -808,7 +777,8 @@ void Foam::mcParticleCloud::particleNumberControl()
 // Split the n heaviest particles
 void Foam::mcParticleCloud::cloneParticles(label celli)
 {
-    label n = Npc_ - round(PaNIC_[celli]); // no. particle to reproduce
+    // no. particle to reproduce
+    label n = solutionDict_.particlesPerCell() - round(PaNIC_[celli]);
     n = min(round(PaNIC_[celli]), n);
 
     sort(cellParticleAddr_[celli], more());
@@ -840,7 +810,8 @@ void Foam::mcParticleCloud::cloneParticles(label celli)
 void Foam::mcParticleCloud::eliminateParticles(label celli)
 {
     label ncur = round(PaNIC_[celli]);
-    label nx =  ncur - Npc_; // no. particle to eliminate
+    // no. particle to eliminate
+    label nx =  ncur - solutionDict_.particlesPerCell();
 
     // All particles in celli
     mcParticleList& popAll = cellParticleAddr_[celli];
@@ -917,7 +888,7 @@ Foam::scalar Foam::mcParticleCloud::evolve()
 {
 
     // lower bound for k
-    kcPdf_ = max(kcPdf_, kMin_);
+    kcPdf_ = max(kcPdf_, solutionDict_.kMin());
 
     // Correct boundary conditions
     forAll(boundaryHandlers_, boundaryI)
@@ -1053,7 +1024,7 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     }
 
     // Extract statistical averaging to obtain mesh-based quantities
-    scalar existWt = 1.0/(1.0 + deltaT/AvgTimeScale_);
+    scalar existWt = 1.0/(1.0 + deltaT/solutionDict_.averagingTime().value());
     updateCloudPDF(existWt);
     printParticleCo();
 
@@ -1140,10 +1111,11 @@ Foam::scalar Foam::mcParticleCloud::evolve()
 // Initialization: populate the FV field with particles
 void Foam::mcParticleCloud::initReleaseParticles()
 {
-    // Populate each cell with Npc_ particles in each cell
+    const label Npc = solutionDict_.particlesPerCell();
+    // Populate each cell with particlesPerCell() particles in each cell
     forAll(Ufv_, celli)
     {
-        scalar m = mesh_.V()[celli] * rhocPdf_[celli] / Npc_;
+        scalar m = mesh_.V()[celli]*rhocPdf_[celli]/Npc;
         // TODO fv or pdf?
         vector Updf = Ufv_[celli];
         scalar urms = sqrt(2./3.*kfv()()[celli]);
@@ -1154,7 +1126,7 @@ void Foam::mcParticleCloud::initReleaseParticles()
             Phi[PhiI] = (*PhicPdf_[PhiI])[celli];
         }
 
-        particleGenInCell(celli, Npc_, m, Updf, uscales, Phi);
+        particleGenInCell(celli, Npc, m, Updf, uscales, Phi);
     }
     // correct mass according to local time-stepping
     localTimeStepping_().correct(*this);
