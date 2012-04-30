@@ -131,7 +131,7 @@ void Foam::mcIntegratedPositionCorrection::correct
     pPosCorrEqn.solve();
 
     // time-integrator for correction velocity
-    solve(fvm::ddt(rho, UPosCorr_) == -fvc::grad(pPosCorr_));
+    solve(fvm::ddt(cloud.pndcPdf(), UPosCorr_) == -fvc::grad(pPosCorr_));
 
     // apply
     interpolationCellPointFace<vector> UPosCorrInterp(UPosCorr_);
