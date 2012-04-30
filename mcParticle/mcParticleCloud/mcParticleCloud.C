@@ -496,11 +496,7 @@ Foam::mcParticleCloud::mcParticleCloud
         Info<< "I am releasing particles initially!" << endl;
         initReleaseParticles();
     }
-    m0_ = 0.;
-    forAllConstIter(mcParticleCloud, *this, pIter)
-    {
-        m0_ += pIter().eta()*pIter().m();
-    }
+    m0_ = fvc::domainIntegrate(rhocPdf_).value();
 
     // Ensure particles takes the updated PDF values
     updateParticlePDF();
@@ -1071,13 +1067,17 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     {
         m1 += pIter().eta()*pIter().m();
     }
+    scalar m2 = fvc::domainIntegrate(pndcPdf_).value();
     // Difference of the masses
-    scalar diffM = m1-m0_;
-    Info<< "    m0 is "<< m0_ << endl;
-    Info<< "    m1 is "<< m1 << endl;
-    Info<< "    The difference of the mass is "<< diffM << endl;
-    Info<< "    The relative difference of the mass (in percent) is "
-        << diffM/m0_*100  << endl;
+    scalar diffM1 = m1-m0_;
+    scalar diffM2 = m2-m0_;
+    Info<< "    m0 is "<< m0_ << nl
+        << "    m1 is "<< m1 << nl
+        << "    m2 is "<< m2 << nl
+        << "    The difference of the masses is "
+        << diffM1 << ", " << diffM2 << nl
+        << "    The relative difference of the masses (in percent) is "
+        << diffM1/m0_*100  << ", " << diffM2/m0_*100 << endl;
     return rhoRes;
 }
 
