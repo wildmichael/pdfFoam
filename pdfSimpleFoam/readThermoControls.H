@@ -1,9 +1,13 @@
 bool FVCycle = false;
 {
-    dictionary thermo= mesh.solutionDict().subDict("thermo");
-    label nFVSubCycles = thermo.lookupOrDefault<label>("nFVSubCycles", 1);
-    label nPDFSubCycles = thermo.lookupOrDefault<label>("nPDFSubCycles", 1);
-    label iCycle = (runTime.timeIndex() - runTime.startTimeIndex() - 1)
-        % (nPDFSubCycles + nFVSubCycles);
-    FVCycle = iCycle < nFVSubCycles;
+    static label subCyclesCount = 0;
+    dictionary cd = runTime.controlDict();
+    label nFVSubCycles = readLabel(cd.lookup("nFVSubCycles"));
+    label nTotalCycles = nFVSubCycles + readLabel(cd.lookup("nPDFSubCycles"));
+    if (subCyclesCount >= nTotalCycles)
+    {
+        subCyclesCount = 0;
+    }
+    FVCycle = subCyclesCount < nFVSubCycles;
+    ++subCyclesCount;
 }
