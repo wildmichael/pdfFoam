@@ -179,15 +179,13 @@ void Foam::mcSLMFullVelocityModel::correct
     label f = p.face();
 
     // fluid quantities @ particle position
+    vector UFap = UInterp_().interpolate(pos, c, f);
     vector gradPFap = gradPInterp_().interpolate(pos, c, f);
     scalar kFap = kInterp_().interpolate(pos, c, f);
     vector diffUap = diffUInterp_().interpolate(pos, c, f);
 
     // Note: it would be the best if UInterp was interpolating velocities based
     // on face fluxes instead of cell center values. Will implement later.
-
-    // Fluctuating velocity
-    const vector u = p.UParticle() - UInterp_().interpolate(pos, c, f);
 
     const vector xi =
         vector
@@ -197,16 +195,17 @@ void Foam::mcSLMFullVelocityModel::correct
             cloud.random().GaussNormal()
         );
 
-    // Update velocity (TODO: second-order in time)
-    p.UParticle() +=
-       -gradPFap/p.rho()*deltaT
-      - (0.5*C1_ + 0.75*C0_)*p.Omega()*u*deltaT
-      + sqrt(C0_*kFap*p.Omega()*deltaT)*xi
-      // Correct mean velocity
-      + diffUap*deltaT
-      // Scale to ensure consistency on TKE (using interpolated
-      // kFap/kPdfap gives very bad results)
-      + u*diffk_[c]*deltaT;
+    const scalar A = -(0.5*C1_ + 0.75*C0_)*p.Omega();
+    const vector B = -(gradPFap/p.rho() + A*UFap);
+    const vector deltaU =
+        (B + A*p.UParticle())*deltaT + sqrt(C0_*kFap*p.Omega()*deltaT)*xi;
+
+    p.UParticle() += deltaU + 0.5*A*deltaU*deltaT
+        // Correct mean velocity
+        + diffUap*deltaT
+        // Scale to ensure consistency on TKE (using interpolated
+        // kFap/kPdfap gives very bad results)
+        + (p.UParticle() - UFap)*diffk_[c]*deltaT;
 }
 
 // ************************************************************************* //
