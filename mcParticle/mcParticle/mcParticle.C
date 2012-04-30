@@ -71,22 +71,11 @@ Foam::scalar computeCourantNo(const Foam::mcParticle& p)
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::mcParticle::trackData::trackData
-(
-    mcParticleCloud& mcpc,
-    const interpolationCellPointFace<scalar>&   rhoInterp,
-    const interpolationCellPointFace<vector>&   UInterp,
-    const gradInterpolationConstantTet<scalar>& gradPInterp,
-    const interpolationCellPointFace<scalar>&   kInterp,
-    const interpolationCellPointFace<vector>&   diffUInterp
-)
+Foam::mcParticle::trackData::trackData(mcParticleCloud& mcpc, scalar trackTime)
 :
     Particle<mcParticle>::trackData(mcpc),
-    rhoInterp_(rhoInterp),
-    UInterp_(UInterp),
-    gradPInterp_(gradPInterp),
-    kInterp_(kInterp),
-    diffUInterp_(diffUInterp)
+    cloud_(mcpc),
+    trackTime_(trackTime)
 {}
 
 
@@ -96,9 +85,7 @@ Foam::mcParticle::mcParticle
     const vector& position,
     const label   celli,
     const scalar  m,
-    const vector& Updf,
     const vector& UParticle,
-    const vector& UFap,
     const scalarField&  Phi,
     const vector& shift,
     const label   ghost
@@ -106,11 +93,9 @@ Foam::mcParticle::mcParticle
 :
     Particle<mcParticle>(c, position, celli),
     m_(m),
-    Updf_(Updf),
     UParticle_(UParticle),
     Ucorrection_(vector::zero),
     Utracking_(UParticle),
-    UFap_(UFap),
     Omega_(0.0),
     rho_(0.0),
     eta_(1.0),
@@ -136,9 +121,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
     td.switchProcessor = false;
     td.keepParticle = true;
 
-    mcParticleCloud& mcpc = refCast<mcParticleCloud>(td.cloud());
-    const scalar& C0 = mcpc.C0();
-    const scalar& C1 = mcpc.C1();
+    mcParticleCloud& mcpc = td.cloud();
 
     if (isOnInletBoundary_)
     {
@@ -148,70 +131,11 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
     const polyMesh& mesh = mcpc.pMesh();
     const polyBoundaryMesh& pbMesh = mesh.boundaryMesh();
 
-    scalar deltaT = eta_*mesh.time().deltaT().value();
-    scalar tEnd = (1.0 - stepFraction())*deltaT;
+    scalar trackTime = eta_*td.trackTime();
+    scalar tEnd = (1.0 - stepFraction())*trackTime;
     scalar dtMax = tEnd;
 
-    if (stepFraction() < SMALL || isOnInletBoundary_)
-    {
-        if (debug)
-        {
-            Info<< "Updating fluctuating velocity" << endl;
-        }
-        const point& p = position();
-        label c = cell();
-        label f = face();
-
-        // fluid quantities @ particle position
-        vector gradPFap = td.gradPInterp().interpolate(p, c, f);
-        scalar kFap = td.kInterp().interpolate(p, c, f);
-        vector diffUap = td.diffUInterp().interpolate(p, c, f);
-
-        // interpolate fluid velocity to particle location This
-        // quantity is a data member the class.
-        // Note: if would be the best if UInterp is interpolating
-        // velocities based on faces to get UFap instead of cell
-        // center values. Will implemente later.
-        UFap_ = td.UInterp().interpolate(p, c, f);
-
-        // Wiener process (question mark)
-        vector dW = sqrt(deltaT) * vector
-        (
-            mcpc.random().GaussNormal(),
-            mcpc.random().GaussNormal(),
-            mcpc.random().GaussNormal()
-        );
-
-        // Update velocity
-        UParticle_ += - gradPFap/rho_ * deltaT
-            - (0.5 * C1 + 0.75 * C0) * Omega_ * (UParticle_- UFap_) * deltaT
-            + sqrt(C0 * kFap * Omega_) * dW
-            // Correct mean velocity
-            + diffUap * deltaT
-            // Scale to ensure consistency on TKE (using interpolated
-            // kFap/kPdfap gives very bad results)
-            + (UParticle_ - UFap_)  * deltaT / mcpc.kRelaxTime().value()
-            * (sqrt(mcpc.kfv()()[c]/mcpc.kcPdf()[c]) - 1.0);
-    }
-
     isOnInletBoundary_ = false;
-
-    Utracking_ = UParticle_ + Ucorrection_;
-    meshTools::constrainDirection(mesh, mesh.solutionD(), Utracking_);
-
-    point destPos = position() + tEnd * Utracking_;
-
-    if (mcpc.isAxiSymmetric())
-    {
-        vector rotatedCentreNormal = mcpc.axis() ^ destPos;
-        rotatedCentreNormal /= mag(rotatedCentreNormal);
-        tensor T = rotationTensor(rotatedCentreNormal, mcpc.centrePlaneNormal());
-        transformProperties(T);
-        destPos = transform(T, destPos);
-        // constrain to kill numerical artifacts
-        meshTools::constrainDirection(mesh, mesh.geometricD(), Utracking_);
-        meshTools::constrainDirection(mesh, mesh.geometricD(), destPos);
-    }
 
     Co_ = computeCourantNo(*this);
 
@@ -220,7 +144,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         if (debug)
         {
             Info<< "Time = " << mesh.time().timeName()
-                << "  deltaT = " << deltaT
+                << "  trackTime = " << trackTime
                 << "  tEnd = " << tEnd
                 << "  stepFraction() = " << stepFraction()
                 << "  origId() = " << origId()
@@ -229,13 +153,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
 
         // set the lagrangian time-step
         scalar dt = min(dtMax, tEnd);
-        destPos = position() + dt * Utracking_;
-
-        // Particle does not move with its actual velocity, but with
-        // FV interpolated velocity plus particle fluctuation
-        // velocity. A particle number correction flux is needed as
-        // well (to ensure consistency with FV density field).
-
+        point destPos = position() + dt * Utracking_;
         scalar tf = trackToFace(destPos, td);
         ++nSteps_;
 
@@ -260,7 +178,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         }
 
         tEnd -= dt;
-        stepFraction() = 1.0 - tEnd/deltaT;
+        stepFraction() = 1.0 - tEnd/trackTime;
 
         if (onBoundary() && td.keepParticle)
         {
@@ -329,8 +247,6 @@ Foam::string Foam::mcParticle::info() const
         << "Ucorrection = " << Ucorrection() << ", "
         << "Utracking = " << Utracking() << ", "
         << "U     = " << UParticle()  << ", "
-        << "UFap  = " << UFap() << ", "
-        << "Updf  = " << Updf() << nl
         << "Phi   = " << Phi() << ", "
         << "ghost = " << ghost() << ", "
         << "shift = " << shift()

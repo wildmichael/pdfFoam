@@ -27,6 +27,32 @@ Class
 Description
     A Cloud of Monte Carlo Particles (mcParticle)
 
+ToDo
+    This class uses a second-order time-integration scheme for the particle
+    position. However, if particles get reflected at walls, this implementation
+    decays to a simple first-order scheme.
+
+    The correct procedure to follow would be to also reflect posititionOld and
+    UParticleOld every time a particle hits a wall, such that a particle being
+    reflected at a wall is equivalent to that particle entering into the domain
+    at the point of reflection. However, positionOld is now outside the domain.
+    The procedure to resolve this is as follows:
+      1. Find intersection of positionOld + alpha*deltaT*Utracking (alpha being
+         a free parameter) with any of the patches on all processors and pick
+         the intersection point x that is intersecting from outside with the
+         minimum magnitude of alpha.
+      2. If alpha < 0 the particle needs to be reflected again at the last wall
+         it hit. If after the reflection positionOld is now outside the domain,
+         go to 1. Otherwise multiply alpha with -1.
+      3. Set positionOld to x, procOld to the processor on which x lies and
+         divide Utracking by (1 - alpha) to account for the distance travelled
+         outside of the domain during alpha*deltaT.
+      3. Proceed as with non-reflected particles.
+
+    This algorithm is very expensive (especially the first step), which is why
+    this class currently decays to first-order integration in case of
+    reflection.
+
 SourceFiles
     mcParticleCloudI.H
     mcParticleCloud.C
@@ -46,6 +72,7 @@ SourceFiles
 #include "mcMixingModel.H"
 #include "mcPositionCorrection.H"
 #include "mcReactionModel.H"
+#include "mcVelocityModel.H"
 #include "dictionary.H"
 #include "Random.H"
 #include "labelIOField.H"
@@ -110,8 +137,6 @@ class mcParticleCloud:
 
         //- The mesh
         const fvMesh& mesh_;
-        //- The decomposed mesh
-        tetFacePointCellDecomposition<richTetPointRef> tetDecomp_;
         //- The control dictionary
         dictionary dict_;
         //- The time object
@@ -136,10 +161,6 @@ class mcParticleCloud:
         wordList scalarNames_;
         //- The scalars to which to apply the mixing model
         labelList mixedScalars_;
-        //- Simplified Langevin Model constant
-        scalar C0_;
-        //- Coefficient for the dissipation in the SLM
-        scalar C1_;
         //- Particle elimination threshold
         scalar eliminateAt_;
         //- Particle cloning threshold
@@ -194,16 +215,14 @@ class mcParticleCloud:
 
         // Model parameters
 
-            //- Mean velocity relaxation time
-            dimensionedScalar URelaxTime_;
-            //- Mean TKE relaxation time
-            dimensionedScalar kRelaxTime_;
             //- Minimum TKE
             dimensionedScalar kMin_;
 
         //- Enable/Disable the particle number control
         Switch particleNumberControl_;
 
+        //- The particle velocity model
+        autoPtr<mcVelocityModel> velocityModel_;
         //- The turbulent frequncy model object
         autoPtr<mcOmegaModel> OmegaModel_;
         //- The mixing model object
@@ -238,9 +257,6 @@ class mcParticleCloud:
 
         //- Update moments and the quantities remembered by particles
         void updateCloudPDF(scalar existWt);
-
-        //- Update Updf & (maybe later, Taupdf) in the particle side.
-        void updateParticlePDF();
 
         // Particle number control actions
 
@@ -322,18 +338,12 @@ public:
         inline const volScalarField& pndcPdf() const;
         //- The instantaneous particle number (mass) density
         inline const volScalarField& pndcPdfInst() const;
-        //- The TKE relaxation time
-        inline const dimensionedScalar& kRelaxTime() const;
         //- The desired number of particles per cell
         inline label Npc();
         //- The names of the scalar fiels
         inline const wordList& scalarNames() const;
         //- List of indices of the scalar fields to which mixing is applied
         inline const labelList& mixedScalars() const;
-        //- Simplified Lagnevin Model constant
-        inline scalar C0() const;
-        //- Dissipation coefficient in the SLM
-        inline scalar C1() const;
         //- Whether the case is axi-symmetric
         inline bool isAxiSymmetric() const;
         //- Centerline axis for axi-symmetric cases

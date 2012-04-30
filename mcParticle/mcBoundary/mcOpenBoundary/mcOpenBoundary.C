@@ -164,6 +164,7 @@ void Foam::mcOpenBoundary::hitPatch
     vector n = patch().faceAreas()[faceI] / magSf;
 
     p.transformProperties(I - 2.0*n*n);
+    p.reflected() = true;
     p.reflectedAtOpenBoundary() = true;
     p.reflectionBoundaryVelocity() = n*phi_[faceI]/magSf;
 }

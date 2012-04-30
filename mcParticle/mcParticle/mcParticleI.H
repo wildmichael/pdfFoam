@@ -25,38 +25,57 @@ License
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-inline const Foam::interpolationCellPointFace<Foam::scalar>&
-Foam::mcParticle::trackData::rhoInterp() const
+inline Foam::label& Foam::mcParticle::face()
 {
-    return rhoInterp_;
+    return facei_;
 }
 
 
-inline const Foam::interpolationCellPointFace<Foam::vector>&
-Foam::mcParticle::trackData::UInterp() const
+inline const Foam::point& Foam::mcParticle::positionOld() const
 {
-    return UInterp_;
+    return positionOld_;
 }
 
 
-inline const Foam::gradInterpolationConstantTet<Foam::scalar>&
-Foam::mcParticle::trackData::gradPInterp() const
+inline Foam::point& Foam::mcParticle::positionOld()
 {
-    return gradPInterp_;
+    return positionOld_;
 }
 
 
-inline const Foam::interpolationCellPointFace<Foam::scalar>&
-Foam::mcParticle::trackData::kInterp() const
+inline Foam::label Foam::mcParticle::cellOld() const
 {
-    return kInterp_;
+    return celliOld_;
 }
 
 
-inline const Foam::interpolationCellPointFace<Foam::vector>&
-Foam::mcParticle::trackData::diffUInterp() const
+inline Foam::label& Foam::mcParticle::cellOld()
 {
-    return diffUInterp_;
+    return celliOld_;
+}
+
+
+inline Foam::label Foam::mcParticle::faceOld() const
+{
+    return faceiOld_;
+}
+
+
+inline Foam::label& Foam::mcParticle::faceOld()
+{
+    return faceiOld_;
+}
+
+
+inline Foam::label Foam::mcParticle::procOld() const
+{
+    return procOld_;
+}
+
+
+inline Foam::label& Foam::mcParticle::procOld()
+{
+    return procOld_;
 }
 
 
@@ -72,18 +91,6 @@ inline Foam::scalar& Foam::mcParticle::m()
 }
 
 
-inline const Foam::vector& Foam::mcParticle::Updf() const
-{
-    return Updf_;
-}
-
-
-inline Foam::vector& Foam::mcParticle::Updf()
-{
-    return Updf_;
-}
-
-
 inline const Foam::vector& Foam::mcParticle::UParticle() const
 {
     return UParticle_;
@@ -91,6 +98,18 @@ inline const Foam::vector& Foam::mcParticle::UParticle() const
 
 
 inline Foam::vector& Foam::mcParticle::UParticle()
+{
+    return UParticle_;
+}
+
+
+inline const Foam::vector& Foam::mcParticle::UParticleOld() const
+{
+    return UParticle_;
+}
+
+
+inline Foam::vector& Foam::mcParticle::UParticleOld()
 {
     return UParticle_;
 }
@@ -114,9 +133,9 @@ inline const Foam::vector& Foam::mcParticle::Utracking() const
 }
 
 
-inline const Foam::vector& Foam::mcParticle::UFap() const
+inline Foam::vector& Foam::mcParticle::Utracking()
 {
-    return UFap_;
+    return Utracking_;
 }
 
 
@@ -228,6 +247,18 @@ inline bool Foam::mcParticle::isOnInletBoundary() const
 inline bool& Foam::mcParticle::isOnInletBoundary()
 {
     return isOnInletBoundary_;
+}
+
+
+inline bool Foam::mcParticle::reflected() const
+{
+    return reflected_;
+}
+
+
+inline bool& Foam::mcParticle::reflected()
+{
+    return reflected_;
 }
 
 

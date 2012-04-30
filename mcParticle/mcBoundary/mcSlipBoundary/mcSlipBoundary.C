@@ -65,8 +65,9 @@ void Foam::mcSlipBoundary::hitPatch
 )
 {
     vector nw = patch().faceAreas()[patch().whichFace(p.face())];
-    nw /= mag(nw);  // Wall normal (outward)
+    nw /= mag(nw); // Wall normal (outward)
     p.transformProperties(I - 2.0*nw*nw);
+    p.reflected() = true;
 }
 
 

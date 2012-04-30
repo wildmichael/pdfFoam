@@ -61,17 +61,34 @@ class mcParticle
 :
     public Particle<mcParticle>
 {
+    // Private types
+
+        struct BoundaryOfDataMembers {} beginOfDataMembers_;
+
+        // ==== NO DATA MEMBERS BEFORE THIS === //
 
     // Private member data
+
+        //- old particle position
+        point positionOld_;
+
+        //- old cell
+        label celliOld_;
+
+        //- old face
+        label faceiOld_;
+
+        //- old processor
+        label procOld_;
 
         //- mass (statistical weight)
         scalar m_;
 
-        //- mean velocity based on particles
-        vector Updf_;
-
         //- particle velocity (mean + flutuation) (primary variable)
         vector UParticle_;
+
+        //- old particle velocity
+        vector UParticleOld_;
 
         //- particle correction velocity
         vector Ucorrection_;
@@ -79,51 +96,49 @@ class mcParticle
         //- particle tracking velocity leading to destination position
         vector Utracking_;
 
-       //- fluid velocity @ particle location, updated at the end of each Lagrangian dt
-       // (same time with Updf & UParticle)
-       vector UFap_;
+        //- turbulent frequency of particle
+        scalar Omega_;
 
-       //- turbulent frequency of particle
-       scalar Omega_;
+        //- density
+        scalar rho_;
 
-       //- density
-       scalar rho_;
+        //- eta
+        scalar eta_;
 
-       //- eta
-       scalar eta_;
+        //- separation (only for ghost cells)
+        vector shift_;
 
-       //- separation (only for ghost cells)
-       vector shift_;
+        //- particle Courant number
+        scalar Co_;
 
-       //- particle Courant number
-       scalar Co_;
+        //- Velocity of the "moving boundary" the particle bounced of
+        vector reflectionBoundaryVelocity_;
 
-       //- Velocity of the "moving boundary" the particle bounced of
-       vector reflectionBoundaryVelocity_;
+        //- Whether this particle is a ghost
+        label ghost_;
 
-       // ==== PUT ALL label AND OTHER 4-BYTE TYPES AFTER THIS === //
+        //- Number of tracking steps during single time-step
+        label nSteps_;
 
-       //- Whether this particle is a ghost
-       label ghost_;
 
-       //- Number of tracking steps during single time-step
-       label nSteps_;
+        //- Whether this particle is located on an inlet boundary
+        // and must be assigned a random stepFraction
+        bool isOnInletBoundary_;
 
-       // ==== PUT ALL char AND OTHER 2-BYTE TYPES AFTER THIS === //
+        //- Whether this particle has been reflected at any type of patch
+        bool reflected_;
 
-       // ==== PUT ALL bool AND OTHER 1-BYTE TYPES AFTER THIS === //
+        //- Whether this particle has been reflected at an mcOpenBoundary
+        bool reflectedAtOpenBoundary_;
 
-       //- Whether this particle is located on an inlet boundary
-       // and must be assigned a random stepFraction
-       bool isOnInletBoundary_;
+        // ==== NO POD DATA MEMBERS AFTER THIS === //
 
-       //- Whether this particle has been reflected at an mcOpenBoundary
-       bool reflectedAtOpenBoundary_;
+        BoundaryOfDataMembers endOfDataMembers_;
 
-       // ==== PUT ALL NON-POD DATA AFTER THIS === //
+        // ==== PUT ALL NON-POD DATA AFTER THIS === //
 
-       //- scalar properties
-       scalarField Phi_;
+        //- scalar properties
+        scalarField Phi_;
 
 public:
 
@@ -133,41 +148,25 @@ public:
     class trackData:
         public Particle<mcParticle>::trackData
     {
+        //- The cloud
+        mcParticleCloud& cloud_;
 
-        // Interpolators for continuous phase fields
-
-            const interpolationCellPointFace<scalar>&   rhoInterp_;
-            const interpolationCellPointFace<vector>&   UInterp_;
-            const gradInterpolationConstantTet<scalar>& gradPInterp_;
-            const interpolationCellPointFace<scalar>&   kInterp_;
-            const interpolationCellPointFace<vector>&   diffUInterp_;
-
+        //- The time span over which to track the particle (deltaT)
+        scalar trackTime_;
 
     public:
 
         // Constructors
 
-        trackData
-        (
-            mcParticleCloud& mcpc,
-            const interpolationCellPointFace<scalar>&   rhoInterp,
-            const interpolationCellPointFace<vector>&   UInterp,
-            const gradInterpolationConstantTet<scalar>& gradPInterp,
-            const interpolationCellPointFace<scalar>&   kInterp,
-            const interpolationCellPointFace<vector>&   diffUInterp
-        );
+        trackData(mcParticleCloud& mcpc, scalar trackTime);
 
-        // Member functions
+        // Access
 
-        inline const interpolationCellPointFace<scalar>& rhoInterp() const;
+            //- The time span over which to track the particle (deltaT)
+            scalar trackTime() const { return trackTime_; }
 
-        inline const interpolationCellPointFace<vector>& UInterp() const;
-
-        inline const gradInterpolationConstantTet<scalar>& gradPInterp() const;
-
-        inline const interpolationCellPointFace<scalar>& kInterp() const;
-
-        inline const interpolationCellPointFace<vector>& diffUInterp() const;
+            //- Return a reference to the cloud
+            mcParticleCloud& cloud() { return cloud_; }
     };
 
 
@@ -180,9 +179,7 @@ public:
             const vector& position,
             const label celli,
             const scalar m,
-            const vector& Updf,
             const vector& UParticle,
-            const vector& UFap,
             const scalarField& Phi,
             const vector& shift = vector::zero,
             const label  ghost = 0
@@ -208,15 +205,40 @@ public:
 
         // Access
 
+            //- Face index if the particle is on a face otherwise -1
+            using Particle<mcParticle>::face;
+
+            //- Face index if the particle is on a face otherwise -1
+            inline label& face();
+
+            //- Return the old position
+            inline const point& positionOld() const;
+
+            //- Return the old position
+            inline point& positionOld();
+
+            //- Return the old cell
+            inline label cellOld() const;
+
+            //- Return the old cell
+            inline label& cellOld();
+
+            //- Return the old face
+            inline label faceOld() const;
+
+            //- Return the old face
+            inline label& faceOld();
+
+            //- Return the old processor
+            inline label procOld() const;
+
+            //- Return the old processor
+            inline label& procOld();
+
             //- Return mass
             inline scalar m() const;
 
             inline scalar& m();
-
-            //- Return pdf velocity (particle velocity in this cell)
-            inline const vector& Updf() const;
-
-            inline vector& Updf();
 
            // inline const symmTensor& Taupdf() const;
            // inline symmTensor& Taupdf();
@@ -227,6 +249,12 @@ public:
             //- Return total particle velocity;
             inline vector& UParticle();
 
+            //- Return old particle velocity
+            inline const vector& UParticleOld() const;
+
+            //- Return old particle velocity
+            inline vector& UParticleOld();
+
             //- Return particle correction velocity
             inline const vector& Ucorrection() const;
 
@@ -236,8 +264,8 @@ public:
             //- Return velocity with which the particle is being tracked
             inline const vector& Utracking() const;
 
-            //- Fluid velocity @ particle location
-            inline const vector& UFap() const;
+            //- Return velocity with which the particle is being tracked
+            inline vector& Utracking();
 
             //- Turbulent frequency
             inline scalar Omega() const;
@@ -296,6 +324,12 @@ public:
             //- whether this particle is located on a inlet boundary
             inline bool& isOnInletBoundary();
 
+            //- Whether this particle has been reflected at any type of patch
+            inline bool reflected() const;
+
+            //- Whether this particle has been reflected at any type of patch
+            inline bool& reflected();
+
             //- Whether this particle has been reflected at an mcOpenBoundary
             inline bool reflectedAtOpenBoundary() const;
 
@@ -334,7 +368,7 @@ public:
             void hitPatch
             (
                 const polyPatch&,
-                mcParticle::trackData& td
+                trackData& td
             )
             {}
 

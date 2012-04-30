@@ -31,5 +31,7 @@ mcPositionCorrection/mcIntegratedPositionCorrection/mcIntegratedPositionCorrecti
 mcLocalTimeStepping/mcLocalTimeStepping/mcLocalTimeStepping.C
 mcLocalTimeStepping/mcCellLocalTimeStepping/mcCellLocalTimeStepping.C
 mcLocalTimeStepping/mcParticleLocalTimeStepping/mcParticleLocalTimeStepping.C
+mcVelocityModel/mcVelocityModel/mcVelocityModel.C
+mcVelocityModel/mcSLMFullVelocityModel/mcSLMFullVelocityModel.C
 
 LIB = $(FOAM_USER_LIBBIN)/libmcParticle

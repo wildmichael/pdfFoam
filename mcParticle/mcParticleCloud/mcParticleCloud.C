@@ -69,6 +69,34 @@ const Foam::compressible::turbulenceModel* getTurbulenceModel
 }
 
 
+void constrainParticle
+(
+    Foam::mcParticleCloud& cloud,
+    Foam::scalar dt,
+    Foam::mcParticle& p
+)
+{
+    using namespace Foam;
+    const polyMesh& mesh = cloud.mesh();
+    vector& u = p.Utracking();
+    meshTools::constrainDirection(mesh, mesh.solutionD(), u);
+
+    if (cloud.isAxiSymmetric())
+    {
+        point destPos = p.position() + dt*u;
+        vector n = cloud.axis() ^ destPos;
+        n /= mag(n);
+        tensor T = rotationTensor(n, cloud.centrePlaneNormal());
+        p.transformProperties(T);
+        destPos = transform(T, destPos);
+        // constrain to kill numerical artifacts
+        meshTools::constrainDirection(mesh, mesh.geometricD(), destPos);
+        // constrained tracking velocity to destPos
+        u = (destPos - p.position())/dt;
+    }
+}
+
+
 //- @todo This is a hack to fix the implementation in OpenFOAM < 2.0.x
 template<class T>
 void uniqueOrder_FIX
@@ -174,7 +202,6 @@ Foam::mcParticleCloud::mcParticleCloud
 :
     Cloud<mcParticle>(mesh, cloudName, false),
     mesh_(mesh),
-    tetDecomp_(mesh),
     dict_(dict),
     runTime_(mesh.time()),
     turbModel_
@@ -199,8 +226,6 @@ Foam::mcParticleCloud::mcParticleCloud
     random_(55555+12345*Pstream::myProcNo()),
     Npc_(dict_.lookupOrAddDefault<label>("particlesPerCell", 30)),
     scalarNames_(0),
-    C0_(dict_.lookupOrAddDefault<scalar>("C0", 2.1)),
-    C1_(dict_.lookupOrAddDefault<scalar>("C1", 1.0)),
     eliminateAt_(dict_.lookupOrAddDefault<scalar>("eliminateAt", 1.5)),
     cloneAt_(dict_.lookupOrAddDefault<scalar>("cloneAt", 0.67)),
     Nc_(mesh_.nCells()),
@@ -385,20 +410,6 @@ Foam::mcParticleCloud::mcParticleCloud
     ),
 
     PhicPdf_(),
-    URelaxTime_
-    (
-        "URelaxTime",
-        dimTime,
-        dict_.lookupOrAddDefault<scalar>
-                ("URelaxTime", runTime_.deltaT().value()*10.0)
-    ),
-    kRelaxTime_
-    (
-        "kRelaxTime",
-        dimTime,
-        dict_.lookupOrAddDefault<scalar>
-                ("kRelaxTime", runTime_.deltaT().value()*10.0)
-    ),
     kMin_
     (
         "kMin",
@@ -409,6 +420,7 @@ Foam::mcParticleCloud::mcParticleCloud
     (
         dict_.lookupOrAddDefault<Switch>("particleNumberControl", true)
     ),
+    velocityModel_(),
     OmegaModel_(),
     mixingModel_(),
     reactionModel_(),
@@ -437,6 +449,7 @@ Foam::mcParticleCloud::mcParticleCloud
     initScalarFields();
 
     // Now that the fields exist, create the models
+    velocityModel_ = mcVelocityModel::New(mesh_, dict);
     OmegaModel_ = mcOmegaModel::New(mesh_, dict);
     mixingModel_ = mcMixingModel::New(mesh_, dict);
     reactionModel_ = mcReactionModel::New(mesh_, dict);
@@ -496,14 +509,7 @@ Foam::mcParticleCloud::mcParticleCloud
         Info<< "I am releasing particles initially!" << endl;
         initReleaseParticles();
     }
-    m0_ = 0.;
-    forAllConstIter(mcParticleCloud, *this, pIter)
-    {
-        m0_ += pIter().eta()*pIter().m();
-    }
-
-    // Ensure particles takes the updated PDF values
-    updateParticlePDF();
+    m0_ = fvc::domainIntegrate(rhocPdf_).value();
 }
 
 
@@ -692,40 +698,17 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
 }
 
 
-void Foam::mcParticleCloud::updateParticlePDF()
-{
-    forAllIter(mcParticleCloud, *this, pIter)
-    {
-        pIter().Updf() = UcPdf_[pIter().cell()];
-    }
-}
-
-
 void Foam::mcParticleCloud::checkParticlePropertyDict()
 {
     // Cap clone/eliminate threshold with reasonable values
-    scalar Dt = runTime_.deltaT().value();
-
-    C0_ = max(0.0, C0_);
-    dict_.set("C0", C0_);
-
-    C1_ = max(0.0, min(1.0, C1_));
-    dict_.set("C1", C1_);
-
     eliminateAt_ = max(1.1,  min(eliminateAt_, 2.5));
     dict_.set("eliminateAt", eliminateAt_);
 
     cloneAt_   = max(0.5,  min(cloneAt_, 0.9));
     dict_.set("cloneAt", cloneAt_);
 
-    kRelaxTime_.value()   = max(2.0*Dt,  kRelaxTime_.value());
-    dict_.set("kRelaxTime", kRelaxTime_.value());
-
     kMin_.value()   = max(1e-3,  min(SMALL, kMin_.value()));
     dict_.set("kMin", kMin_.value());
-
-    URelaxTime_.value()   = max(2.0*Dt,  URelaxTime_.value());
-    dict_.set("URelaxTime", URelaxTime_.value());
 
     Info<< "Sanitized cloudProperties dict:" << dict_ << endl;
 }
@@ -936,64 +919,132 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     // lower bound for k
     kcPdf_ = max(kcPdf_, kMin_);
 
-    // physical pressure
-    const volScalarField p = pfv_ - 2./3.*rhocPdf_*kfv();
-
-    volVectorField diffU
-    (
-        IOobject
-        (
-            "diffU",
-            mesh_,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh_,
-        dimVelocity/dimTime,
-        zeroGradientFvPatchScalarField::typeName
-    );
-
-    diffU = (Ufv_ - UcPdf_) / URelaxTime_;
-    diffU.correctBoundaryConditions();
-
-    interpolationCellPointFace<scalar>   rhoInterp(rhocPdf_);
-    interpolationCellPointFace<vector>   UInterp(Ufv_);
-    gradInterpolationConstantTet<scalar> gradPInterp(tetDecomp_, p);
-    interpolationCellPointFace<scalar>   kInterp(kfv());
-    interpolationCellPointFace<vector>   diffUInterp(diffU);
-    interpolationCellPointFace<scalar>   kcPdfInterp(kcPdf_);
-
     // Correct boundary conditions
     forAll(boundaryHandlers_, boundaryI)
     {
         boundaryHandlers_[boundaryI].correct(*this, false);
     }
 
+    // First half-step
+    //////////////////
+
+    scalar deltaT = runTime_.deltaT().value();
+
+    forAllIter(mcParticleCloud, *this, pIter)
+    {
+        mcParticle& p = pIter();
+        p.nSteps() = 0;
+        p.Utracking() = p.UParticle() + p.Ucorrection();
+        constrainParticle(*this, deltaT/2, p);
+        p.reflected() = false;
+        // Store old data
+        p.UParticleOld() = p.UParticle();
+        p.positionOld() = p.position();
+        p.cellOld() = p.cell();
+        p.faceOld() = p.face();
+        p.procOld() = Pstream::myProcNo();
+    }
+
+    mcParticle::trackData td1(*this, deltaT/2.);
+    Cloud<mcParticle>::move(td1);
+
+    // Evaluate models at deltaT/2
     forAllIter(mcParticleCloud, *this, pIter)
     {
         pIter().nSteps() = 0;
         pIter().Ucorrection() = vector::zero;
     }
-
     localTimeStepping_().correct(*this);
     OmegaModel_().correct(*this);
     mixingModel_().correct(*this);
     reactionModel_().correct(*this);
+    velocityModel_().correct(*this);
     positionCorrection_().correct(*this);
 
-    scalar existWt = 1.0/(1.0 + (runTime_.deltaT()/AvgTimeScale_).value());
+    // Estimate particle velocity as 0.5*(U^{n}+U^{n+1}) and put particles back
+    // to their original position. For particles that have been reflected,
+    // decay to first-order integration.
 
-    mcParticle::trackData td
-    (
-        *this,
-        rhoInterp,
-        UInterp,
-        gradPInterp,
-        kInterp,
-        diffUInterp
-    );
+    // Update velocity, handle reflected particles and send back to original
+    // position and processor
+    List<IDLList<mcParticle> > transferList(Pstream::nProcs());
+    forAllIter(mcParticleCloud, *this, pIter)
+    {
+        mcParticle& p = pIter();
+        if (!p.reflected())
+        {
+            p.Utracking() =
+                0.5*(p.UParticleOld() + p.UParticle()) + p.Ucorrection();
 
-    Cloud<mcParticle>::move(td);
+            p.position() = p.positionOld();
+            p.cell() = p.cellOld();
+            p.face() = p.faceOld();
+
+            constrainParticle(*this, deltaT, p);
+
+            // If this is a parallel run and the particle switch processor in
+            // the first half step, put it in the transfer list
+            if (Pstream::parRun() && p.procOld() != Pstream::myProcNo())
+            {
+                transferList[p.procOld()].append(this->remove(&p));
+            }
+        }
+    }
+
+    // Parallel transfer
+    if (Pstream::parRun())
+    {
+        // List of the numbers of particles to be transfered across the
+        // processor patches
+        labelList nsTransPs(transferList.size());
+
+        forAll(transferList, i)
+        {
+            nsTransPs[i] = transferList[i].size();
+        }
+
+        // List of the numbers of particles to be transfered across the
+        // processor patches for all the processors
+        labelListList allNTrans(Pstream::nProcs());
+        allNTrans[Pstream::myProcNo()] = nsTransPs;
+        combineReduce(allNTrans, combineNsTransPs());
+
+        forAll(transferList, i)
+        {
+            if (transferList[i].size())
+            {
+                OPstream particleStream(Pstream::blocking, i);
+                particleStream << transferList[i];
+            }
+        }
+
+        forAll(allNTrans, i)
+        {
+            label nRecPs = allNTrans[i][Pstream::myProcNo()];
+
+            if (nRecPs)
+            {
+                IPstream particleStream(Pstream::blocking, i);
+                IDLList<mcParticle> newParticles
+                (
+                    particleStream,
+                    typename mcParticle::iNew(*this)
+                );
+
+                forAllIter(IDLList<mcParticle>, newParticles, newpIter)
+                {
+                    mcParticle& newp = newpIter();
+                    addParticle(newParticles.remove(&newp));
+                }
+            }
+        }
+    }
+
+    // Second half-step
+    //////////////////
+
+    mcParticle::trackData td2(*this, deltaT);
+    Cloud<mcParticle>::move(td2);
 
     // Correct boundary conditions
     forAll(boundaryHandlers_, boundaryI)
@@ -1002,8 +1053,8 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     }
 
     // Extract statistical averaging to obtain mesh-based quantities
+    scalar existWt = 1.0/(1.0 + deltaT/AvgTimeScale_);
     updateCloudPDF(existWt);
-    updateParticlePDF();
     printParticleCo();
 
     particleNumberControl();
@@ -1071,13 +1122,17 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     {
         m1 += pIter().eta()*pIter().m();
     }
+    scalar m2 = fvc::domainIntegrate(pndcPdf_).value();
     // Difference of the masses
-    scalar diffM = m1-m0_;
-    Info<< "    m0 is "<< m0_ << endl;
-    Info<< "    m1 is "<< m1 << endl;
-    Info<< "    The difference of the mass is "<< diffM << endl;
-    Info<< "    The relative difference of the mass (in percent) is "
-        << diffM/m0_*100  << endl;
+    scalar diffM1 = m1-m0_;
+    scalar diffM2 = m2-m0_;
+    Info<< "    m0 is "<< m0_ << nl
+        << "    m1 is "<< m1 << nl
+        << "    m2 is "<< m2 << nl
+        << "    The difference of the masses is "
+        << diffM1 << ", " << diffM2 << nl
+        << "    The relative difference of the masses (in percent) is "
+        << diffM1/m0_*100  << ", " << diffM2/m0_*100 << endl;
     return rhoRes;
 }
 
@@ -1145,7 +1200,6 @@ void Foam::mcParticleCloud::particleGenInCell
             random().GaussNormal() * uscales.z()
             );
         vector UParticle = u + Updf;
-        vector UFap = Ufv_[celli];
 
         mcParticle* ptr = new mcParticle
         (
@@ -1153,9 +1207,7 @@ void Foam::mcParticleCloud::particleGenInCell
             positions[i],
             celli,
             m,
-            Updf,
             UParticle,
-            UFap,
             Phi,
             shift,
             ghost
