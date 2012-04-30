@@ -64,6 +64,7 @@ SourceFiles
 #define mcParticleCloud_H
 
 #include "Cloud.H"
+#include "mcSolution.H"
 #include "DLPtrList.H"
 #include "mcParticle.H"
 #include "mcBoundary.H"
@@ -139,6 +140,8 @@ class mcParticleCloud:
         const fvMesh& mesh_;
         //- The control dictionary
         dictionary dict_;
+        //- The solution dictionary
+        mcSolution solutionDict_;
         //- The time object
         const Time& runTime_;
         //- The RAS model object
@@ -150,21 +153,12 @@ class mcParticleCloud:
         //- The FV pressure field
         const volScalarField& pfv_;
 
-        //- The averaging time scale
-        scalar AvgTimeScale_;
-
         //- Random number generator for Wiener process (diffusion)
         Random random_;
-        //- Desired number of particles per cell (initially)
-        label Npc_;
         //- List of scalar field names
         wordList scalarNames_;
         //- The scalars to which to apply the mixing model
         labelList mixedScalars_;
-        //- Particle elimination threshold
-        scalar eliminateAt_;
-        //- Particle cloning threshold
-        scalar cloneAt_;
         //- Number of cells
         const label Nc_;
         //- How many particle existed in history (including living ones)
@@ -213,14 +207,6 @@ class mcParticleCloud:
         //- Extracted, time-averaged scalar fields
         List<volScalarField*> PhicPdf_;
 
-        // Model parameters
-
-            //- Minimum TKE
-            dimensionedScalar kMin_;
-
-        //- Enable/Disable the particle number control
-        Switch particleNumberControl_;
-
         //- The particle velocity model
         autoPtr<mcVelocityModel> velocityModel_;
         //- The turbulent frequncy model object
@@ -260,8 +246,6 @@ class mcParticleCloud:
 
         // Particle number control actions
 
-            //- Limit cluster/clone thresholds to reasonable values
-            void checkParticlePropertyDict();
             //- Perform the particle number control
             void particleNumberControl();
             //- Clone particles in @a celli
@@ -314,6 +298,16 @@ public:
 
         //- Access the mesh
         inline const fvMesh& mesh() const;
+
+        //- Return the selected sub-dictionary if the "select" keyword is
+        //  given, otherwise return the complete mcSolutionDict
+        inline const mcSolution& solutionDict() const;
+
+        //- Read the mcSolution dictionary
+        inline virtual bool read();
+
+        //- Read the mcSolution dictionary if modified
+        inline virtual bool readIfModified();
 
         //- Access the turbulence model
         inline const compressible::turbulenceModel& turbulenceModel() const;

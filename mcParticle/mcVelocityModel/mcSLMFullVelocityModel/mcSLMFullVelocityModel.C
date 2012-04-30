@@ -92,36 +92,14 @@ Foam::mcSLMFullVelocityModel::mcSLMFullVelocityModel
     ),
     tetDecomp_(mesh_),
     C0_(lookupOrAddDefault<scalar>("C0", 2.1, true)),
-    C1_(lookupOrAddDefault<scalar>("C1", 1.0, true)),
-    URelaxTime_
-    (
-        "URelaxTime",
-        dimTime,
-        lookupOrAddDefault<scalar>
-                ("URelaxTime", db.time().deltaT().value()*10.0, true)
-    ),
-    kRelaxTime_
-    (
-        "kRelaxTime",
-        dimTime,
-        lookupOrAddDefault<scalar>
-                ("kRelaxTime", db.time().deltaT().value()*10.0, true)
-    )
+    C1_(lookupOrAddDefault<scalar>("C1", 1.0, true))
 {
-    scalar dt = db.time().deltaT().value();
     // Sanitize input
-
     C0_ = max(0.0, C0_);
     set("C0", C0_);
 
     C1_ = max(0.0, min(1.0, C1_));
     set("C1", C1_);
-
-    URelaxTime_.value()   = max(2.0*dt,  URelaxTime_.value());
-    set("URelaxTime", URelaxTime_.value());
-
-    kRelaxTime_.value()   = max(2.0*dt,  kRelaxTime_.value());
-    set("kRelaxTime", kRelaxTime_.value());
 
     if (debug)
     {
@@ -136,13 +114,15 @@ void Foam::mcSLMFullVelocityModel::setupInternals(const mcParticleCloud& cloud)
 {
     const volVectorField& Updf =
         mesh_.lookupObject<volVectorField>("UCloudPDF");
+    const mcSolution& solDict = cloud.solutionDict();
 
     p_ = pfv_ - 2./3.*cloud.rhocPdf()*cloud.kfv();
 
-    diffU_.internalField() = (cloud.Ufv() - Updf)/URelaxTime_;
+    diffU_.internalField() = (cloud.Ufv() - Updf)/solDict.relaxationTime("U");
     diffU_.correctBoundaryConditions();
 
-    diffk_ = (sqrt(cloud.kfv()/cloud.kcPdf()) - 1.0)/kRelaxTime_;
+    diffk_ = (sqrt(cloud.kfv()/cloud.kcPdf()) - 1.0)
+            /solDict.relaxationTime("k");
 
     rhoInterp_.reset(new interpolationCellPointFace<scalar>(cloud.rhocPdf()));
     UInterp_.reset(new interpolationCellPointFace<vector>(cloud.Ufv()));

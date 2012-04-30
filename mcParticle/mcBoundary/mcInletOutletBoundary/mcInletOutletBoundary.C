@@ -274,7 +274,7 @@ void Foam::mcInletOutletBoundary::correct
         PhicPdf[PhiI] = &cloud.PhicPdf()[PhiI]->boundaryField()[patchID()];
     }
     scalar dt = mesh().time().deltaT().value();
-    scalar Npc = cloud.Npc();
+    const label Npc = cloud.solutionDict().particlesPerCell();
     forAll(pp, faceI)
     {
         label cellI = pp.faceCells()[faceI];
