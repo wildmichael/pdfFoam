@@ -77,9 +77,7 @@ Foam::mcParticle::mcParticle
     const vector& position,
     const label   celli,
     const scalar  m,
-    const vector& Updf,
     const vector& UParticle,
-    const vector& UFap,
     const scalarField&  Phi,
     const vector& shift,
     const label   ghost
@@ -87,11 +85,9 @@ Foam::mcParticle::mcParticle
 :
     Particle<mcParticle>(c, position, celli),
     m_(m),
-    Updf_(Updf),
     UParticle_(UParticle),
     Ucorrection_(vector::zero),
     Utracking_(UParticle),
-    UFap_(UFap),
     Omega_(0.0),
     rho_(0.0),
     eta_(1.0),
@@ -266,8 +262,6 @@ Foam::string Foam::mcParticle::info() const
         << "Ucorrection = " << Ucorrection() << ", "
         << "Utracking = " << Utracking() << ", "
         << "U     = " << UParticle()  << ", "
-        << "UFap  = " << UFap() << ", "
-        << "Updf  = " << Updf() << nl
         << "Phi   = " << Phi() << ", "
         << "ghost = " << ghost() << ", "
         << "shift = " << shift()

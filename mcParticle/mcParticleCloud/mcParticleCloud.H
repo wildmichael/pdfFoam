@@ -232,9 +232,6 @@ class mcParticleCloud:
         //- Update moments and the quantities remembered by particles
         void updateCloudPDF(scalar existWt);
 
-        //- Update Updf & (maybe later, Taupdf) in the particle side.
-        void updateParticlePDF();
-
         // Particle number control actions
 
             //- Limit cluster/clone thresholds to reasonable values

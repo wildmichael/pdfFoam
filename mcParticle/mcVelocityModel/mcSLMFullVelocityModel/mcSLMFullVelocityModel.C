@@ -183,15 +183,11 @@ void Foam::mcSLMFullVelocityModel::correct
     scalar kFap = kInterp_().interpolate(pos, c, f);
     vector diffUap = diffUInterp_().interpolate(pos, c, f);
 
-    // interpolate fluid velocity to particle location This
-    // quantity is a data member the class.
-    // Note: it would be the best if UInterp was interpolating
-    // velocities based on face fluxes to get UFap instead of cell
-    // center values. Will implement later.
-    p.UFap() = UInterp_().interpolate(pos, c, f);
+    // Note: it would be the best if UInterp was interpolating velocities based
+    // on face fluxes instead of cell center values. Will implement later.
 
     // Fluctuating velocity
-    const vector u = p.UParticle() - p.UFap();
+    const vector u = p.UParticle() - UInterp_().interpolate(pos, c, f);
 
     const vector xi =
         vector

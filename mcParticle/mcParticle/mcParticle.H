@@ -67,9 +67,6 @@ class mcParticle
         //- mass (statistical weight)
         scalar m_;
 
-        //- mean velocity based on particles
-        vector Updf_;
-
         //- particle velocity (mean + flutuation) (primary variable)
         vector UParticle_;
 
@@ -78,10 +75,6 @@ class mcParticle
 
         //- particle tracking velocity leading to destination position
         vector Utracking_;
-
-       //- fluid velocity @ particle location, updated at the end of each Lagrangian dt
-       // (same time with Updf & UParticle)
-       vector UFap_;
 
        //- turbulent frequency of particle
        scalar Omega_;
@@ -138,9 +131,7 @@ public:
             const vector& position,
             const label celli,
             const scalar m,
-            const vector& Updf,
             const vector& UParticle,
-            const vector& UFap,
             const scalarField& Phi,
             const vector& shift = vector::zero,
             const label  ghost = 0
@@ -171,11 +162,6 @@ public:
 
             inline scalar& m();
 
-            //- Return pdf velocity (particle velocity in this cell)
-            inline const vector& Updf() const;
-
-            inline vector& Updf();
-
            // inline const symmTensor& Taupdf() const;
            // inline symmTensor& Taupdf();
 
@@ -193,12 +179,6 @@ public:
 
             //- Return velocity with which the particle is being tracked
             inline const vector& Utracking() const;
-
-            //- Fluid velocity @ particle location
-            inline const vector& UFap() const;
-
-            //- Fluid velocity @ particle location
-            inline vector& UFap();
 
             //- Turbulent frequency
             inline scalar Omega() const;

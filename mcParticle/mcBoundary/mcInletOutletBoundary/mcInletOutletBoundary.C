@@ -267,7 +267,6 @@ void Foam::mcInletOutletBoundary::correct
     label np = 0;
     const polyPatch& pp = patch();
     const scalarField& magSf = mesh().magSf().boundaryField()[patchID()];
-    const vectorField& U = cloud.Ufv().boundaryField()[patchID()];
     const scalarField& rho = cloud.rhocPdf().boundaryField()[patchID()];
     List<scalarField*> PhicPdf(cloud.PhicPdf().size());
     forAll(PhicPdf, PhiI)
@@ -314,9 +313,7 @@ void Foam::mcInletOutletBoundary::correct
                 randomPoint(cloud, faceI),
                 cellI,
                 mp,
-                U[faceI],
                 Up,
-                U[faceI],
                 phi
             );
             p->isOnInletBoundary() = true;

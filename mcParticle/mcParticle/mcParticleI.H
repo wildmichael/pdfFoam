@@ -37,18 +37,6 @@ inline Foam::scalar& Foam::mcParticle::m()
 }
 
 
-inline const Foam::vector& Foam::mcParticle::Updf() const
-{
-    return Updf_;
-}
-
-
-inline Foam::vector& Foam::mcParticle::Updf()
-{
-    return Updf_;
-}
-
-
 inline const Foam::vector& Foam::mcParticle::UParticle() const
 {
     return UParticle_;
@@ -76,18 +64,6 @@ inline Foam::vector& Foam::mcParticle::Ucorrection()
 inline const Foam::vector& Foam::mcParticle::Utracking() const
 {
     return Utracking_;
-}
-
-
-inline const Foam::vector& Foam::mcParticle::UFap() const
-{
-    return UFap_;
-}
-
-
-inline Foam::vector& Foam::mcParticle::UFap()
-{
-    return UFap_;
 }
 
 

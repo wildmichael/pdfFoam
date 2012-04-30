@@ -45,11 +45,9 @@ Foam::mcParticle::mcParticle
         if (is.format() == IOstream::ASCII)
         {
             m_ = readScalar(is);
-            is  >> Updf_
-                >> UParticle_
+            is  >> UParticle_
                 >> Ucorrection_
                 >> Utracking_
-                >> UFap_
                 >> Omega_
                 >> rho_
                 >> eta_
@@ -66,9 +64,8 @@ Foam::mcParticle::mcParticle
             is.read
             (
                 reinterpret_cast<char*>(&m_),
-                sizeof(m_) + sizeof(Updf_) +
-                sizeof(UParticle_) + sizeof(Ucorrection_) +
-                sizeof(Utracking_) + sizeof(UFap_) +
+                sizeof(m_) + sizeof(UParticle_) + sizeof(Ucorrection_) +
+                sizeof(Utracking_) +
                 sizeof(Omega_) + sizeof(rho_) + sizeof(eta_) +
                 sizeof(shift_) + sizeof(Co_) + sizeof(ghost_) +
                 sizeof(nSteps_) + sizeof(isOnInletBoundary_)
@@ -94,17 +91,11 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
     IOField<scalar> m(c.fieldIOobject("m", IOobject::MUST_READ));
     c.checkFieldIOobject(c, m);
 
-    IOField<vector> Updf(c.fieldIOobject("Updf", IOobject::MUST_READ));
-    c.checkFieldIOobject(c, Updf);
-
     IOField<vector> UParticle
     (
         c.fieldIOobject("UParticle", IOobject::MUST_READ)
     );
     c.checkFieldIOobject(c, UParticle);
-
-    IOField<vector> UFap(c.fieldIOobject("UFap", IOobject::MUST_READ));
-    c.checkFieldIOobject(c, UFap);
 
     IOField<scalar> Omega(c.fieldIOobject("Omega", IOobject::MUST_READ));
     c.checkFieldIOobject(c, Omega);
@@ -139,9 +130,7 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
         mcParticle& p = iter();
 
         p.m_ = m[i];
-        p.Updf_ = Updf[i];
         p.UParticle_ = UParticle[i];
-        p.UFap_ = UFap[i];
         p.Omega_ = Omega[i];
         p.Phi_.setSize(PhiFields.size());
         forAll(PhiFields, PhiI)
@@ -168,13 +157,11 @@ void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
     label np = c.size();
 
     IOField<scalar> m(c.fieldIOobject("m", IOobject::NO_READ), np);
-    IOField<vector> Updf(c.fieldIOobject("Updf", IOobject::NO_READ), np);
     IOField<vector> UParticle
     (
         c.fieldIOobject("UParticle", IOobject::NO_READ),
         np
     );
-    IOField<vector> UFap(c.fieldIOobject("UFap", IOobject::NO_READ), np);
     IOField<vector> Ucorrection
     (
         c.fieldIOobject("Ucorrection", IOobject::NO_READ),
@@ -208,9 +195,7 @@ void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
         const mcParticle& p = iter();
 
         m[i] = p.m_;
-        Updf[i] = p.Updf_;
         UParticle[i] = p.UParticle_;
-        UFap[i] = p.UFap_;
         Ucorrection[i] = p.Ucorrection_;
         Omega[i] = p.Omega_;
         forAll(PhiFields, PhiI)
@@ -223,9 +208,7 @@ void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
     }
 
     m.write();
-    Updf.write();
     UParticle.write();
-    UFap.write();
     Ucorrection.write();
     Omega.write();
     forAll(PhiFields, PhiI)
@@ -245,11 +228,9 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
     {
         os  << static_cast<const Particle<mcParticle>&>(p)
             << token::SPACE << p.m_
-            << token::SPACE << p.Updf_
             << token::SPACE << p.UParticle_
             << token::SPACE << p.Ucorrection_
             << token::SPACE << p.Utracking_
-            << token::SPACE << p.UFap_
             << token::SPACE << p.Omega_
             << token::SPACE << p.rho_
             << token::SPACE << p.eta_
@@ -266,9 +247,8 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
         os.write
         (
             reinterpret_cast<const char*>(&p.m_),
-            sizeof(p.m_) + sizeof(p.Updf_) +
-            sizeof(p.UParticle_) + sizeof(p.Ucorrection_) +
-            sizeof(p.Utracking_) + sizeof(p.UFap_) +
+            sizeof(p.m_) + sizeof(p.UParticle_) + sizeof(p.Ucorrection_) +
+            sizeof(p.Utracking_) +
             sizeof(p.Omega_) + sizeof(p.rho_) + sizeof(p.eta_) +
             sizeof(p.shift_) + sizeof(p.Co_) + sizeof(p.ghost_) +
             sizeof(p.nSteps_) + sizeof(p.isOnInletBoundary_)

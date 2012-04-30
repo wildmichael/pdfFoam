@@ -482,9 +482,6 @@ Foam::mcParticleCloud::mcParticleCloud
         initReleaseParticles();
     }
     m0_ = fvc::domainIntegrate(rhocPdf_).value();
-
-    // Ensure particles takes the updated PDF values
-    updateParticlePDF();
 }
 
 
@@ -670,15 +667,6 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
 
     kcPdf_.internalField()   = 0.5 * tr(TaucPdf_.internalField());
     kcPdf_.correctBoundaryConditions();
-}
-
-
-void Foam::mcParticleCloud::updateParticlePDF()
-{
-    forAllIter(mcParticleCloud, *this, pIter)
-    {
-        pIter().Updf() = UcPdf_[pIter().cell()];
-    }
 }
 
 
@@ -939,7 +927,6 @@ Foam::scalar Foam::mcParticleCloud::evolve()
 
     // Extract statistical averaging to obtain mesh-based quantities
     updateCloudPDF(existWt);
-    updateParticlePDF();
     printParticleCo();
 
     particleNumberControl();
@@ -1085,7 +1072,6 @@ void Foam::mcParticleCloud::particleGenInCell
             random().GaussNormal() * uscales.z()
             );
         vector UParticle = u + Updf;
-        vector UFap = Ufv_[celli];
 
         mcParticle* ptr = new mcParticle
         (
@@ -1093,9 +1079,7 @@ void Foam::mcParticleCloud::particleGenInCell
             positions[i],
             celli,
             m,
-            Updf,
             UParticle,
-            UFap,
             Phi,
             shift,
             ghost
