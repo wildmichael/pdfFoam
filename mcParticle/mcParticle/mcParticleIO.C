@@ -63,14 +63,13 @@ Foam::mcParticle::mcParticle
         }
         else
         {
+            static const size_t offset = sizeof(BoundaryOfDataMembers);
+            static const ptrdiff_t binaryLength =
+                &endOfDataMembers_ - &beginOfDataMembers_ - offset;
             is.read
             (
-                reinterpret_cast<char*>(&m_),
-                sizeof(m_) + sizeof(UParticle_) + sizeof(Ucorrection_) +
-                sizeof(Utracking_) +
-                sizeof(Omega_) + sizeof(rho_) + sizeof(eta_) +
-                sizeof(shift_) + sizeof(Co_) + sizeof(ghost_) +
-                sizeof(nSteps_) + sizeof(isOnInletBoundary_)
+                reinterpret_cast<char*>(&beginOfDataMembers_)+offset,
+                binaryLength
             );
             is >> Phi_;
         }
@@ -249,14 +248,14 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
     else
     {
         os  << static_cast<const Particle<mcParticle>&>(p);
+        static const size_t offset =
+            sizeof(mcParticle::BoundaryOfDataMembers);
+        static const ptrdiff_t binaryLength =
+            &p.endOfDataMembers_ - &p.beginOfDataMembers_ - offset;
         os.write
         (
-            reinterpret_cast<const char*>(&p.m_),
-            sizeof(p.m_) + sizeof(p.UParticle_) + sizeof(p.Ucorrection_) +
-            sizeof(p.Utracking_) +
-            sizeof(p.Omega_) + sizeof(p.rho_) + sizeof(p.eta_) +
-            sizeof(p.shift_) + sizeof(p.Co_) + sizeof(p.ghost_) +
-            sizeof(p.nSteps_) + sizeof(p.isOnInletBoundary_)
+            reinterpret_cast<const char*>(&p.beginOfDataMembers_) + offset,
+            binaryLength
         );
         os  << p.Phi_;
     }

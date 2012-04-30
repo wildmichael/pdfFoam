@@ -61,6 +61,11 @@ class mcParticle
 :
     public Particle<mcParticle>
 {
+    // Private types
+
+        struct BoundaryOfDataMembers {} beginOfDataMembers_;
+
+        // ==== NO DATA MEMBERS BEFORE THIS === //
 
     // Private member data
 
@@ -76,47 +81,46 @@ class mcParticle
         //- particle tracking velocity leading to destination position
         vector Utracking_;
 
-       //- turbulent frequency of particle
-       scalar Omega_;
+        //- turbulent frequency of particle
+        scalar Omega_;
 
-       //- density
-       scalar rho_;
+        //- density
+        scalar rho_;
 
-       //- eta
-       scalar eta_;
+        //- eta
+        scalar eta_;
 
-       //- separation (only for ghost cells)
-       vector shift_;
+        //- separation (only for ghost cells)
+        vector shift_;
 
-       //- particle Courant number
-       scalar Co_;
+        //- particle Courant number
+        scalar Co_;
 
-       //- Velocity of the "moving boundary" the particle bounced of
-       vector reflectionBoundaryVelocity_;
+        //- Velocity of the "moving boundary" the particle bounced of
+        vector reflectionBoundaryVelocity_;
 
-       // ==== PUT ALL label AND OTHER 4-BYTE TYPES AFTER THIS === //
+        //- Whether this particle is a ghost
+        label ghost_;
 
-       //- Whether this particle is a ghost
-       label ghost_;
+        //- Number of tracking steps during single time-step
+        label nSteps_;
 
-       //- Number of tracking steps during single time-step
-       label nSteps_;
 
-       // ==== PUT ALL char AND OTHER 2-BYTE TYPES AFTER THIS === //
+        //- Whether this particle is located on an inlet boundary
+        // and must be assigned a random stepFraction
+        bool isOnInletBoundary_;
 
-       // ==== PUT ALL bool AND OTHER 1-BYTE TYPES AFTER THIS === //
+        //- Whether this particle has been reflected at an mcOpenBoundary
+        bool reflectedAtOpenBoundary_;
 
-       //- Whether this particle is located on an inlet boundary
-       // and must be assigned a random stepFraction
-       bool isOnInletBoundary_;
+        // ==== NO POD DATA MEMBERS AFTER THIS === //
 
-       //- Whether this particle has been reflected at an mcOpenBoundary
-       bool reflectedAtOpenBoundary_;
+        BoundaryOfDataMembers endOfDataMembers_;
 
-       // ==== PUT ALL NON-POD DATA AFTER THIS === //
+        // ==== PUT ALL NON-POD DATA AFTER THIS === //
 
-       //- scalar properties
-       scalarField Phi_;
+        //- scalar properties
+        scalarField Phi_;
 
 public:
 
