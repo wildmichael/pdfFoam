@@ -53,9 +53,11 @@ Foam::mcParticle::mcParticle
                 >> eta_
                 >> shift_
                 >> Co_
+                >> reflectionBoundaryVelocity_
                 >> ghost_
                 >> nSteps_
                 >> isOnInletBoundary_
+                >> reflectedAtOpenBoundary_
                 >> Phi_
                 ;
         }
@@ -86,7 +88,7 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
         return;
     }
     mcParticleCloud& mcpc = refCast<mcParticleCloud>(c);
-    Particle <mcParticle> :: readFields(c);
+    Particle <mcParticle>::readFields(c);
 
     IOField<scalar> m(c.fieldIOobject("m", IOobject::MUST_READ));
     c.checkFieldIOobject(c, m);
@@ -99,6 +101,12 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
 
     IOField<scalar> Omega(c.fieldIOobject("Omega", IOobject::MUST_READ));
     c.checkFieldIOobject(c, Omega);
+
+    IOField<scalar> rho(c.fieldIOobject("rho", IOobject::MUST_READ));
+    c.checkFieldIOobject(c, rho);
+
+    IOField<scalar> eta(c.fieldIOobject("eta", IOobject::MUST_READ));
+    c.checkFieldIOobject(c, eta);
 
     PtrList<IOField<scalar> > PhiFields(mcpc.scalarNames().size());
     forAll(mcpc.scalarNames(), PhiI)
@@ -118,12 +126,6 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
         c.checkFieldIOobject(c, PhiFields[PhiI]);
     }
 
-    IOField<scalar> rho(c.fieldIOobject("rho", IOobject::MUST_READ));
-    c.checkFieldIOobject(c, rho);
-
-    IOField<scalar> eta(c.fieldIOobject("eta", IOobject::MUST_READ));
-    c.checkFieldIOobject(c, eta);
-
     label i = 0;
     forAllIter(Cloud<mcParticle>, c, iter)
     {
@@ -132,18 +134,20 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
         p.m_ = m[i];
         p.UParticle_ = UParticle[i];
         p.Omega_ = Omega[i];
+        p.rho_ = rho[i];
+        p.eta_ = eta[i];
+        p.shift_ = vector::zero;
+        p.Co_ = 0.;
+        p.reflectionBoundaryVelocity_ = vector::zero;
+        p.ghost_ = 0;
+        p.nSteps_ = 0;
+        p.isOnInletBoundary_ = false;
+        p.reflectedAtOpenBoundary_ = false;
         p.Phi_.setSize(PhiFields.size());
         forAll(PhiFields, PhiI)
         {
             p.Phi_[PhiI] = PhiFields[PhiI][i];
         }
-        p.rho_ = rho[i];
-        p.eta_ = eta[i];
-        p.shift_ = vector::zero;
-        p.ghost_ = 0;
-        p.nSteps_ = 0;
-        p.reflectionBoundaryVelocity_ = vector::zero;
-        p.reflectedAtOpenBoundary_ = false;
         i++;
     }
 }
@@ -168,6 +172,8 @@ void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
         np
     );
     IOField<scalar> Omega(c.fieldIOobject("Omega", IOobject::NO_READ), np);
+    IOField<scalar> rho(c.fieldIOobject("rho", IOobject::NO_READ), np);
+    IOField<scalar> eta(c.fieldIOobject("eta", IOobject::NO_READ), np);
     PtrList<IOField<scalar> > PhiFields(mcpc.scalarNames().size());
     forAll(mcpc.scalarNames(), PhiI)
     {
@@ -185,9 +191,6 @@ void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
             )
         );
     }
-    IOField<scalar> rho(c.fieldIOobject("rho", IOobject::NO_READ), np);
-
-    IOField<scalar> eta(c.fieldIOobject("eta", IOobject::NO_READ), np);
 
     label i = 0;
     forAllConstIter(Cloud<mcParticle>, c, iter)
@@ -211,12 +214,12 @@ void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
     UParticle.write();
     Ucorrection.write();
     Omega.write();
+    rho.write();
+    eta.write();
     forAll(PhiFields, PhiI)
     {
         PhiFields[PhiI].write();
     }
-    rho.write();
-    eta.write();
 }
 
 
@@ -236,9 +239,11 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
             << token::SPACE << p.eta_
             << token::SPACE << p.shift_
             << token::SPACE << p.Co_
+            << token::SPACE << p.reflectionBoundaryVelocity_
             << token::SPACE << p.ghost_
             << token::SPACE << p.nSteps_
             << token::SPACE << p.isOnInletBoundary_
+            << token::SPACE << p.reflectedAtOpenBoundary_
             << token::SPACE << p.Phi_;
     }
     else
