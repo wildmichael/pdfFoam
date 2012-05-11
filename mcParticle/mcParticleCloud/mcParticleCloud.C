@@ -999,7 +999,7 @@ Foam::scalar Foam::mcParticleCloud::evolve()
                 IDLList<mcParticle> newParticles
                 (
                     particleStream,
-                    typename mcParticle::iNew(*this)
+                    mcParticle::iNew(*this)
                 );
 
                 forAllIter(IDLList<mcParticle>, newParticles, newpIter)
