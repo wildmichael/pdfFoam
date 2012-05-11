@@ -96,7 +96,7 @@ Foam::mcInletOutletBoundary::mcInletOutletBoundary
         {
             probVec_[faceI][pointI] /= area;
         }
-        fwdTrans_[faceI] = rotationTensor(ex, -Sf[faceI]/magSf[faceI]);
+        fwdTrans_[faceI] = rotationTensor(-Sf[faceI]/magSf[faceI], ex);
         revTrans_[faceI] = fwdTrans_[faceI].T();
     }
 }
