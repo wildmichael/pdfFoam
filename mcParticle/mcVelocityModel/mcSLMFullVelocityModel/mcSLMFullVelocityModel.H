@@ -38,6 +38,9 @@ Description
     by the @c C0 dictionary entry (defaults to 2.1). Do not set @c C1; it is
     here for testing purposes only, switching off dissipation if set to 0.
 
+ToDo
+    Currently the value of Cmu is hard-coded to 0.09.
+
 SourceFiles
     mcSLMFullVelocityModel.C
 
@@ -114,7 +117,7 @@ class mcSLMFullVelocityModel :
 protected:
 
         //- Update the internal fields
-        virtual void setupInternals(const mcParticleCloud& cloud);
+        virtual void setupInternals();
 
 public:
 
@@ -128,7 +131,8 @@ public:
         (
             const objectRegistry& db,
             const dictionary& parentDict,
-            const dictionary& mcSLMFullVelocityModelDict
+            const dictionary& mcSLMFullVelocityModelDict,
+            mcParticleCloud& cloud
         );
 
 
@@ -137,11 +141,15 @@ public:
         //- Apply the Velocity model to a single particle
         virtual void correct
         (
-            mcParticleCloud& cloud,
             mcParticle& p,
             bool prepare=true
         );
 
+        //- The mean turbulence frequency
+        virtual tmp<volScalarField> omega() const;
+
+        //- The diffusive coefficient based on the velocity model
+        virtual dimensionedScalar Cdiff() const;
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

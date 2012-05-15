@@ -206,6 +206,8 @@ class mcParticleCloud:
         volScalarField kcPdf_;
         //- Extracted, time-averaged scalar fields
         List<volScalarField*> PhicPdf_;
+        //- Numerical diffusion
+        volScalarField DNum_;
 
         //- The particle velocity model
         autoPtr<mcVelocityModel> velocityModel_;

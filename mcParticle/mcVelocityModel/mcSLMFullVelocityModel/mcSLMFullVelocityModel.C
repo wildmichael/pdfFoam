@@ -26,6 +26,7 @@ License
 #include "mcSLMFullVelocityModel.H"
 
 #include "addToRunTimeSelectionTable.H"
+#include "compressible/RAS/kOmegaSST/kOmegaSST.H"
 #include "fvCFD.H"
 #include "mcParticleCloud.H"
 
@@ -51,10 +52,11 @@ Foam::mcSLMFullVelocityModel::mcSLMFullVelocityModel
 (
     const Foam::objectRegistry& db,
     const Foam::dictionary& parentDict,
-    const Foam::dictionary& dict
+    const Foam::dictionary& dict,
+    mcParticleCloud& cloud
 )
 :
-    mcVelocityModel(db, parentDict, dict),
+    mcVelocityModel(db, parentDict, dict, cloud),
     mesh_(refCast<const fvMesh>(db)),
     pfv_
     (
@@ -110,22 +112,22 @@ Foam::mcSLMFullVelocityModel::mcSLMFullVelocityModel
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::mcSLMFullVelocityModel::setupInternals(const mcParticleCloud& cloud)
+void Foam::mcSLMFullVelocityModel::setupInternals()
 {
     const volVectorField& Updf =
         mesh_.lookupObject<volVectorField>("UCloudPDF");
-    const mcSolution& solDict = cloud.solutionDict();
+    const mcSolution& solDict = cloud().solutionDict();
 
-    p_ = pfv_ - 2./3.*cloud.rhocPdf()*cloud.kfv();
+    p_ = pfv_ - 2./3.*cloud().rhocPdf()*cloud().kfv();
 
-    diffU_.internalField() = (cloud.Ufv() - Updf)/solDict.relaxationTime("U");
+    diffU_.internalField() = (cloud().Ufv() - Updf)/solDict.relaxationTime("U");
     diffU_.correctBoundaryConditions();
 
-    diffk_ = (sqrt(cloud.kfv()/cloud.kcPdf()) - 1.0)
+    diffk_ = (sqrt(cloud().kfv()/cloud().kcPdf()) - 1.0)
             /solDict.relaxationTime("k");
 
-    rhoInterp_.reset(new interpolationCellPointFace<scalar>(cloud.rhocPdf()));
-    UInterp_.reset(new interpolationCellPointFace<vector>(cloud.Ufv()));
+    rhoInterp_.reset(new interpolationCellPointFace<scalar>(cloud().rhocPdf()));
+    UInterp_.reset(new interpolationCellPointFace<vector>(cloud().Ufv()));
     gradPInterp_.reset
     (
         new gradInterpolationConstantTet<scalar>
@@ -134,22 +136,21 @@ void Foam::mcSLMFullVelocityModel::setupInternals(const mcParticleCloud& cloud)
             p_
         )
     );
-    kInterp_.reset(new interpolationCellPointFace<scalar>(cloud.kfv()));
+    kInterp_.reset(new interpolationCellPointFace<scalar>(cloud().kfv()));
     diffUInterp_.reset(new interpolationCellPointFace<vector>(diffU_));
-    kcPdfInterp_.reset(new interpolationCellPointFace<scalar>(cloud.kcPdf()));
+    kcPdfInterp_.reset(new interpolationCellPointFace<scalar>(cloud().kcPdf()));
 }
 
 
 void Foam::mcSLMFullVelocityModel::correct
 (
-    Foam::mcParticleCloud& cloud,
     Foam::mcParticle& p,
     bool prepare
 )
 {
     if (prepare)
     {
-        setupInternals(cloud);
+        setupInternals();
     }
 
     scalar deltaT = p.eta()*mesh_.time().deltaT().value();
@@ -170,9 +171,9 @@ void Foam::mcSLMFullVelocityModel::correct
     const vector xi =
         vector
         (
-            cloud.random().GaussNormal(),
-            cloud.random().GaussNormal(),
-            cloud.random().GaussNormal()
+            cloud().random().GaussNormal(),
+            cloud().random().GaussNormal(),
+            cloud().random().GaussNormal()
         );
 
     const scalar A = -(0.5*C1_ + 0.75*C0_)*p.Omega();
@@ -186,6 +187,37 @@ void Foam::mcSLMFullVelocityModel::correct
         // Scale to ensure consistency on TKE (using interpolated
         // kFap/kPdfap gives very bad results)
         + (p.UParticle() - UFap)*diffk_[c]*deltaT;
+}
+
+
+Foam::tmp<Foam::volScalarField> Foam::mcSLMFullVelocityModel::omega() const
+{
+    const compressible::turbulenceModel& turbModel = cloud().turbulenceModel();
+    if (isA<compressible::RASModels::kOmegaSST>(turbModel))
+    {
+        // If we have a kOmegaSST (or derived) object, use omega directly
+        const compressible::RASModels::kOmegaSST& kOmegaModel =
+            refCast<const compressible::RASModels::kOmegaSST>(turbModel);
+        return kOmegaModel.omega();
+    }
+    else
+    {
+        // Otherwise compute omega from epsilon/k
+        return tmp<volScalarField>(new volScalarField(turbModel.epsilon() / turbModel.k()));
+    }
+}
+
+
+Foam::dimensionedScalar Foam::mcSLMFullVelocityModel::Cdiff() const
+{
+    static const scalar Cmu = 0.09;
+    static const dimensionedScalar Cdiff
+    (
+        "Cdiff",
+        dimless,
+        C0_/Cmu*sqr(0.5 + 0.75*C0_)
+    );
+    return Cdiff;
 }
 
 // ************************************************************************* //

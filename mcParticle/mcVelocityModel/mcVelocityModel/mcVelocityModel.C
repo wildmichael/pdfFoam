@@ -43,10 +43,12 @@ Foam::mcVelocityModel::mcVelocityModel
 (
     const Foam::objectRegistry& db,
     const Foam::dictionary& parentDict,
-    const Foam::dictionary& dict
+    const Foam::dictionary& dict,
+    Foam::mcParticleCloud& cloud
 )
 :
-    mcModel(db, parentDict, dict)
+    mcModel(db, parentDict, dict),
+    cloud_(cloud)
 {}
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
@@ -54,7 +56,8 @@ Foam::mcVelocityModel::mcVelocityModel
 Foam::autoPtr<Foam::mcVelocityModel> Foam::mcVelocityModel::New
 (
     const Foam::objectRegistry& db,
-    const Foam::dictionary& dict
+    const Foam::dictionary& dict,
+    Foam::mcParticleCloud& cloud
 )
 {
     word velocityModelType(dict.lookup("velocityModel"));
@@ -80,23 +83,24 @@ Foam::autoPtr<Foam::mcVelocityModel> Foam::mcVelocityModel::New
         (
             db,
             dict,
-            dict.subOrEmptyDict(velocityModelType+"VelocityModelCoeffs")
+            dict.subOrEmptyDict(velocityModelType+"VelocityModelCoeffs"),
+            cloud
         )
     );
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::mcVelocityModel::setupInternals(const mcParticleCloud& cloud)
+void Foam::mcVelocityModel::setupInternals()
 {}
 
 
-void Foam::mcVelocityModel::correct(mcParticleCloud& cloud)
+void Foam::mcVelocityModel::correct()
 {
-    setupInternals(cloud);
-    forAllIter(mcParticleCloud, cloud, pIter)
+    setupInternals();
+    forAllIter(mcParticleCloud, cloud_, pIter)
     {
-        correct(cloud, pIter(), false);
+        correct(pIter(), false);
     }
 }
 

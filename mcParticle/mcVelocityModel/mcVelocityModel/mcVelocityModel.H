@@ -58,6 +58,10 @@ namespace Foam
 class mcVelocityModel :
     public mcModel
 {
+    // Private Member Data
+
+        //- The cloud
+        mcParticleCloud& cloud_;
 
     // Private Member Functions
 
@@ -70,7 +74,13 @@ protected:
     // Protected Member Functions
 
         //- Update the internal fields
-        virtual void setupInternals(const mcParticleCloud& cloud);
+        virtual void setupInternals();
+
+        //- Return the cloud
+        mcParticleCloud& cloud() {return cloud_;}
+
+        //- Return the cloud
+        const mcParticleCloud& cloud() const {return cloud_;}
 
 public:
 
@@ -88,9 +98,10 @@ public:
             (
                 const Foam::objectRegistry& db,
                 const dictionary& parentDict,
-                const dictionary& dict
+                const dictionary& dict,
+                mcParticleCloud& cloud
             ),
-            (db, parentDict, dict)
+            (db, parentDict, dict, cloud)
         );
 
     // Constructors
@@ -100,7 +111,8 @@ public:
         (
             const Foam::objectRegistry& db,
             const dictionary& parentDict,
-            const dictionary& mcVelocityModelDict
+            const dictionary& mcVelocityModelDict,
+            mcParticleCloud& cloud
         );
 
 
@@ -110,7 +122,8 @@ public:
         static autoPtr<mcVelocityModel> New
         (
             const Foam::objectRegistry& db,
-            const dictionary& dict
+            const dictionary& dict,
+            mcParticleCloud& cloud
         );
 
     //- Destructor
@@ -120,16 +133,35 @@ public:
     // Member Functions
 
         //- Apply the velocity model to the particle cloud
-        virtual void correct(mcParticleCloud& cloud);
+        virtual void correct();
 
         //- Apply the velocity model to a single particle
         virtual void correct
         (
-            mcParticleCloud& cloud,
             mcParticle& p,
             bool prepare=true
         ) = 0;
 
+        //- Apply the velocity model to the particle cloud
+        virtual void correct(mcParticleCloud&) {correct();}
+
+        //- The mean turbulence frequency
+        virtual tmp<volScalarField> omega() const = 0;
+
+        //- The diffusive coefficient based on the velocity model
+        // Rationale:
+        //     dX = U*dt
+        //     dU = -1/tau*U*dt + sqrt(2*D)*dW
+        //   for tau -> 0
+        //     dX = sqrt(2*D*sqr(tau))*dW
+        //   where
+        //     tau = (0.5 + 0.75*C0)*omega
+        //     D = k*omega*C0/2
+        //   it follows
+        //     dX = (sqrt(omega*mut/rho*Cdiff)
+        //   where Cdiff is the diffusive coefficient
+        //     Cdiff = C0/Cmu*sqr(0.5 + 0.75*C0)
+        virtual dimensionedScalar Cdiff() const = 0;
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

@@ -69,6 +69,10 @@ class mcSolution:
         scalar eliminateAt_;
         //- Minimum TKE
         dimensionedScalar kMin_;
+        //- Minimum turbulent diffusivity
+        dimensionedScalar DMin_;
+        //- Maximum numerical diffusivity
+        dimensionedScalar DNumMax_;
 
     // Private Member Functions
 
@@ -116,6 +120,12 @@ public:
 
             //- Return the minimum TKE
             const dimensionedScalar& kMin() const {return kMin_;}
+
+            //- Return the minimum turbulent diffusivity
+            const dimensionedScalar& DMin() const {return DMin_;}
+
+            //- Return the maximum numerical diffusivity
+            const dimensionedScalar& DNumMax() const {return DNumMax_;}
 
         // Read
 
