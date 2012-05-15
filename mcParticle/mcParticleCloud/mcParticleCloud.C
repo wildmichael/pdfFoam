@@ -403,21 +403,6 @@ Foam::mcParticleCloud::mcParticleCloud
     ),
 
     PhicPdf_(),
-
-    DNum_
-    (
-        IOobject
-        (
-            "DNum",
-            runTime_.timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-        mesh_,
-        dimensionedScalar("zero", dimVelocity*dimVelocity, 0.),
-        zeroGradientFvPatchScalarField::typeName
-    ),
     velocityModel_(),
     OmegaModel_(),
     mixingModel_(),
@@ -447,7 +432,7 @@ Foam::mcParticleCloud::mcParticleCloud
     initScalarFields();
 
     // Now that the fields exist, create the models
-    velocityModel_ = mcVelocityModel::New(mesh_, dict, *this);
+    velocityModel_ = mcVelocityModel::New(mesh_, dict);
     OmegaModel_ = mcOmegaModel::New(mesh_, dict);
     mixingModel_ = mcMixingModel::New(mesh_, dict);
     reactionModel_ = mcReactionModel::New(mesh_, dict);
@@ -943,13 +928,12 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     forAllIter(mcParticleCloud, *this, pIter)
     {
         pIter().nSteps() = 0;
-        //pIter().Ucorrection() = vector::zero;
     }
     localTimeStepping_().correct(*this);
     OmegaModel_().correct(*this);
     mixingModel_().correct(*this);
     reactionModel_().correct(*this);
-    velocityModel_().correct();
+    velocityModel_().correct(*this);
 
     // Send back to original processor
     if (Pstream::parRun())
@@ -1012,34 +996,6 @@ Foam::scalar Foam::mcParticleCloud::evolve()
         }
     }
 
-    // For particles where nut is too low, add artificial uncertainty to their
-    // destination position
-    const dimensionedScalar& Cdiff = velocityModel_().Cdiff();
-    const dimensionedScalar& DMin = solutionDict_.DMin();
-    const dimensionedScalar& DNumMax = solutionDict_.DNumMax();
-    Perr<< "DEBUG: DNumMax = " << DNumMax << nl;
-    //volScalarField nut = turbModel_.mut()/rhocPdf_;
-    volScalarField DReal =
-        0.5*Cdiff*velocityModel_().omega()*turbModel_.mut()/rhocPdf_;
-    DNum_ =
-        (
-            0.5*sqr(sqrt(2*DMin)-sqrt(2*DReal))
-           // 0.5*Cdiff*velocityModel_().omega()
-           //*(nut + nutMin - 2.*sqrt(nut*nutMin))
-        );
-    forAll(DNum_, i)
-    {
-        if (DReal[i] >= DMin.value())
-        {
-            DNum_[i] = 0.;
-        }
-        else if (DNum_[i] > DNumMax.value())
-        {
-            DNum_[i] = DNumMax.value();
-        }
-    }
-    DNum_.correctBoundaryConditions();
-
     // Estimate particle velocity as 0.5*(U^{n}+U^{n+1}) and put particles back
     // to their original position. For particles that have been reflected,
     // decay to first-order integration.
@@ -1051,16 +1007,6 @@ Foam::scalar Foam::mcParticleCloud::evolve()
         p.cell() = p.cellOld();
         p.face() = p.faceOld();
 
-        if (DNum_[p.cell()] > VSMALL)
-        {
-            vector xi
-            (
-                random_.GaussNormal(),
-                random_.GaussNormal(),
-                random_.GaussNormal()
-            );
-            p.Ucorrection() += sqrt(2.*DNum_[p.cell()]*deltaT)*xi/deltaT;
-        }
         if (p.reflected())
         {
             p.Utracking() = p.UParticleOld() + p.Ucorrection();
