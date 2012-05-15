@@ -895,6 +895,11 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     {
         boundaryHandlers_[boundaryI].correct(*this, false);
     }
+    forAllIter(mcParticleCloud, *this, pIter)
+    {
+        pIter().Ucorrection() = vector::zero;
+    }
+    positionCorrection_().correct(*this);
 
     // First half-step
     //////////////////
@@ -923,35 +928,20 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     forAllIter(mcParticleCloud, *this, pIter)
     {
         pIter().nSteps() = 0;
-        pIter().Ucorrection() = vector::zero;
     }
     localTimeStepping_().correct(*this);
     OmegaModel_().correct(*this);
     mixingModel_().correct(*this);
     reactionModel_().correct(*this);
     velocityModel_().correct(*this);
-    positionCorrection_().correct(*this);
 
-    // Estimate particle velocity as 0.5*(U^{n}+U^{n+1}) and put particles back
-    // to their original position. For particles that have been reflected,
-    // decay to first-order integration.
-
-    // Update velocity, handle reflected particles and send back to original
-    // position and processor
-    List<IDLList<mcParticle> > transferList(Pstream::nProcs());
-    forAllIter(mcParticleCloud, *this, pIter)
+    // Send back to original processor
+    if (Pstream::parRun())
     {
-        mcParticle& p = pIter();
-        if (!p.reflected())
+        List<IDLList<mcParticle> > transferList(Pstream::nProcs());
+        forAllIter(mcParticleCloud, *this, pIter)
         {
-            p.Utracking() =
-                0.5*(p.UParticleOld() + p.UParticle()) + p.Ucorrection();
-
-            p.position() = p.positionOld();
-            p.cell() = p.cellOld();
-            p.face() = p.faceOld();
-
-            constrainParticle(*this, deltaT, p);
+            mcParticle& p = pIter();
 
             // If this is a parallel run and the particle switch processor in
             // the first half step, put it in the transfer list
@@ -960,11 +950,6 @@ Foam::scalar Foam::mcParticleCloud::evolve()
                 transferList[p.procOld()].append(this->remove(&p));
             }
         }
-    }
-
-    // Parallel transfer
-    if (Pstream::parRun())
-    {
         // List of the numbers of particles to be transfered across the
         // processor patches
         labelList nsTransPs(transferList.size());
@@ -1009,6 +994,30 @@ Foam::scalar Foam::mcParticleCloud::evolve()
                 }
             }
         }
+    }
+
+    // Estimate particle velocity as 0.5*(U^{n}+U^{n+1}) and put particles back
+    // to their original position. For particles that have been reflected,
+    // decay to first-order integration.
+    forAllIter(mcParticleCloud, *this, pIter)
+    {
+        mcParticle& p = pIter();
+
+        p.position() = p.positionOld();
+        p.cell() = p.cellOld();
+        p.face() = p.faceOld();
+
+        if (p.reflected())
+        {
+            p.Utracking() = p.UParticleOld() + p.Ucorrection();
+        }
+        else
+        {
+            p.Utracking() =
+                0.5*(p.UParticleOld() + p.UParticle()) + p.Ucorrection();
+        }
+
+        constrainParticle(*this, deltaT, p);
     }
 
     // Second half-step
