@@ -11,6 +11,7 @@ mcMixingModel/mcIEMMixingModel/mcIEMMixingModel.C
 mcReactionModel/mcReactionModel/mcReactionModel.C
 mcReactionModel/mcColdReactionModel/mcColdReactionModel.C
 mcReactionModel/mcNaiveFlameletModel/mcNaiveFlameletModel.C
+mcReactionModel/mcBurkeSchumannReactionModel/mcBurkeSchumannReactionModel.C
 mcBoundary/mcBoundary/mcBoundary.C
 mcBoundary/mcSlipBoundary/mcSlipBoundary.C
 mcBoundary/mcEmptyBoundary/mcEmptyBoundary.C
