@@ -64,6 +64,13 @@ mcIntegratedPositionCorrection
         lookupOrAddDefault<scalar>("C", 1e-5)
     ),
 
+    Cd_
+    (
+        "Cd",
+        dimless,
+        lookupOrAddDefault<scalar>("Cd", 0.)
+    ),
+
     pPosCorr_
     (
         IOobject
@@ -141,7 +148,15 @@ void Foam::mcIntegratedPositionCorrection::correct
         const point& p = part.position();
         label c = part.cell();
         label f = part.face();
-        part.Ucorrection() += UPosCorrInterp.interpolate(p, c, f);
+        vector Uc = UPosCorrInterp.interpolate(p, c, f);
+        vector xi
+            (
+                cloud.random().GaussNormal(),
+                cloud.random().GaussNormal(),
+                cloud.random().GaussNormal()
+            );
+        Uc += (Cd_*sqrt(mag(Uc)*deltaT)*xi/deltaT).value();
+        part.Ucorrection() += Uc;
     }
 }
 

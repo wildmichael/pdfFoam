@@ -63,6 +63,7 @@ class mcLimitedSimplePositionCorrection :
         //- Density-correction coefficients
         dimensionedScalar C_;
         dimensionedScalar CFL_;
+        dimensionedScalar Cd_;
 
     // Private Member Functions
 
