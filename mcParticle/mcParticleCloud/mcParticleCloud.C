@@ -419,7 +419,8 @@ Foam::mcParticleCloud::mcParticleCloud
         ),
         mesh_.surfaceInterpolation::deltaCoeffs()*mesh_.Sf()/mesh_.magSf()
     ),
-    lostParticles_(*this)
+    lostParticles_(*this),
+    hNum_(0)
 {
     // HACK work around annoying bug in OpenFOAM < 2.0
     readIfPresent(mMom_);
@@ -476,6 +477,7 @@ Foam::mcParticleCloud::mcParticleCloud
         }
     }
 
+    initHNum();
     initBCHandlers();
 
     // Take care of statistical moments (make sure they are consistent)
@@ -1009,13 +1011,26 @@ Foam::scalar Foam::mcParticleCloud::evolve()
 
         if (p.reflected())
         {
-            p.Utracking() = p.UParticleOld() + p.Ucorrection();
+            p.Utracking() = p.UParticleOld();
         }
         else
         {
-            p.Utracking() =
-                0.5*(p.UParticleOld() + p.UParticle()) + p.Ucorrection();
+            p.Utracking() = 0.5*(p.UParticleOld() + p.UParticle());
         }
+
+        // Add numerical diffusion (random walk)
+        const scalar& DNum = solutionDict_.DNum().value();
+        scalar C = DNum*sqrt(hNum_[p.cell()]*deltaT*mag(p.Utracking()))/deltaT;
+        p.Utracking() +=
+            vector
+            (
+                C*random_.GaussNormal(),
+                C*random_.GaussNormal(),
+                C*random_.GaussNormal()
+            );
+
+        // Add correction velocity
+        p.Utracking() += p.Ucorrection();
 
         constrainParticle(*this, deltaT, p);
     }
@@ -1377,6 +1392,43 @@ void Foam::mcParticleCloud::initBCHandlers()
             patchI,
             bcHandler
         );
+    }
+}
+
+
+void Foam::mcParticleCloud::initHNum()
+{
+    const pointField& points = mesh_.points();
+    const faceList& faces = mesh_.faces();
+    const cellList& cells = mesh_.cells();
+    hNum_.setSize(cells.size());
+    forAll(hNum_, celli)
+    {
+        labelList cellVertices = cells[celli].labels(faces);
+        vector bbmax = -GREAT*vector::one;
+        vector bbmin = GREAT*vector::one;
+        forAll (cellVertices, vertexi)
+        {
+            bbmax = max(bbmax, points[cellVertices[vertexi]]);
+            bbmin = min(bbmin, points[cellVertices[vertexi]]);
+        }
+        vector dx
+            (
+                bbmax.x()-bbmin.x(),
+                bbmax.y()-bbmin.y(),
+                bbmax.z()-bbmin.z()
+            );
+        if (mesh_.nGeometricD() < 3)
+        {
+            dx.x() = mesh_.geometricD()[0] < 0 ? 1. : dx.x();
+            dx.y() = mesh_.geometricD()[1] < 0 ? 1. : dx.y();
+            dx.y() = mesh_.geometricD()[2] < 0 ? 1. : dx.z();
+            hNum_[celli] = sqrt(dx.x()*dx.y()*dx.z());
+        }
+        else
+        {
+            hNum_[celli] = cbrt(dx.x()*dx.y()*dx.z());
+        }
     }
 }
 

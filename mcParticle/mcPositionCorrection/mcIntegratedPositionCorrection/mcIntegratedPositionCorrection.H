@@ -61,7 +61,7 @@ class mcIntegratedPositionCorrection :
     // Private Data
 
         //- Density-correction coefficients
-        dimensionedScalar C_, Cd_;
+        dimensionedScalar C_;
 
         //- Correction pressure
         volScalarField pPosCorr_;

@@ -69,6 +69,8 @@ class mcSolution:
         scalar eliminateAt_;
         //- Minimum TKE
         dimensionedScalar kMin_;
+        //- Numerical diffusion coefficient
+        dimensionedScalar DNum_;
 
     // Private Member Functions
 
@@ -116,6 +118,9 @@ public:
 
             //- Return the minimum TKE
             const dimensionedScalar& kMin() const {return kMin_;}
+
+            //- Return the numerical diffusion coefficient
+            const dimensionedScalar& DNum() const {return DNum_;}
 
         // Read
 

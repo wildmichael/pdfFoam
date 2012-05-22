@@ -233,6 +233,9 @@ class mcParticleCloud:
         //- Keeps track of the lost particles
         IOLostParticles<mcParticle> lostParticles_;
 
+        //- Scaling factors for the numerical diffusion (~ @c cbrt(mesh.V()))
+        scalarList hNum_;
+
         //- Original, total mass
         scalar m0_;
 
@@ -261,6 +264,9 @@ class mcParticleCloud:
 
         //- Initialise boundary condition handlers
         void initBCHandlers();
+
+        //- Compute scaling factors for numerical diffusion
+        void initHNum();
 
         //- Compute and print the mean and maximum particle Courant number
         void printParticleCo();

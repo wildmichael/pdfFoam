@@ -48,7 +48,8 @@ Foam::mcSolution::mcSolution(const objectRegistry& obr)
     particleNumberControl_(),
     cloneAt_(),
     eliminateAt_(),
-    kMin_("kMin", dimVelocity*dimVelocity, 100.0*SMALL)
+    kMin_("kMin", dimVelocity*dimVelocity, 100.0*SMALL),
+    DNum_("DNum", dimless, 0.)
 {
     read();
 }
@@ -103,6 +104,11 @@ bool Foam::mcSolution::read()
         if (dict.found("kMin"))
         {
             kMin_.value() = readScalar(dict.lookup("kMin"));
+        }
+
+        if (dict.found("DNum"))
+        {
+            DNum_.value() = readScalar(dict.lookup("DNum"));
         }
 
         return true;

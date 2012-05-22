@@ -69,13 +69,6 @@ mcLimitedSimplePositionCorrection
         "CFL",
         dimless,
         lookupOrAddDefault<scalar>("CFL", 0.5)
-    ),
-
-    Cd_
-    (
-        "Cd",
-        dimless,
-        lookupOrAddDefault<scalar>("Cd", 0.)
     )
 {}
 
@@ -162,15 +155,7 @@ void Foam::mcLimitedSimplePositionCorrection::correct
         const point& p = part.position();
         label c = part.cell();
         label f = part.face();
-        vector Uc = UPosCorrInterp.interpolate(p, c, f);
-        vector xi
-            (
-                cloud.random().GaussNormal(),
-                cloud.random().GaussNormal(),
-                cloud.random().GaussNormal()
-            );
-        Uc += (Cd_*sqrt(mag(Uc)*dt)*xi/dt).value();
-        part.Ucorrection() += Uc;
+        part.Ucorrection() += UPosCorrInterp.interpolate(p, c, f);
     }
 }
 
