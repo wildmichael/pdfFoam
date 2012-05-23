@@ -71,9 +71,6 @@ class mcSLMFullVelocityModel :
 {
     // Private Data
 
-        //- The mesh
-        const fvMesh& mesh_;
-
         //- The FV pressure
         const volScalarField& pfv_;
 
@@ -111,11 +108,6 @@ class mcSLMFullVelocityModel :
         mcSLMFullVelocityModel(const mcSLMFullVelocityModel&);
         void operator=(const mcSLMFullVelocityModel&);
 
-protected:
-
-        //- Update the internal fields
-        virtual void setupInternals(const mcParticleCloud& cloud);
-
 public:
 
     //- Runtime type information
@@ -126,21 +118,19 @@ public:
         //- Construct from components
         mcSLMFullVelocityModel
         (
+            mcParticleCloud& cloud,
             const objectRegistry& db,
-            const dictionary& parentDict,
-            const dictionary& mcSLMFullVelocityModelDict
+            const word& subDictName
         );
 
 
     // Member Functions
 
+        //- Update/prepare internal data
+        virtual void updateInternals();
+
         //- Apply the Velocity model to a single particle
-        virtual void correct
-        (
-            mcParticleCloud& cloud,
-            mcParticle& p,
-            bool prepare=true
-        );
+        virtual void correct(mcParticle& p);
 
 };
 

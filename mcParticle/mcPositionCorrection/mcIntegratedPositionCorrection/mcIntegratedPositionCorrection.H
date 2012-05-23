@@ -50,6 +50,7 @@ namespace Foam
 {
 
 class mcParticleCloud;
+template<class> class interpolationCellPointFace;
 
 /*---------------------------------------------------------------------------*\
                 Class mcIntegratedPositionCorrection Declaration
@@ -59,9 +60,6 @@ class mcIntegratedPositionCorrection :
     public mcPositionCorrection
 {
     // Private Data
-
-        //- Density-correction coefficients
-        dimensionedScalar C_;
 
         //- Correction pressure
         volScalarField pPosCorr_;
@@ -74,6 +72,9 @@ class mcIntegratedPositionCorrection :
 
         //- Correction velocity
         volVectorField UPosCorr_;
+
+        //- Correction velocity interpolator
+        autoPtr<interpolationCellPointFace<vector> > UPosCorrInterp_;
 
     // Private Member Functions
 
@@ -91,16 +92,19 @@ public:
         //- Construct from components
         mcIntegratedPositionCorrection
         (
+            mcParticleCloud& cloud,
             const objectRegistry& db,
-            const dictionary& parentDict,
-            const dictionary& mcIntegratedPositionCorrectionDict
+            const word& subDictName
         );
 
 
     // Member Functions
 
+        //- Update/prepare internal data
+        virtual void updateInternals();
+
         //- Apply the position correction
-        virtual void correct(mcParticleCloud& cloud);
+        virtual void correct(mcParticle& p);
 
 };
 

@@ -303,7 +303,7 @@ void Foam::mcInletOutletBoundary::correct
         DynamicList<mcParticle*> genParticles;
         genParticles.reserve(mIn/mp);
         scalar mGen = 0;
-        bool prepare = true;
+        cloud.localTimeStepping().updateInternals();
         while (mGen < mIn)
         {
             vector Up = randomVelocity(cloud, faceI);
@@ -317,8 +317,7 @@ void Foam::mcInletOutletBoundary::correct
                 phi
             );
             p->isOnInletBoundary() = true;
-            cloud.localTimeStepping().correct(cloud, *p, prepare);
-            prepare = false;
+            cloud.localTimeStepping().correct(*p);
             p->m() /= p->eta();
             if (mGen + p->m() > mIn)
             {

@@ -63,8 +63,12 @@ class mcMuradogluPositionCorrection :
 {
     // Private Data
 
-        //- Density correction potential
+        //- Integrated density correction potential
         volScalarField phi_;
+        //- Gradient of the integrated density correction potential
+        volVectorField gradPhi_;
+        //- Interpolator for the integrated density correction potential
+        autoPtr<interpolationCellPointFace<vector> > gradPhiInterp_;
 
     // Private Member Functions
 
@@ -82,16 +86,19 @@ public:
         //- Construct from components
         mcMuradogluPositionCorrection
         (
+            mcParticleCloud& cloud,
             const objectRegistry& db,
-            const dictionary& parentDict,
-            const dictionary& mcMuradogluPositionCorrectionDict
+            const word& subDictName
         );
 
 
     // Member Functions
 
+        //- Update/prepare internal data
+        virtual void updateInternals();
+
         //- Apply the position correction
-        virtual void correct(mcParticleCloud& cloud);
+        virtual void correct(mcParticle& p);
 
 };
 

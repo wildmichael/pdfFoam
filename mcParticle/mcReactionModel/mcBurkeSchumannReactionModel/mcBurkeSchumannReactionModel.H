@@ -64,8 +64,8 @@ class mcBurkeSchumannReactionModel :
         //- Stoichiometric mixture fraction
         const scalar zstoi_;
 
-        //- Index of the mixture fraction property
-        label zIdx_;
+        //- Indexes of the mixture fraction and temperature properties
+        label zIdx_, TIdx_;
 
         //- The pressure field
         const volScalarField& p_;
@@ -86,22 +86,15 @@ public:
         //- Construct from components
         mcBurkeSchumannReactionModel
         (
+            mcParticleCloud& cloud,
             const objectRegistry& db,
-            const dictionary& parentDict,
-            const dictionary& mcBurkeSchumannReactionModelDict
+            const word& subDictName
         );
 
     // Member Functions
 
-        //- Apply the reaction model to the particle cloud
-        virtual void correct(mcParticleCloud& cloud);
-
         //- Apply the reaction model to a single particle
-        virtual void correct
-        (
-            mcParticleCloud& cloud,
-            mcParticle& p
-        );
+        virtual void correct(mcParticle& p);
 
 };
 

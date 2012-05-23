@@ -50,19 +50,12 @@ namespace Foam
 Foam::mcSimplePositionCorrection::
 mcSimplePositionCorrection
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& parentDict,
-    const Foam::dictionary& mcSimplePositionCorrectionDict
+    mcParticleCloud& cloud,
+    const objectRegistry& db,
+    const word& subDictName
 )
 :
-    mcPositionCorrection(db, parentDict, mcSimplePositionCorrectionDict),
-
-    C_
-    (
-        "C",
-        dimless,
-        lookupOrAddDefault<scalar>("C", 1.)
-    ),
+    mcPositionCorrection(cloud, db, subDictName),
 
     Ainv_
     (
@@ -74,7 +67,7 @@ mcSimplePositionCorrection
             IOobject::NO_READ,
             IOobject::NO_WRITE
         ),
-        mesh(),
+        cloud.mesh(),
         dimensionedVector("0", dimless/dimArea, vector::zero)
     ),
 
@@ -88,12 +81,12 @@ mcSimplePositionCorrection
             IOobject::NO_READ,
             IOobject::NO_WRITE
         ),
-        mesh(),
+        cloud.mesh(),
         dimless,
         zeroGradientFvPatchScalarField::typeName
     )
 {
-    const fvMesh& m = mesh();
+    const fvMesh& m = cloud.mesh();
     const pointField& points = m.points();
     const faceList& f = m.faces();
     const cellList& cf = m.cells();
@@ -121,31 +114,32 @@ mcSimplePositionCorrection
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-
-void Foam::mcSimplePositionCorrection::correct
-(
-    Foam::mcParticleCloud& cloud
-)
+void Foam::mcSimplePositionCorrection::updateInternals()
 {
-    const scalarField& pndInt = cloud.pndcPdf().dimensionedInternalField();
-    const scalarField& rhoInt = cloud.rhocPdf().dimensionedInternalField();
+    dimensionedScalar C
+    (
+        "C",
+        dimless,
+        solutionDict().lookupOrDefault<scalar>("C", 1e-2)
+    );
+    const scalarField& pndInt = cloud().pndcPdf().dimensionedInternalField();
+    const scalarField& rhoInt = cloud().rhocPdf().dimensionedInternalField();
     phi_.internalField() = pndInt/rhoInt - 1.;
     phi_.correctBoundaryConditions();
 
     // TODO try gradInterpolationConstantTet
-    volVectorField gradPhi = C_*mag(cloud.Ufv())*fvc::grad(phi_);
-    interpolationCellPointFace<vector> gradPhiInterp(gradPhi);
+    gradPhi_.reset(new volVectorField(C*mag(cloud().Ufv())*fvc::grad(phi_)));
+    gradPhiInterp_.reset(new interpolationCellPointFace<vector>(gradPhi_));
+}
 
-    // apply
-    forAllIter(mcParticleCloud, cloud, pIter)
-    {
-        mcParticle& part = pIter();
-        const point& p = part.position();
-        label c = part.cell();
-        label f = part.face();
-        part.Ucorrection() -=
-            cmptMultiply(Ainv_[c], gradPhiInterp.interpolate(p, c, f));
-    }
+
+void Foam::mcSimplePositionCorrection::correct(Foam::mcParticle& part)
+{
+    const point& p = part.position();
+    label c = part.cell();
+    label f = part.face();
+    part.Ucorrection() -=
+        cmptMultiply(Ainv_[c], gradPhiInterp_().interpolate(p, c, f));
 }
 
 // ************************************************************************* //

@@ -49,36 +49,37 @@ namespace Foam
 
 Foam::mcIEMMixingModel::mcIEMMixingModel
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& parentDict,
-    const Foam::dictionary& mcIEMMixingModelDict
+    mcParticleCloud& cloud,
+    const objectRegistry& db,
+    const word& subDictName
 )
 :
-    mcMixingModel(db, parentDict, mcIEMMixingModelDict),
-    Cmix2_(0.5*lookupOrDefault<scalar>("Cmix", 2.0, true))
+    mcMixingModel(cloud, db, subDictName),
+    Cmix2_(0.)
 {}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::mcIEMMixingModel::correct(Foam::mcParticleCloud& cloud)
+void Foam::mcIEMMixingModel::updateInternals()
 {
-    const labelList& mixedScalars = cloud.mixedScalars();
-    scalar dt =  cloud.mesh().time().deltaT().value();
-    // loop over particles
-    forAllIter(mcParticleCloud, cloud, pIter)
+    Cmix2_ = 0.5*solutionDict().lookupOrDefault<scalar>("Cmix", 2.0);
+}
+
+
+void Foam::mcIEMMixingModel::correct(mcParticle& p)
+{
+    const labelList& mixedScalars = cloud().mixedScalars();
+    const scalar& dt =  cloud().mesh().time().deltaT().value();
+    const scalar& Omega = p.Omega();
+    const scalar& eta = p.eta();
+    label cellI = p.cell();
+    // loop over mixed properties
+    forAll(mixedScalars, mixedI)
     {
-        mcParticle& p = pIter();
-        label cellI = p.cell();
-        scalar Omega = p.Omega();
-        scalar eta = p.eta();
-        // loop over mixed properties
-        forAll(mixedScalars, mixedI)
-        {
-            // apply IEM mixing
-            scalar& phi = p.Phi()[mixedScalars[mixedI]];
-            scalar& phiap = (*cloud.PhicPdf()[mixedScalars[mixedI]])[cellI];
-            phi -= (1.0 - exp(-Cmix2_*Omega*eta*dt))*(phi - phiap);
-        }
+        // apply IEM mixing
+        scalar& phi = p.Phi()[mixedScalars[mixedI]];
+        scalar& phiap = (*cloud().PhicPdf()[mixedScalars[mixedI]])[cellI];
+        phi -= (1.0 - exp(-Cmix2_*Omega*eta*dt))*(phi - phiap);
     }
 }
 

@@ -47,54 +47,67 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::mcLimitedSimplePositionCorrection::
-mcLimitedSimplePositionCorrection
+Foam::mcLimitedSimplePositionCorrection::mcLimitedSimplePositionCorrection
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& parentDict,
-    const Foam::dictionary& dict
+    mcParticleCloud& cloud,
+    const objectRegistry& db,
+    const word& subDictName
 )
 :
-    mcPositionCorrection(db, parentDict, dict),
+    mcPositionCorrection(cloud, db, subDictName),
 
-    C_
+    UPosCorr_
     (
-        "C",
-        dimless,
-        lookupOrAddDefault<scalar>("C", 1.)
-    ),
-
-    CFL_
-    (
-        "CFL",
-        dimless,
-        lookupOrAddDefault<scalar>("CFL", 0.5)
+        IOobject
+        (
+            thermoDict().lookupOrDefault<word>("UPosCorrName", "UPosCorr"),
+            db.time().timeName(),
+            db,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        cloud.mesh(),
+        #warning This dimension is BOGUS
+        dimless/dimLength,
+        zeroGradientFvPatchScalarField::typeName
     )
 {}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-
-void Foam::mcLimitedSimplePositionCorrection::correct
-(
-    Foam::mcParticleCloud& cloud
-)
+void Foam::mcLimitedSimplePositionCorrection::updateInternals()
 {
-    scalar dt = mesh().time().deltaT().value();
+    dimensionedScalar C
+    (
+        "C",
+        dimless,
+        solutionDict().lookupOrDefault<scalar>("C", 1e-2)
+    );
+
+    dimensionedScalar CFL
+    (
+        "CFL",
+        dimless,
+        solutionDict().lookupOrDefault<scalar>("CFL", 0.5)
+    );
+
+    const fvMesh& mesh = cloud().mesh();
+    scalar dt = mesh.time().deltaT().value();
     volScalarField phi
     (
         IOobject
         (
             "phiPosCorr",
-            mesh(),
+            mesh,
             IOobject::NO_READ,
             IOobject::NO_WRITE
         ),
-        mesh(),
+        mesh,
         dimensionedScalar("0", dimless, 0.0),
         zeroGradientFvPatchField<scalar>::typeName
     );
-    phi.internalField() = (cloud.pndcPdf() - cloud.rhocPdf())/cloud.rhocPdf();
+    phi.internalField() =
+        (cloud().pndcPdf() - cloud().rhocPdf())/cloud().rhocPdf();
     phi.correctBoundaryConditions();
 
     // limiter
@@ -107,56 +120,59 @@ void Foam::mcLimitedSimplePositionCorrection::correct
     phiLim = tanh(10.*phiLim);
 
     // CFL
-    volVectorField UPosCorr = -fvc::grad(phi);
+    UPosCorr_ = -fvc::grad(phi);
     scalar Co = 0;
-    forAll(mesh().cells(), cellI)
+    forAll(mesh.cells(), cellI)
     {
-        const cell& c = mesh().cells()[cellI];
+        const cell& c = mesh.cells()[cellI];
         forAll(c, cellFaceI)
         {
             label faceI = c[cellFaceI];
             vector coeff;
-            if (mesh().isInternalFace(faceI))
+            if (mesh.isInternalFace(faceI))
             {
-                coeff = cloud.CourantCoeffs()[faceI];
+                coeff = cloud().CourantCoeffs()[faceI];
             }
             else
             {
-                label patchI = mesh().boundaryMesh().whichPatch(faceI);
-                if (!cloud.CourantCoeffs().boundaryField()[patchI].size())
+                label patchI = mesh.boundaryMesh().whichPatch(faceI);
+                if (!cloud().CourantCoeffs().boundaryField()[patchI].size())
                 {
                     // skip empty boundaries
                     continue;
                 }
-                label start = mesh().boundaryMesh()[patchI].start();
-                coeff = cloud.CourantCoeffs().boundaryField()[patchI][faceI-start];
+                label start = mesh.boundaryMesh()[patchI].start();
+                coeff =
+                    (
+                        cloud().CourantCoeffs()
+                            .boundaryField()[patchI][faceI-start]
+                    );
             }
-            Co = max(Co, fabs(dt*coeff&UPosCorr[cellI]));
+            Co = max(Co, fabs(dt*coeff&UPosCorr_[cellI]));
         }
     }
     reduce(Co, maxOp<scalar>());
     dimensionedScalar corr = 0.;
     if (Co > SMALL)
     {
-        corr = CFL_/Co*C_*phiLim;
+        corr = CFL/Co*C*phiLim;
     }
 
-    UPosCorr *= corr;
-    interpolationCellPointFace<vector> UPosCorrInterp(UPosCorr);
+    UPosCorr_ *= corr;
+    UPosCorrInterp_.reset(new interpolationCellPointFace<vector>(UPosCorr_));
 
     // TODO try gradInterpolationConstantTet
     //phi *= corr;
     //gradinterpolationConstantTet<scalar> UPosCorrInterp(phi);
+}
 
-    // apply
-    forAllIter(mcParticleCloud, cloud, pIter)
-    {
-        mcParticle& part = pIter();
-        const point& p = part.position();
-        label c = part.cell();
-        label f = part.face();
-        part.Ucorrection() += UPosCorrInterp.interpolate(p, c, f);
-    }
+
+void Foam::mcLimitedSimplePositionCorrection::correct(mcParticle& part)
+{
+    const point& p = part.position();
+    label c = part.cell();
+    label f = part.face();
+    part.Ucorrection() += UPosCorrInterp_().interpolate(p, c, f);
 }
 
 // ************************************************************************* //

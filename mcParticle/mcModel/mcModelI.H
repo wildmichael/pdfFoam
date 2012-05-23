@@ -25,6 +25,22 @@ License
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
+const Foam::dictionary& Foam::mcModel::thermoDict() const
+{
+    return thermoDict_;
+}
+
+
+const Foam::mcParticleCloud& Foam::mcModel::cloud() const
+{
+    return cloud_;
+}
+
+Foam::mcParticleCloud& Foam::mcModel::cloud()
+{
+    return cloud_;
+}
+
 const Foam::objectRegistry& Foam::mcModel::db() const
 {
     return db_;

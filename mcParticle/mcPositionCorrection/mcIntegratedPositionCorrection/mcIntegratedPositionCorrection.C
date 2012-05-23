@@ -50,54 +50,43 @@ namespace Foam
 Foam::mcIntegratedPositionCorrection::
 mcIntegratedPositionCorrection
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& parentDict,
-    const Foam::dictionary& mcIntegratedPositionCorrectionDict
+    mcParticleCloud& cloud,
+    const objectRegistry& db,
+    const word& subDictName
 )
 :
-    mcPositionCorrection(db, parentDict, mcIntegratedPositionCorrectionDict),
-
-    C_
-    (
-        "C",
-        dimless,
-        lookupOrAddDefault<scalar>("C", 1e-5)
-    ),
+    mcPositionCorrection(cloud, db, subDictName),
 
     pPosCorr_
     (
         IOobject
         (
-            lookupOrAddDefault<word>("pPosCorrName", "pPosCorr"),
+            thermoDict().lookupOrDefault<word>("pPosCorrName", "pPosCorr"),
             db.time().timeName(),
             db,
             IOobject::MUST_READ,
             IOobject::AUTO_WRITE
         ),
-        mesh()
+        cloud.mesh()
     ),
 
     UPosCorr_
     (
         IOobject
         (
-            lookupOrAddDefault<word>("UPosCorrName", "UPosCorr"),
+            thermoDict().lookupOrDefault<word>("UPosCorrName", "UPosCorr"),
             db.time().timeName(),
             db,
             IOobject::MUST_READ,
             IOobject::AUTO_WRITE
         ),
-        mesh()
+        cloud.mesh()
     )
 {
-    if (debug)
-    {
-        Info<< dictionary::name() << " = " << *this << endl;
-    }
     setRefCell
     (
         pPosCorr_,
-        mesh().solutionDict().subDict("SIMPLE"),
+        cloud.mesh().solutionDict().subDict("SIMPLE"),
         pRefCell_,
         pRefValue_
     );
@@ -105,44 +94,42 @@ mcIntegratedPositionCorrection
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-
-void Foam::mcIntegratedPositionCorrection::correct
-(
-    Foam::mcParticleCloud& cloud
-)
+void Foam::mcIntegratedPositionCorrection::updateInternals()
 {
-    const dimensionedScalar& deltaT = mesh().time().deltaT();
-    const volScalarField& rho = cloud.rhocPdf();
-    const volScalarField& pnd = cloud.pndcPdfInst();
+    const scalar C = solutionDict().lookupOrDefault<scalar>("C", 1e-5);
+    const dimensionedScalar& deltaT = cloud().mesh().time().deltaT();
+    const volScalarField& rho = cloud().rhocPdf();
+    const volScalarField& pnd = cloud().pndcPdfInst();
 
     volScalarField rhs = rho - pnd;
     // correction factor to make the RHS of the Poisson equation integrate
     // to zero
-    dimensionedScalar beta = fvc::domainIntegrate(rhs) / gSum(mesh().V());
+    dimensionedScalar beta =
+        fvc::domainIntegrate(rhs) / gSum(cloud().mesh().V());
     beta.dimensions() /= dimVolume;
 
     // solve Poisson equation for pPosCorr
     fvScalarMatrix pPosCorrEqn
     (
-        fvm::laplacian(pPosCorr_) == C_/sqr(deltaT)*(rhs - beta)
+        fvm::laplacian(pPosCorr_) == C/sqr(deltaT)*(rhs - beta)
     );
     pPosCorrEqn.setReference(pRefCell_, pRefValue_);
     pPosCorrEqn.relax();
     pPosCorrEqn.solve();
 
     // time-integrator for correction velocity
-    solve(fvm::ddt(cloud.pndcPdf(), UPosCorr_) == -fvc::grad(pPosCorr_));
+    solve(fvm::ddt(cloud().pndcPdf(), UPosCorr_) == -fvc::grad(pPosCorr_));
 
-    // apply
-    interpolationCellPointFace<vector> UPosCorrInterp(UPosCorr_);
-    forAllIter(mcParticleCloud, cloud, pIter)
-    {
-        mcParticle& part = pIter();
-        const point& p = part.position();
-        label c = part.cell();
-        label f = part.face();
-        part.Ucorrection() += UPosCorrInterp.interpolate(p, c, f);
-    }
+    UPosCorrInterp_.reset(new interpolationCellPointFace<vector>(UPosCorr_));
+}
+
+
+void Foam::mcIntegratedPositionCorrection::correct(mcParticle& part)
+{
+    const point& p = part.position();
+    label c = part.cell();
+    label f = part.face();
+    part.Ucorrection() += UPosCorrInterp_().interpolate(p, c, f);
 }
 
 // ************************************************************************* //

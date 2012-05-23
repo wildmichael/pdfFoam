@@ -59,23 +59,11 @@ class mcParticle;
 class mcLocalTimeStepping :
     public mcModel
 {
-
-    // Private Data
-
-        bool active_;
-
     // Private Member Functions
 
         // Disallow default bitwise copy construct and assignment
         mcLocalTimeStepping(const mcLocalTimeStepping&);
         void operator=(const mcLocalTimeStepping&);
-
-protected:
-
-    // Protected Member Functions
-
-        //- Update the internal fields
-        virtual void setupInternals(const mcParticleCloud& cloud);
 
 public:
 
@@ -91,11 +79,11 @@ public:
             mcLocalTimeStepping,
             mcLocalTimeStepping,
             (
-                const Foam::objectRegistry& db,
-                const dictionary& parentDict,
-                const dictionary& mcLocalTimeSteppingDict
+                mcParticleCloud& cloud,
+                const objectRegistry& db,
+                const word& subDictName
             ),
-            (db, parentDict, mcLocalTimeSteppingDict)
+            (cloud, db, subDictName)
         );
 
     // Constructors
@@ -103,9 +91,9 @@ public:
         //- Construct from components
         mcLocalTimeStepping
         (
-            const Foam::objectRegistry& db,
-            const dictionary& parentDict,
-            const dictionary& mcLocalTimeSteppingDict
+            mcParticleCloud& cloud,
+            const objectRegistry& db,
+            const word& subDictName
         );
 
 
@@ -114,30 +102,16 @@ public:
         //- Return a reference to the selected position correction
         static autoPtr<mcLocalTimeStepping> New
         (
-            const Foam::objectRegistry& db,
-            const dictionary& dict
+            mcParticleCloud& cloud,
+            const objectRegistry& db
         );
-
-    //- Destructor
-        virtual ~mcLocalTimeStepping()
-        {}
 
     // Member Functions
 
-        //- Apply the position correction
-        virtual void correct(mcParticleCloud& cloud);
+        using mcModel::correct;
 
         //- Apply the position correction to a single particle
-        virtual void correct
-        (
-            mcParticleCloud& cloud,
-            mcParticle& p,
-            bool prepare=true
-        );
-
-        //- Return whether local time-stepping is effective
-        bool active() const { return active_; }
-
+        virtual void correct(mcParticle& p);
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

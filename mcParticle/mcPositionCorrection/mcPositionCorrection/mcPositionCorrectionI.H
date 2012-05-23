@@ -23,12 +23,6 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-inline const Foam::fvMesh& Foam::mcPositionCorrection::mesh() const
-{
-    return mesh_;
-}
-
-
 inline const Foam::volScalarField& Foam::mcPositionCorrection::L()
 {
     if (!L_.valid())

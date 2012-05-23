@@ -65,13 +65,6 @@ class mcVelocityModel :
         mcVelocityModel(const mcVelocityModel&);
         void operator=(const mcVelocityModel&);
 
-protected:
-
-    // Protected Member Functions
-
-        //- Update the internal fields
-        virtual void setupInternals(const mcParticleCloud& cloud);
-
 public:
 
     //- Runtime type information
@@ -86,11 +79,11 @@ public:
             mcVelocityModel,
             mcVelocityModel,
             (
-                const Foam::objectRegistry& db,
-                const dictionary& parentDict,
-                const dictionary& dict
+                mcParticleCloud& cloud,
+                const objectRegistry& db,
+                const word& subDictName
             ),
-            (db, parentDict, dict)
+            (cloud, db, subDictName)
         );
 
     // Constructors
@@ -98,9 +91,9 @@ public:
         //- Construct from components
         mcVelocityModel
         (
-            const Foam::objectRegistry& db,
-            const dictionary& parentDict,
-            const dictionary& mcVelocityModelDict
+            mcParticleCloud& cloud,
+            const objectRegistry& db,
+            const word& subDictName
         );
 
 
@@ -109,27 +102,9 @@ public:
         //- Return a reference to the selected velocity model
         static autoPtr<mcVelocityModel> New
         (
-            const Foam::objectRegistry& db,
-            const dictionary& dict
-        );
-
-    //- Destructor
-        virtual ~mcVelocityModel()
-        {}
-
-    // Member Functions
-
-        //- Apply the velocity model to the particle cloud
-        virtual void correct(mcParticleCloud& cloud);
-
-        //- Apply the velocity model to a single particle
-        virtual void correct
-        (
             mcParticleCloud& cloud,
-            mcParticle& p,
-            bool prepare=true
-        ) = 0;
-
+            const objectRegistry& db
+        );
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

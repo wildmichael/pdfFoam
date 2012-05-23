@@ -50,6 +50,7 @@ Author
 namespace Foam
 {
 
+class mcParticle;
 class mcParticleCloud;
 class objectRegistry;
 
@@ -57,11 +58,13 @@ class objectRegistry;
                            Class mcModel Declaration
 \*---------------------------------------------------------------------------*/
 
-class mcModel :
-    public dictionary
+class mcModel
 {
 
     // Private Data
+
+        //- Particle cloud
+        mcParticleCloud& cloud_;
 
         //- Object registry
         const objectRegistry& db_;
@@ -71,6 +74,16 @@ class mcModel :
         // Disallow default bitwise copy construct and assignment
         mcModel(const mcModel&);
         void operator=(const mcModel&);
+
+protected:
+
+    // Protected Member Data
+
+        //- Name of the constant/mcSolution subdict
+        word subDictName_;
+
+        //- Dictionary in constant/thermophysicalProperties
+        dictionary thermoDict_;
 
 public:
 
@@ -82,9 +95,9 @@ public:
         //- Construct from components
         mcModel
         (
+            mcParticleCloud& cloud,
             const objectRegistry& db,
-            const dictionary& parentDict,
-            const dictionary& mcModelDict
+            const word& subDictName
         );
 
     //- Destructor
@@ -93,8 +106,32 @@ public:
 
     // Member Functions
 
+        //- The constant/thermophysicalModels subdict
+        inline const dictionary& thermoDict() const;
+
+        //- The system/mcSolution subdict
+        // @note If the model-specific sub-dictionary does not exist in the
+        // sub-dictionary specified in a @c select entry, the top-level
+        // sub-dictionary will be returned. This is to avoid reverting back
+        // to the default settings.
+        dictionary solutionDict() const;
+
+        //- Update/prepare internal data
+        virtual void updateInternals();
+
         //- Apply the model to the particle cloud
-        virtual void correct(mcParticleCloud& cloud) = 0;
+        virtual void correct();
+
+        //- Apply the model to a single particle
+        // @note It is the callers responsibility to call updateInternals
+        // if required before calling this function.
+        virtual void correct(mcParticle& p) = 0;
+
+        //- The particle cloud
+        inline const mcParticleCloud& cloud() const;
+
+        //- The particle cloud
+        inline mcParticleCloud& cloud();
 
         //- The object registry
         inline const objectRegistry& db() const;

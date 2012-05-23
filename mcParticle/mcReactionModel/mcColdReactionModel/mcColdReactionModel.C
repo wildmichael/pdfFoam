@@ -48,31 +48,18 @@ namespace Foam
 
 Foam::mcColdReactionModel::mcColdReactionModel
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& parentDict,
-    const Foam::dictionary& mcColdReactionModelDict
+    mcParticleCloud& cloud,
+    const objectRegistry& db,
+    const word& subDictName
 )
 :
-    mcReactionModel(db, parentDict, mcColdReactionModelDict),
-    rho_(lookupOrDefault<scalar>("density", 1.0, true))
+    mcReactionModel(cloud, db, subDictName),
+    rho_(thermoDict().lookupOrDefault<scalar>("density", 1.0))
 {}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::mcColdReactionModel::correct(Foam::mcParticleCloud& cloud)
-{
-    forAllIter(mcParticleCloud, cloud, pIter)
-    {
-        correct(cloud, pIter());
-    }
-}
-
-
-void Foam::mcColdReactionModel::correct
-(
-    Foam::mcParticleCloud& cloud,
-    Foam::mcParticle& p
-)
+void Foam::mcColdReactionModel::correct(mcParticle& p)
 {
     p.rho() = rho_;
 }

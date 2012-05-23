@@ -55,8 +55,7 @@ class mcNaiveFlameletModel :
 
     // Private Data
 
-        word zName_;
-        label zIdx_;
+        label zIdx_, TIdx_;
 
     // Private Member Functions
 
@@ -74,23 +73,15 @@ public:
         //- Construct from components
         mcNaiveFlameletModel
         (
+            mcParticleCloud& cloud,
             const objectRegistry& db,
-            const dictionary& parentDict,
-            const dictionary& mcNaiveFlameletModelDict
+            const word& subDictName
         );
 
     // Member Functions
 
-        //- Apply the reaction model to the particle cloud
-        virtual void correct(mcParticleCloud& cloud);
-
         //- Apply the reaction model to a single particle
-        virtual void correct
-        (
-            mcParticleCloud& cloud,
-            mcParticle& p
-        );
-
+        virtual void correct(mcParticle& p);
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

@@ -40,24 +40,24 @@ namespace Foam
 
 Foam::mcReactionModel::mcReactionModel
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& parentDict,
-    const Foam::dictionary& mcReactionModelDict
+    mcParticleCloud& cloud,
+    const objectRegistry& db,
+    const word& subDictName
 )
 :
-    mcModel(db, parentDict, mcReactionModelDict),
-    TIdx_(-1)
+    mcModel(cloud, db, subDictName)
 {}
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
 
 Foam::autoPtr<Foam::mcReactionModel> Foam::mcReactionModel::New
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& dict
+    mcParticleCloud& cloud,
+    const objectRegistry& db
 )
 {
-    word reactionType(dict.lookup("reactionModel"));
+    word reactionType(cloud.thermoDict().lookup("reactionModel"));
+    word sd = reactionType + "ReactionModelCoeffs";
 
     mcReactionModelConstructorTable::iterator cstrIter =
         mcReactionModelConstructorTablePtr_->find(reactionType);
@@ -72,37 +72,35 @@ Foam::autoPtr<Foam::mcReactionModel> Foam::mcReactionModel::New
             << mcReactionModelConstructorTablePtr_->sortedToc()
             << exit(FatalError);
     }
+
     return autoPtr<mcReactionModel>
     (
-        cstrIter()
-        (
-            db,
-            dict,
-            dict.subOrEmptyDict(reactionType+"ReactionModelCoeffs")
-        )
+        cstrIter()(cloud, db, sd)
     );
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::mcReactionModel::setTIdx(const mcParticleCloud& cloud)
+Foam::label Foam::mcReactionModel::findIdx
+(
+    const word& nameKey,
+    const word& defaultName
+)
 {
-    if (TIdx_ < 0)
+    word name = thermoDict().lookupOrDefault<word>(nameKey, defaultName);
+    const wordList& sn = cloud().scalarNames();
+    wordList::const_iterator f = sn.cbegin(), e = sn.cend();
+    label idx = std::distance(f, std::find(f, e, name));
+    if (idx == sn.size())
     {
-        word TName = lookupOrDefault<word>("TName", "T", true);
-        const wordList& sn = cloud.scalarNames();
-        wordList::const_iterator f = sn.cbegin(), e = sn.cend();
-        TIdx_ = std::distance(f, std::find(f, e, TName));
-        if (TIdx_ == sn.size())
-        {
-            FatalErrorIn
-            (
-                "mcReactionModel::setTIdx(const mcParticleCloud&)"
-            )
-            << "Failed to find a scalar property names `" << TName << "'\n"
-            << exit(FatalError);
-        }
+        FatalErrorIn
+        (
+            "mcReactionModel::findIdx(const word&, const word&)"
+        )
+        << "Failed to find a scalar property names `" << name << "'\n"
+        << exit(FatalError);
     }
+    return idx;
 }
 
 // ************************************************************************* //

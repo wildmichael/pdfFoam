@@ -24,6 +24,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "mcMixingModel.H"
+#include "mcParticleCloud.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -40,23 +41,24 @@ namespace Foam
 
 Foam::mcMixingModel::mcMixingModel
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& parentDict,
-    const Foam::dictionary& mcMixingModelDict
+    mcParticleCloud& cloud,
+    const objectRegistry& db,
+    const word& subDictName
 )
 :
-    mcModel(db, parentDict, mcMixingModelDict)
+    mcModel(cloud, db, subDictName)
 {}
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
 
 Foam::autoPtr<Foam::mcMixingModel> Foam::mcMixingModel::New
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& dict
+    mcParticleCloud& cloud,
+    const objectRegistry& db
 )
 {
-    word mixingType(dict.lookup("mixingModel"));
+    word mixingType(cloud.thermoDict().lookup("mixingModel"));
+    word sd = mixingType+"MixingModelCoeffs";
 
     mcMixingModelConstructorTable::iterator cstrIter =
         mcMixingModelConstructorTablePtr_->find(mixingType);
@@ -72,15 +74,7 @@ Foam::autoPtr<Foam::mcMixingModel> Foam::mcMixingModel::New
             << exit(FatalError);
     }
 
-    return autoPtr<mcMixingModel>
-    (
-        cstrIter()
-        (
-            db,
-            dict,
-            dict.subOrEmptyDict(mixingType+"MixingModelCoeffs")
-        )
-    );
+    return autoPtr<mcMixingModel>(cstrIter()(cloud, db, sd));
 }
 
 // ************************************************************************* //

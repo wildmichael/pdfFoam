@@ -24,6 +24,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "mcPositionCorrection.H"
+#include "mcParticleCloud.H"
 
 #include "fvCFD.H"
 
@@ -42,24 +43,24 @@ namespace Foam
 
 Foam::mcPositionCorrection::mcPositionCorrection
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& parentDict,
-    const Foam::dictionary& mcPositionCorrectionDict
+    mcParticleCloud& cloud,
+    const objectRegistry& db,
+    const word& subDictName
 )
 :
-    mcModel(db, parentDict, mcPositionCorrectionDict),
-    mesh_(refCast<const fvMesh>(db))
+    mcModel(cloud, db, subDictName)
 {}
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
 
 Foam::autoPtr<Foam::mcPositionCorrection> Foam::mcPositionCorrection::New
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& dict
+    mcParticleCloud& cloud,
+    const objectRegistry& db
 )
 {
-    word posCorrType(dict.lookup("positionCorrection"));
+    word posCorrType(cloud.thermoDict().lookup("positionCorrection"));
+    word sd = posCorrType + "PositionCorrectionCoeffs";
 
     // If set to "false", "no", "n", "off" or "none", disable
     Switch::switchType enablePosCorr = Switch::asEnum(posCorrType, true);
@@ -67,7 +68,7 @@ Foam::autoPtr<Foam::mcPositionCorrection> Foam::mcPositionCorrection::New
     {
         return autoPtr<mcPositionCorrection>
         (
-            new mcPositionCorrection(db, dict, dictionary::null)
+            new mcPositionCorrection(cloud, db, sd)
         );
     }
 
@@ -87,12 +88,7 @@ Foam::autoPtr<Foam::mcPositionCorrection> Foam::mcPositionCorrection::New
 
     return autoPtr<mcPositionCorrection>
     (
-        cstrIter()
-        (
-            db,
-            dict,
-            dict.subOrEmptyDict(posCorrType+"PositionCorrectionCoeffs")
-        )
+        cstrIter()(cloud, db, sd)
     );
 }
 
@@ -101,6 +97,7 @@ Foam::autoPtr<Foam::mcPositionCorrection> Foam::mcPositionCorrection::New
 void Foam::mcPositionCorrection::makeL()
 {
 
+    const fvMesh& mesh = cloud().mesh();
     if (L_.valid())
     {
         return;
@@ -113,41 +110,41 @@ void Foam::mcPositionCorrection::makeL()
             IOobject
             (
                 "LPosCorr_",
-                mesh_.time().timeName(),
-                mesh_,
+                mesh.time().timeName(),
+                mesh,
                 IOobject::NO_READ,
                 IOobject::NO_WRITE
             ),
-            mesh_,
+            mesh,
             dimensionedScalar("0", dimLength, 0.),
             calculatedFvPatchScalarField::typeName
         )
     );
 
     const surfaceScalarField& invdx =
-        mesh_.surfaceInterpolation::deltaCoeffs();
-    forAll(mesh_.cells(), cellI)
+        mesh.surfaceInterpolation::deltaCoeffs();
+    forAll(mesh.cells(), cellI)
     {
-        const cell& c = mesh_.cells()[cellI];
+        const cell& c = mesh.cells()[cellI];
         scalar sumDx = 0.;
         label n = 0;
         forAll(c, cellFaceI)
         {
             label faceI = c[cellFaceI];
             scalar coeff;
-            if (mesh_.isInternalFace(faceI))
+            if (mesh.isInternalFace(faceI))
             {
                 coeff = invdx[faceI];
             }
             else
             {
-                label patchI = mesh_.boundaryMesh().whichPatch(faceI);
+                label patchI = mesh.boundaryMesh().whichPatch(faceI);
                 if (!invdx.boundaryField()[patchI].size())
                 {
                     // skip empty boundaries
                     continue;
                 }
-                label start = mesh_.boundaryMesh()[patchI].start();
+                label start = mesh.boundaryMesh()[patchI].start();
                 coeff = invdx.boundaryField()[patchI][faceI-start]/2.;
             }
             sumDx += 1./coeff;
@@ -163,10 +160,7 @@ void Foam::mcPositionCorrection::makeL()
 }
 
 
-void Foam::mcPositionCorrection::correct
-(
-    Foam::mcParticleCloud& cloud
-)
+void Foam::mcPositionCorrection::correct(mcParticle& p)
 {}
 
 // ************************************************************************* //

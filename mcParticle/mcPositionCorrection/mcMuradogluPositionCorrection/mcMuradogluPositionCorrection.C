@@ -49,81 +49,91 @@ namespace Foam
 
 Foam::mcMuradogluPositionCorrection::mcMuradogluPositionCorrection
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& parentDict,
-    const Foam::dictionary& dict
+    mcParticleCloud& cloud,
+    const objectRegistry& db,
+    const word& subDictName
 )
 :
-    mcEllipticRelaxationPositionCorrection(db, parentDict, dict),
+    mcEllipticRelaxationPositionCorrection(cloud, db, subDictName),
 
     phi_
     (
         IOobject
         (
-            lookupOrDefault<word>("phiName", "phiPosCorr"),
+            thermoDict().lookupOrDefault<word>("phiPosCorrName", "phiPosCorr"),
             db.time().timeName(),
             db,
             IOobject::MUST_READ,
             IOobject::AUTO_WRITE
         ),
-        mesh()
+        cloud.mesh()
+    ),
+
+    gradPhi_
+    (
+        IOobject
+        (
+            "mcMuradogluPositionCorrection::grad(phi)",
+            db.time().timeName(),
+            db,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        cloud.mesh(),
+        dimless,
+        zeroGradientFvPatchScalarField::typeName
     )
 {}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 
-void Foam::mcMuradogluPositionCorrection::correct(Foam::mcParticleCloud& cloud)
+void Foam::mcMuradogluPositionCorrection::updateInternals()
 {
-    // maximum mean velocity
-    dimensionedScalar U0 = max(mag(cloud.Ufv()));
-    reduce(U0.value(), maxOp<scalar>());
+    readCoeffs();
+    U0_ = max(mag(cloud().Ufv()));
+    reduce(U0_.value(), maxOp<scalar>());
     // frequency helper variable
-    volScalarField omega = c_*U0/L();
-    // normalized density difference
-    volScalarField QInst =
-    (
-        cloud.pndcPdfInst() - cloud.rhocPdfInst()
-    )/cloud.rhocPdf();
+    volScalarField omega = c_*U0_/L();
+    QInst_ = (cloud().pndcPdfInst() - cloud().rhocPdfInst())/cloud().rhocPdf();
 
     // solve for mean normalized density difference
     solve
     (
         fvm::ddt(Q_)
         ==
-      - fvm::Sp(omega, Q_) + omega*QInst
-      + f_*U0*L()*fvm::laplacian(Q_)
+      - fvm::Sp(omega, Q_) + omega*QInst_
+      + f_*U0_*L()*fvm::laplacian(Q_)
     );
 
     // time-integrator for correction potential
-    solve(fvm::ddt(phi_) == b_*sqr(U0)*QInst);
+    solve(fvm::ddt(phi_) == b_*sqr(U0_)*QInst_);
 
     // indicator variable
-    volScalarField zeta = pos(cloud.pndcPdfInst()/cloud.rhocPdfInst() - eps_);
+    zeta_ = pos(cloud().pndcPdfInst()/cloud().rhocPdfInst() - eps_);
 
     // note: gradInterpolationConstantTet gives really bad results.
-    volVectorField gradPhi = fvc::grad(phi_);
-    volVectorField gradQInst = fvc::grad(QInst);
-    volVectorField gradQ = fvc::grad(Q_);
-    interpolationCellPointFace<vector> gradPhiInterp(gradPhi);
-    interpolationCellPointFace<vector> gradQInstInterp(gradQInst);
-    interpolationCellPointFace<vector> gradQInterp(gradQ);
-    interpolationCellPointFace<scalar> zetaInterp(zeta);
+    gradPhi_ = fvc::grad(phi_);
+    gradQInst_ = fvc::grad(QInst_);
+    gradQ_ = fvc::grad(Q_);
+    gradPhiInterp_.reset(new interpolationCellPointFace<vector>(gradPhi_));
+    gradQInstInterp_.reset(new interpolationCellPointFace<vector>(gradQInst_));
+    gradQInterp_.reset(new interpolationCellPointFace<vector>(gradQ_));
+    zetaInterp_.reset(new interpolationCellPointFace<scalar>(zeta_));
+}
 
-    // apply
-    forAllIter(mcParticleCloud, cloud, pIter)
-    {
-        mcParticle& part = pIter();
-        const point& p = part.position();
-        label c = part.cell();
-        label f = part.face();
-        scalar z = zetaInterp.interpolate(p, c, f);
-        dimensionedScalar l = LInterp_.interpolate(p, c, f);
-        part.Ucorrection() -=
-            gradPhiInterp.interpolate(p, c, f)
-          + (a_*U0*l).value()
-          * (z != 0 ? gradQInterp : gradQInstInterp).interpolate(p, c, f);
-    }
+
+void Foam::mcMuradogluPositionCorrection::correct(mcParticle& part)
+{
+    const point& p = part.position();
+    label c = part.cell();
+    label f = part.face();
+    scalar z = zetaInterp_().interpolate(p, c, f);
+    dimensionedScalar l = LInterp_.interpolate(p, c, f);
+    part.Ucorrection() -=
+        gradPhiInterp_().interpolate(p, c, f)
+      + (a_*U0_*l).value()
+      * (z != 0 ? gradQInterp_ : gradQInstInterp_)().interpolate(p, c, f);
 }
 
 // ************************************************************************* //

@@ -75,9 +75,6 @@ class mcRASOmegaModel :
         mcRASOmegaModel(const mcRASOmegaModel&);
         void operator=(const mcRASOmegaModel&);
 
-        //- Setup the interpolator
-        void setupInterpolator(const mcParticleCloud& cloud);
-
 public:
 
     //- Runtime type information
@@ -88,25 +85,19 @@ public:
         //- Construct from components
         mcRASOmegaModel
         (
+            mcParticleCloud& cloud,
             const objectRegistry& db,
-            const dictionary& parentDict,
-            const dictionary& mcRASOmegaModelDict
+            const word& subDictName
         );
 
 
     // Member Functions
 
-        //- Apply the Omega model to the particle cloud
-        virtual void correct(mcParticleCloud& cloud);
+        //- Setup the interpolator
+        void updateInternals();
 
         //- Apply the Omega model to a single particle
-        virtual void correct
-        (
-            mcParticleCloud& cloud,
-            mcParticle& p,
-            bool prepare=true
-        );
-
+        virtual void correct(mcParticle& p);
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

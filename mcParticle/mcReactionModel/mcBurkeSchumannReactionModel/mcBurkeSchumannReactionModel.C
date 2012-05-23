@@ -50,62 +50,32 @@ namespace Foam
 
 Foam::mcBurkeSchumannReactionModel::mcBurkeSchumannReactionModel
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& parentDict,
-    const Foam::dictionary& mcBurkeSchumannReactionModelDict
+    mcParticleCloud& cloud,
+    const objectRegistry& db,
+    const word& subDictName
 )
 :
-    mcReactionModel(db, parentDict, mcBurkeSchumannReactionModelDict),
-    Rfuel_(readScalar(lookup("Rfuel"))),
-    Rox_  (readScalar(lookup("Rox"))),
-    Rstoi_(readScalar(lookup("Rstoi"))),
-    Tfuel_(readScalar(lookup("Tfuel"))),
-    Tox_  (readScalar(lookup("Tox"))),
-    Tstoi_(readScalar(lookup("Tstoi"))),
-    zstoi_(readScalar(lookup("zstoi"))),
-    zIdx_(-1),
+    mcReactionModel(cloud, db, subDictName),
+    Rfuel_(readScalar(thermoDict().lookup("Rfuel"))),
+    Rox_  (readScalar(thermoDict().lookup("Rox"))),
+    Rstoi_(readScalar(thermoDict().lookup("Rstoi"))),
+    Tfuel_(readScalar(thermoDict().lookup("Tfuel"))),
+    Tox_  (readScalar(thermoDict().lookup("Tox"))),
+    Tstoi_(readScalar(thermoDict().lookup("Tstoi"))),
+    zstoi_(readScalar(thermoDict().lookup("zstoi"))),
+    zIdx_(findIdx("zName", "z")),
+    TIdx_(findIdx("TName", "T")),
     p_
     (
         db.lookupObject<volScalarField>
-            (lookupOrDefault<word>("pName", "p", true))
+            (thermoDict().lookupOrDefault<word>("pName", "p"))
     )
 {}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::mcBurkeSchumannReactionModel::correct(Foam::mcParticleCloud& cloud)
+void Foam::mcBurkeSchumannReactionModel::correct(mcParticle& p)
 {
-    forAllIter(mcParticleCloud, cloud, pIter)
-    {
-        correct(cloud, pIter());
-    }
-}
-
-
-void Foam::mcBurkeSchumannReactionModel::correct
-(
-    Foam::mcParticleCloud& cloud,
-    Foam::mcParticle& p
-)
-{
-    setTIdx(cloud);
-    if (zIdx_ < 0)
-    {
-        word zName = lookupOrDefault<word>("zName", "z", true);
-        const wordList& sn = cloud.scalarNames();
-        wordList::const_iterator f = sn.cbegin(), e = sn.cend();
-        zIdx_ = std::distance(f, std::find(f, e, zName));
-        if (zIdx_ == sn.size())
-        {
-            FatalErrorIn
-            (
-                "mcBurkeSchumannReactionModel::correct("
-                "mcParticleCloud&, mcParticle&)"
-            )
-            << "Failed to find a scalar property names `" << zName << "'\n"
-            << exit(FatalError);
-        }
-    }
     const scalar& z = p.Phi()[zIdx_];
     static const scalar RTox = Rox_*Tox_;
     static const scalar RTfuel = Rfuel_*Tfuel_;

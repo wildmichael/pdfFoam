@@ -24,6 +24,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "mcModel.H"
+#include "mcParticleCloud.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -39,13 +40,44 @@ namespace Foam
 
 Foam::mcModel::mcModel
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& parentDict,
-    const Foam::dictionary& mcModelDict
+    mcParticleCloud& cloud,
+    const objectRegistry& db,
+    const word& subDictName
 )
 :
-    dictionary(parentDict, mcModelDict),
-    db_(db)
+    cloud_(cloud),
+    db_(db),
+    subDictName_(subDictName),
+    thermoDict_(cloud.thermoDict().subOrEmptyDict(subDictName_))
 {}
+
+// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+
+Foam::dictionary Foam::mcModel::solutionDict() const
+{
+    const mcSolution& s = cloud().solutionDict();
+    if (s.found(subDictName_) && !s.solutionDict().found(subDictName_))
+    {
+        // If the user used "select", but did not provide a model-specific
+        // sub-dictionary, revert to the top-level one.
+        return s.subOrEmptyDict(subDictName_);
+    }
+    return s.solutionDict()
+        .subOrEmptyDict(subDictName_);
+}
+
+
+void Foam::mcModel::updateInternals()
+{}
+
+
+void Foam::mcModel::correct()
+{
+    updateInternals();
+    forAllIter(mcParticleCloud, cloud_, pIter)
+    {
+        correct(pIter());
+    }
+}
 
 // ************************************************************************* //

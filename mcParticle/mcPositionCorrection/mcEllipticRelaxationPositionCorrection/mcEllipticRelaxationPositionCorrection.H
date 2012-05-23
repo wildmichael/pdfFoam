@@ -76,20 +76,33 @@ protected:
 
         //- Density correction potential
         volScalarField Q_;
+        //- Normalized density difference
+        volScalarField QInst_;
+        //- Gradients of the density difference and correction potential
+        volVectorField gradQInst_, gradQ_;
+        //- Indicator variable
+        volScalarField zeta_;
+        // maximum mean velocity
+        dimensionedScalar U0_;
 
         //- Density-correction coefficients
-        dimensionedScalar kf_;
-        dimensionedScalar kb_;
-        dimensionedScalar N_;
-        dimensionedScalar CFL_;
         dimensionedScalar eps_;
         dimensionedScalar c_;
         dimensionedScalar f_;
         dimensionedScalar b_;
         dimensionedScalar a_;
 
-        //- Interpolator for L_
+        //- Interpolators
         interpolationCellPointFace<scalar> LInterp_;
+        // TODO try gradInterpolationConstantTet
+        autoPtr<interpolationCellPointFace<vector> >
+            gradQInstInterp_, gradQInterp_;
+        autoPtr<interpolationCellPointFace<scalar> > zetaInterp_;
+
+    // Protected Member Functions
+
+        //- Update coefficients
+        void readCoeffs();
 
 public:
 
@@ -101,16 +114,19 @@ public:
         //- Construct from components
         mcEllipticRelaxationPositionCorrection
         (
+            mcParticleCloud& cloud,
             const objectRegistry& db,
-            const dictionary& parentDict,
-            const dictionary& mcEllipticRelaxationPositionCorrectionDict
+            const word& subDictName
         );
 
 
     // Member Functions
 
+        //- Update/prepare internal data
+        virtual void updateInternals();
+
         //- Apply the position correction
-        virtual void correct(mcParticleCloud& cloud);
+        virtual void correct(mcParticle& p);
 
 };
 

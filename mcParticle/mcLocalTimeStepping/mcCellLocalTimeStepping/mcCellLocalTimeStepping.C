@@ -51,20 +51,12 @@ namespace Foam
 
 Foam::mcCellLocalTimeStepping::mcCellLocalTimeStepping
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& parentDict,
-    const Foam::dictionary& mcCellLocalTimeSteppingDict
+    mcParticleCloud& cloud,
+    const objectRegistry& db,
+    const word& subDictName
 )
 :
-    mcLocalTimeStepping(db, parentDict, mcCellLocalTimeSteppingDict),
-    CourantU_
-    (
-        max(lookupOrAddDefault<scalar>("CourantU", 0.3), 1e-6)
-    ),
-    etaMax_
-    (
-        max(lookupOrAddDefault<scalar>("etaMax", 10), 1)
-    ),
+    mcLocalTimeStepping(cloud, db, subDictName),
     eta_
     (
         IOobject
@@ -83,22 +75,25 @@ Foam::mcCellLocalTimeStepping::mcCellLocalTimeStepping
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::mcCellLocalTimeStepping::setupInternals
-(
-    const Foam::mcParticleCloud& cloud
-)
+void Foam::mcCellLocalTimeStepping::updateInternals()
 {
+    // Courant number
+    scalar CourantU =
+        max(solutionDict().lookupOrDefault<scalar>("CourantU", 0.3), 1e-6);
+    // Maximum local to global time step ratio
+    scalar etaMax =
+        max(solutionDict().lookupOrDefault<scalar>("etaMax", 10), 1);
     const fvMesh& mesh = eta_.mesh();
     scalar deltaT = mesh.time().deltaT().value();
-    const volVectorField& U = cloud.Ufv();
-    const compressible::turbulenceModel& tm = cloud.turbulenceModel();
+    const volVectorField& U = cloud().Ufv();
+    const compressible::turbulenceModel& tm = cloud().turbulenceModel();
     tmp<volSymmTensorField> tR = tm.R();
     const symmTensorField& RInt = tR().internalField();
-    const surfaceVectorField& CourantCoeffs = cloud.CourantCoeffs();
+    const surfaceVectorField& CourantCoeffs = cloud().CourantCoeffs();
     scalar k0 = SMALL;
     if (isA<compressible::RASModel>(tm))
     {
-        k0 = refCast<const Foam::compressible::RASModel>(tm).k0().value();
+        k0 = refCast<const compressible::RASModel>(tm).k0().value();
     }
 
     // Use clipping in case there are negative entries in R due to divergence
@@ -138,7 +133,7 @@ void Foam::mcCellLocalTimeStepping::setupInternals
                min
                (
                    dtc,
-                   CourantU_/
+                   CourantU/
                    (
                        fabs(coeff&U[cellI])
                      + fabs(coeff&urms2[cellI])
@@ -152,32 +147,20 @@ void Foam::mcCellLocalTimeStepping::setupInternals
     scalarField& etaInt = eta_.internalField();
     scalar etaMin = gMin(etaInt);
     etaInt -= etaMin;
-    etaInt = (etaMax_ - etaMin)/gMax(etaInt)*etaInt + etaMin;
+    etaInt = (etaMax - etaMin)/gMax(etaInt)*etaInt + etaMin;
     eta_.correctBoundaryConditions();
     etaInterp_.reset(new interpolationCellPointFace<scalar>(eta_));
 }
 
 
-void Foam::mcCellLocalTimeStepping::correct
-(
-    Foam::mcParticleCloud& cloud,
-    Foam::mcParticle& p,
-    bool prepare
-)
+void Foam::mcCellLocalTimeStepping::correct(mcParticle& p)
 {
-    if (prepare)
+    if (!etaInterp_.valid())
     {
-        setupInternals(cloud);
-    }
-    else
-    {
-        if (!etaInterp_.valid())
-        {
-            FatalErrorIn("mcCellLocalTimeStepping::correct"
-                "(mcParticleCloud&,mcParticle&,bool)")
-                << "Interpolator not initialized"
-                << exit(FatalError);
-        }
+        FatalErrorIn("mcCellLocalTimeStepping::correct"
+            "(mcParticleCloud&,mcParticle&,bool)")
+            << "Interpolator not initialized"
+            << exit(FatalError);
     }
     p.eta() = etaInterp_().interpolate(p.position(), p.cell(), p.face());
 }

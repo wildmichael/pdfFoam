@@ -24,6 +24,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "mcOmegaModel.H"
+#include "mcParticleCloud.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -40,23 +41,24 @@ namespace Foam
 
 Foam::mcOmegaModel::mcOmegaModel
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& parentDict,
-    const Foam::dictionary& mcOmegaModelDict
+    mcParticleCloud& cloud,
+    const objectRegistry& db,
+    const word& subDictName
 )
 :
-    mcModel(db, parentDict, mcOmegaModelDict)
+    mcModel(cloud, db, subDictName)
 {}
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
 
 Foam::autoPtr<Foam::mcOmegaModel> Foam::mcOmegaModel::New
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& dict
+    mcParticleCloud& cloud,
+    const objectRegistry& db
 )
 {
-    word omegaType(dict.lookup("OmegaModel"));
+    word omegaType(cloud.thermoDict().lookup("OmegaModel"));
+    word sd = omegaType + "OmegaModelCoeffs";
 
     mcOmegaModelConstructorTable::iterator cstrIter =
         mcOmegaModelConstructorTablePtr_->find(omegaType);
@@ -72,15 +74,7 @@ Foam::autoPtr<Foam::mcOmegaModel> Foam::mcOmegaModel::New
             << exit(FatalError);
     }
 
-    return autoPtr<mcOmegaModel>
-    (
-        cstrIter()
-        (
-            db,
-            dict,
-            dict.subOrEmptyDict(omegaType+"OmegaModelCoeffs")
-        )
-    );
+    return autoPtr<mcOmegaModel>(cstrIter()(cloud, db, sd));
 }
 
 // ************************************************************************* //

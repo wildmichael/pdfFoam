@@ -43,84 +43,57 @@ namespace Foam
 
 Foam::mcLocalTimeStepping::mcLocalTimeStepping
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& parentDict,
-    const Foam::dictionary& mcLocalTimeSteppingDict
+    mcParticleCloud& cloud,
+    const objectRegistry& db,
+    const word& subDictName
 )
 :
-    mcModel(db, parentDict, mcLocalTimeSteppingDict),
-    active_(true)
+    mcModel(cloud, db, subDictName)
 {}
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
 
 Foam::autoPtr<Foam::mcLocalTimeStepping> Foam::mcLocalTimeStepping::New
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& dict
+    mcParticleCloud& cloud,
+    const objectRegistry& db
 )
 {
-    word name(dict.lookup("localTimeStepping"));
+    word name(cloud.thermoDict().lookup("localTimeStepping"));
+    word sd = name+"LocalTimeSteppingCoeffs";
+
+    autoPtr<mcLocalTimeStepping> result;
 
     // If set to "false", "no", "n", "off" or "none", disable
     Switch::switchType enable = Switch::asEnum(name, true);
     if (enable != Switch::INVALID && !Switch::asBool(enable))
     {
-        autoPtr<mcLocalTimeStepping> result
-        (
-            new mcLocalTimeStepping(db, dict, dictionary::null)
-        );
-        result().active_ = false;
-        return result;
+        result.reset(new mcLocalTimeStepping(cloud, db, sd));
     }
-
-    mcLocalTimeSteppingConstructorTable::iterator cstrIter =
-        mcLocalTimeSteppingConstructorTablePtr_->find(name);
-
-    if (cstrIter == mcLocalTimeSteppingConstructorTablePtr_->end())
+    else
     {
-        FatalErrorIn
-        (
-            "mcLocalTimeStepping::New(const fvMesh&, const dictionary&)"
-        )   << "Unknown mcLocalTimeStepping type " << name << nl << nl
-            << "Valid mcLocalTimeStepping types are :" << nl
-            << mcLocalTimeSteppingConstructorTablePtr_->sortedToc()
-            << exit(FatalError);
-    }
+        mcLocalTimeSteppingConstructorTable::iterator cstrIter =
+            mcLocalTimeSteppingConstructorTablePtr_->find(name);
 
-    return autoPtr<mcLocalTimeStepping>
-    (
-        cstrIter()
-        (
-            db,
-            dict,
-            dict.subOrEmptyDict(name+"LocalTimeSteppingCoeffs")
-        )
-    );
+        if (cstrIter == mcLocalTimeSteppingConstructorTablePtr_->end())
+        {
+            FatalErrorIn
+            (
+                "mcLocalTimeStepping::New(const fvMesh&, const dictionary&)"
+            )   << "Unknown mcLocalTimeStepping type " << name << nl << nl
+                << "Valid mcLocalTimeStepping types are :" << nl
+                << mcLocalTimeSteppingConstructorTablePtr_->sortedToc()
+                << exit(FatalError);
+        }
+
+        result = cstrIter()(cloud, db, sd);
+    }
+    return result;
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::mcLocalTimeStepping::setupInternals(const mcParticleCloud& cloud)
-{}
-
-
-void Foam::mcLocalTimeStepping::correct(mcParticleCloud& cloud)
-{
-    setupInternals(cloud);
-    forAllIter(mcParticleCloud, cloud, pIter)
-    {
-        this->correct(cloud, pIter(), false);
-    }
-}
-
-
-void Foam::mcLocalTimeStepping::correct
-(
-    mcParticleCloud&,
-    mcParticle&,
-    bool prepare
-)
+void Foam::mcLocalTimeStepping::correct(mcParticle&)
 {}
 
 // ************************************************************************* //

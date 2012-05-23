@@ -83,20 +83,18 @@ public:
         //- Construct from components
         mcParticleLocalTimeStepping
         (
-            const Foam::objectRegistry& db,
-            const dictionary& parentDict,
-            const dictionary& mcParticleLocalTimeSteppingDict
+            mcParticleCloud& cloud,
+            const objectRegistry& db,
+            const word& subDictName
         );
 
     // Member Functions
 
+        //- Update/prepare internal data
+        virtual void updateInternals();
+
         //- Apply the position correction to a single particle
-        virtual void correct
-        (
-            mcParticleCloud& cloud,
-            mcParticle& p,
-            bool prepare=true
-        );
+        virtual void correct(mcParticle& p);
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

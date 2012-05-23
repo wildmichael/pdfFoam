@@ -73,23 +73,15 @@ public:
         //- Construct from components
         mcColdReactionModel
         (
+            mcParticleCloud& cloud,
             const objectRegistry& db,
-            const dictionary& parentDict,
-            const dictionary& mcColdReactionModelDict
+            const word& subDictName
         );
 
     // Member Functions
 
-        //- Apply the reaction model to the particle cloud
-        virtual void correct(mcParticleCloud& cloud);
-
         //- Apply the reaction model to a single particle
-        virtual void correct
-        (
-            mcParticleCloud& cloud,
-            mcParticle& p
-        );
-
+        virtual void correct(mcParticle& p);
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

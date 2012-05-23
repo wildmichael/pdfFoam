@@ -48,50 +48,20 @@ namespace Foam
 
 Foam::mcNaiveFlameletModel::mcNaiveFlameletModel
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& parentDict,
-    const Foam::dictionary& mcNaiveFlameletModelDict
+    mcParticleCloud& cloud,
+    const objectRegistry& db,
+    const word& subDictName
 )
 :
-    mcReactionModel(db, parentDict, mcNaiveFlameletModelDict),
-    zName_(lookupOrDefault<word>("zName", "z", true)),
-    zIdx_(-1)
+    mcReactionModel(cloud, db, subDictName),
+    zIdx_(findIdx("zName", "z")),
+    TIdx_(findIdx("TName", "T"))
 {}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::mcNaiveFlameletModel::correct(Foam::mcParticleCloud& cloud)
+void Foam::mcNaiveFlameletModel::correct(mcParticle& p)
 {
-    forAllIter(mcParticleCloud, cloud, pIter)
-    {
-        correct(cloud, pIter());
-    }
-}
-
-
-void Foam::mcNaiveFlameletModel::correct
-(
-    Foam::mcParticleCloud& cloud,
-    Foam::mcParticle& p
-)
-{
-    setTIdx(cloud);
-    if (zIdx_ < 0)
-    {
-        const wordList& names = cloud.scalarNames();
-        wordList::const_iterator zIter = find(names.begin(), names.end(),
-                                              zName_);
-        if (zIter == names.end())
-        {
-            Foam::FatalErrorIn
-            (
-                "mcNaiveFlameletModel::correct(mcParticleCloud&, mcParticle&)"
-            )
-                << "No such particle property: " << zName_ << endl
-                << exit(FatalError);
-        }
-        zIdx_ = distance(names.begin(), zIter);
-    }
     const scalar& z = p.Phi()[zIdx_];
     p.rho() = (1. - 3.2*z*(1.-z));
     p.Phi()[TIdx_] = 1e5/p.rho();

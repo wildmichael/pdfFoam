@@ -60,12 +60,6 @@ class mcCellLocalTimeStepping :
 {
     // Private Data
 
-        //- Courant number
-        scalar CourantU_;
-
-        //- Maximum local to global time step ratio
-        scalar etaMax_;
-
         //- Local to global time step ratio field
         volScalarField eta_;
 
@@ -78,13 +72,6 @@ class mcCellLocalTimeStepping :
         mcCellLocalTimeStepping(const mcCellLocalTimeStepping&);
         void operator=(const mcCellLocalTimeStepping&);
 
-protected:
-
-    // Protected Member Functions
-
-        //- Update the eta field and the interpolator
-        virtual void setupInternals(const mcParticleCloud& cloud);
-
 public:
 
     //- Runtime type information
@@ -95,20 +82,18 @@ public:
         //- Construct from components
         mcCellLocalTimeStepping
         (
-            const Foam::objectRegistry& db,
-            const dictionary& parentDict,
-            const dictionary& mcCellLocalTimeSteppingDict
+            mcParticleCloud& cloud,
+            const objectRegistry& db,
+            const word& subDictName
         );
 
     // Member Functions
 
+        //- Update the eta field and the interpolator
+        virtual void updateInternals();
+
         //- Apply the position correction to a single particle
-        virtual void correct
-        (
-            mcParticleCloud& cloud,
-            mcParticle& p,
-            bool prepare=true
-        );
+        virtual void correct(mcParticle& p);
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

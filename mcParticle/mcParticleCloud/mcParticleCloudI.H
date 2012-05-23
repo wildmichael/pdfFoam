@@ -31,6 +31,12 @@ inline const Foam::fvMesh& Foam::mcParticleCloud::mesh() const
 }
 
 
+inline const Foam::dictionary& Foam::mcParticleCloud::thermoDict() const
+{
+    return thermoDict_;
+}
+
+
 inline const Foam::mcSolution& Foam::mcParticleCloud::solutionDict() const
 {
     return solutionDict_;

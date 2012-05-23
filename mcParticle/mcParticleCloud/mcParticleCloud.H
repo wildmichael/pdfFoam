@@ -139,8 +139,9 @@ class mcParticleCloud:
         //- The mesh
         const fvMesh& mesh_;
         //- The control dictionary
-        dictionary dict_;
+        dictionary thermoDict_;
         //- The solution dictionary
+        // Do not access this member directly, use solutionDict() instead.
         mcSolution solutionDict_;
         //- The time object
         const Time& runTime_;
@@ -308,6 +309,9 @@ public:
 
         //- Access the mesh
         inline const fvMesh& mesh() const;
+
+        //- Return the thermophysicalProperties dictionary
+        inline const dictionary& thermoDict() const;
 
         //- Return the selected sub-dictionary if the "select" keyword is
         //  given, otherwise return the complete mcSolutionDict

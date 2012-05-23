@@ -81,16 +81,19 @@ public:
         //- Construct from components
         mcIEMMixingModel
         (
+            mcParticleCloud& cloud,
             const objectRegistry& db,
-            const dictionary& parentDict,
-            const dictionary& mcIEMMixingModelDict
+            const word& subDictName
         );
 
 
     // Member Functions
 
-        //- Apply the mixing model to the particle cloud
-        virtual void correct(mcParticleCloud& cloud);
+        //- Update/prepare internal data
+        virtual void updateInternals();
+
+        //- Apply the mixing model to a single particle
+        virtual void correct(mcParticle& p);
 
 };
 

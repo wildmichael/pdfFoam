@@ -50,24 +50,21 @@ namespace Foam
 
 Foam::mcRASOmegaModel::mcRASOmegaModel
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& parentDict,
-    const Foam::dictionary& mcRASOmegaModelDict
+    mcParticleCloud& cloud,
+    const objectRegistry& db,
+    const word& subDictName
 )
 :
-    mcOmegaModel(db, parentDict, mcRASOmegaModelDict),
+    mcOmegaModel(cloud, db, subDictName),
     Omega_(),
     OmegaInterp_()
 {}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::mcRASOmegaModel::setupInterpolator
-(
-    const Foam::mcParticleCloud& cloud
-)
+void Foam::mcRASOmegaModel::updateInternals()
 {
-    const compressible::turbulenceModel& turbModel = cloud.turbulenceModel();
+    const compressible::turbulenceModel& turbModel = cloud().turbulenceModel();
     if (isA<compressible::RASModels::kOmegaSST>(turbModel))
     {
         // If we have a kOmegaSST (or derived) object, use omega directly
@@ -78,7 +75,7 @@ void Foam::mcRASOmegaModel::setupInterpolator
     else
     {
         // Otherwise compute Omega from epsilon/k
-        const dimensionedScalar& kMin = cloud.solutionDict().kMin();
+        const dimensionedScalar& kMin = cloud().solutionDict().kMin();
         Omega_.reset
         (
             new volScalarField
@@ -91,43 +88,21 @@ void Foam::mcRASOmegaModel::setupInterpolator
 }
 
 
-void Foam::mcRASOmegaModel::correct(Foam::mcParticleCloud& cloud)
+void Foam::mcRASOmegaModel::correct(Foam::mcParticle& p)
 {
-    setupInterpolator(cloud);
-    forAllIter(mcParticleCloud, cloud, pIter)
+    if (!Omega_.valid())
     {
-        correct(cloud, pIter(), false);
+        FatalErrorIn("mcRASOmegaModel::correct"
+            "(mcParticleCloud&,mcParticle&,bool)")
+            << "autoPtr holding Omega not valid"
+            << exit(FatalError);
     }
-}
-
-
-void Foam::mcRASOmegaModel::correct
-(
-    Foam::mcParticleCloud& cloud,
-    Foam::mcParticle& p,
-    bool prepare
-)
-{
-    if (prepare)
+    if (!OmegaInterp_.valid())
     {
-        setupInterpolator(cloud);
-    }
-    else
-    {
-        if (!Omega_.valid())
-        {
-            FatalErrorIn("mcRASOmegaModel::correct"
-                "(mcParticleCloud&,mcParticle&,bool)")
-                << "autoPtr holding Omega not valid"
-                << exit(FatalError);
-        }
-        if (!OmegaInterp_.valid())
-        {
-            FatalErrorIn("mcRASOmegaModel::correct"
-                "(mcParticleCloud&,mcParticle&,bool)")
-                << "Interpolator not initialized"
-                << exit(FatalError);
-        }
+        FatalErrorIn("mcRASOmegaModel::correct"
+            "(mcParticleCloud&,mcParticle&,bool)")
+            << "Interpolator not initialized"
+            << exit(FatalError);
     }
     p.Omega() = OmegaInterp_().interpolate(p.position(), p.cell(), p.face());
 }

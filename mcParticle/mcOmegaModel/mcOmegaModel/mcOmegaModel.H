@@ -81,11 +81,11 @@ public:
             mcOmegaModel,
             mcOmegaModel,
             (
-                const Foam::objectRegistry& db,
-                const dictionary& parentDict,
-                const dictionary& mcOmegaModelDict
+                mcParticleCloud& cloud,
+                const objectRegistry& db,
+                const word& subDictName
             ),
-            (db, parentDict, mcOmegaModelDict)
+            (cloud, db, subDictName)
         );
 
     // Constructors
@@ -93,9 +93,9 @@ public:
         //- Construct from components
         mcOmegaModel
         (
-            const Foam::objectRegistry& db,
-            const dictionary& parentDict,
-            const dictionary& mcOmegaModelDict
+            mcParticleCloud& cloud,
+            const objectRegistry& db,
+            const word& subDictName
         );
 
 
@@ -104,27 +104,9 @@ public:
         //- Return a reference to the selected Omega model
         static autoPtr<mcOmegaModel> New
         (
-            const Foam::objectRegistry& db,
-            const dictionary& dict
-        );
-
-    //- Destructor
-        virtual ~mcOmegaModel()
-        {}
-
-    // Member Functions
-
-        //- Apply the Omega model to the particle cloud
-        virtual void correct(mcParticleCloud& cloud) = 0;
-
-        //- Apply the Omega model to a single particle
-        virtual void correct
-        (
             mcParticleCloud& cloud,
-            mcParticle& p,
-            bool prepare=true
-        ) = 0;
-
+            const objectRegistry& db
+        );
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

@@ -79,11 +79,11 @@ public:
             mcMixingModel,
             mcMixingModel,
             (
+                mcParticleCloud& cloud,
                 const objectRegistry& db,
-                const dictionary& parentDict,
-                const dictionary& mcMixingModelDict
+                const word& subDictName
             ),
-            (db, parentDict, mcMixingModelDict)
+            (cloud, db, subDictName)
         );
 
     // Constructors
@@ -91,9 +91,9 @@ public:
         //- Construct from components
         mcMixingModel
         (
+            mcParticleCloud& cloud,
             const objectRegistry& db,
-            const dictionary& parentDict,
-            const dictionary& mcMixingModelDict
+            const word& subDictName
         );
 
 
@@ -102,19 +102,9 @@ public:
         //- Return a reference to the selected mixing model
         static autoPtr<mcMixingModel> New
         (
-            const objectRegistry& db,
-            const dictionary& mcMixingModelDict
+            mcParticleCloud& cloud,
+            const objectRegistry& db
         );
-
-    //- Destructor
-        virtual ~mcMixingModel()
-        {}
-
-    // Member Functions
-
-        //- Apply the mixing model to the particle cloud
-        virtual void correct(mcParticleCloud& cloud) = 0;
-
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

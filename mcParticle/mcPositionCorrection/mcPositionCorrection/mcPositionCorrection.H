@@ -62,9 +62,6 @@ class mcPositionCorrection :
 {
     // Private Data
 
-        //- The mesh
-        const fvMesh& mesh_;
-
         //- Average of the inverse of the deltaCoeffs
         autoPtr<volScalarField> L_;
 
@@ -79,9 +76,6 @@ class mcPositionCorrection :
 protected:
 
     // Protected Member Functions
-
-        //- The mesh
-        inline const fvMesh& mesh() const;
 
         //- Average of the inverse of the deltaCoeffs
         const volScalarField& L();
@@ -100,11 +94,11 @@ public:
             mcPositionCorrection,
             mcPositionCorrection,
             (
-                const Foam::objectRegistry& db,
-                const dictionary& parentDict,
-                const dictionary& mcPositionCorrectionDict
+                mcParticleCloud& cloud,
+                const objectRegistry& db,
+                const word& subDictName
             ),
-            (db, parentDict, mcPositionCorrectionDict)
+            (cloud, db, subDictName)
         );
 
     // Constructors
@@ -112,30 +106,26 @@ public:
         //- Construct from components
         mcPositionCorrection
         (
-            const Foam::objectRegistry& db,
-            const dictionary& parentDict,
-            const dictionary& mcPositionCorrectionDict
+            mcParticleCloud& cloud,
+            const objectRegistry& db,
+            const word& subDictName
         );
-
 
     // Selectors
 
         //- Return a reference to the selected position correction
         static autoPtr<mcPositionCorrection> New
         (
-            const Foam::objectRegistry& db,
-            const dictionary& mcPositionCorrectionDict
+            mcParticleCloud& cloud,
+            const objectRegistry& db
         );
-
-    //- Destructor
-        virtual ~mcPositionCorrection()
-        {}
 
     // Member Functions
 
-        //- Apply the position correction
-        virtual void correct(mcParticleCloud& cloud);
+        using mcModel::correct;
 
+        //- Apply the model to a single particle
+        virtual void correct(mcParticle&);
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

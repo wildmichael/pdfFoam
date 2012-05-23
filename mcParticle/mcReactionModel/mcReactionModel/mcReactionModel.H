@@ -68,15 +68,10 @@ class mcReactionModel :
 
 protected:
 
-    // Protected Member Data
-
-        //- Index of the temperature property
-        label TIdx_;
-
     // Protected Member Functions
 
-        //- Find the index of the temperature property
-        void setTIdx(const mcParticleCloud& cloud);
+        //- Find the index of the given property
+        label findIdx(const word& nameKey, const word& defaultName);
 
 public:
 
@@ -92,11 +87,11 @@ public:
             mcReactionModel,
             mcReactionModel,
             (
+                mcParticleCloud& cloud,
                 const objectRegistry& db,
-                const dictionary& parentDict,
-                const dictionary& mcReactionModelDict
+                const word& subDictName
             ),
-            (db, parentDict, mcReactionModelDict)
+            (cloud, db, subDictName)
         );
 
     // Constructors
@@ -104,9 +99,9 @@ public:
         //- Construct from components
         mcReactionModel
         (
+            mcParticleCloud& cloud,
             const objectRegistry& db,
-            const dictionary& parentDict,
-            const dictionary& mcReactionModelDict
+            const word& subDictName
         );
 
 
@@ -115,26 +110,9 @@ public:
         //- Return a reference to the selected reaction model
         static autoPtr<mcReactionModel> New
         (
-            const objectRegistry& db,
-            const dictionary& mcReactionModelDict
-        );
-
-    //- Destructor
-        virtual ~mcReactionModel()
-        {}
-
-    // Member Functions
-
-        //- Apply the reaction model to the particle cloud
-        virtual void correct(mcParticleCloud& cloud) = 0;
-
-        //- Apply the reaction model to a single particle
-        virtual void correct
-        (
             mcParticleCloud& cloud,
-            mcParticle& p
-        ) = 0;
-
+            const objectRegistry& db
+        );
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

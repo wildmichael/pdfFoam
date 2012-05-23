@@ -43,6 +43,7 @@ Author
 #include "mcPositionCorrection.H"
 
 #include "dimensionedScalar.H"
+#include "volFields.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -50,6 +51,7 @@ namespace Foam
 {
 
 class mcParticleCloud;
+template<class> class interpolationCellPointFace;
 
 /*---------------------------------------------------------------------------*\
               Class mcLimitedSimplePositionCorrection Declaration
@@ -60,9 +62,11 @@ class mcLimitedSimplePositionCorrection :
 {
     // Private Data
 
-        //- Density-correction coefficients
-        dimensionedScalar C_;
-        dimensionedScalar CFL_;
+        //- Correction velocity
+        volVectorField UPosCorr_;
+
+        //- Correction velocity interpolator
+        autoPtr<interpolationCellPointFace<vector> > UPosCorrInterp_;
 
     // Private Member Functions
 
@@ -83,16 +87,19 @@ public:
         //- Construct from components
         mcLimitedSimplePositionCorrection
         (
+            mcParticleCloud& cloud,
             const objectRegistry& db,
-            const dictionary& parentDict,
-            const dictionary& mcLimitedSimplePositionCorrectionDict
+            const word& subDictName
         );
 
 
     // Member Functions
 
+        //- Update/prepare internal data
+        virtual void updateInternals();
+
         //- Apply the position correction
-        virtual void correct(mcParticleCloud& cloud);
+        virtual void correct(mcParticle& p);
 
 };
 

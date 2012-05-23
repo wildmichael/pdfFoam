@@ -51,24 +51,28 @@ namespace Foam
 
 Foam::mcParticleLocalTimeStepping::mcParticleLocalTimeStepping
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& parentDict,
-    const Foam::dictionary& mcParticleLocalTimeSteppingDict
+    mcParticleCloud& cloud,
+    const objectRegistry& db,
+    const word& subDictName
 )
 :
-    mcLocalTimeStepping(db, parentDict, mcParticleLocalTimeSteppingDict),
-    CourantU_(max(lookupOrAddDefault<scalar>("CourantU", 0.3), 1e-6)),
-    upperBound_(lookupOrDefault<scalar>("upperBound", 10))
+    mcLocalTimeStepping(cloud, db, subDictName),
+    CourantU_(0.),
+    upperBound_(0.)
 {}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::mcParticleLocalTimeStepping::correct
-(
-    Foam::mcParticleCloud&,
-    Foam::mcParticle& p,
-    bool prepare
-)
+void Foam::mcParticleLocalTimeStepping::updateInternals()
+{
+    CourantU_ =
+        max(solutionDict().lookupOrDefault<scalar>("CourantU", 0.3), 1e-6);
+    upperBound_ =
+        solutionDict().lookupOrDefault<scalar>("upperBound", 10);
+}
+
+
+void Foam::mcParticleLocalTimeStepping::correct(mcParticle& p)
 {
     p.eta() = min(CourantU_ / stabilise(p.Co(), VSMALL), upperBound_);
 }

@@ -41,23 +41,24 @@ namespace Foam
 
 Foam::mcVelocityModel::mcVelocityModel
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& parentDict,
-    const Foam::dictionary& dict
+    mcParticleCloud& cloud,
+    const objectRegistry& db,
+    const word& subDictName
 )
 :
-    mcModel(db, parentDict, dict)
+    mcModel(cloud, db, subDictName)
 {}
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
 
 Foam::autoPtr<Foam::mcVelocityModel> Foam::mcVelocityModel::New
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& dict
+    mcParticleCloud& cloud,
+    const objectRegistry& db
 )
 {
-    word velocityModelType(dict.lookup("velocityModel"));
+    word velocityModelType(cloud.thermoDict().lookup("velocityModel"));
+    word sd = velocityModelType + "VelocityModelCoeffs";
 
     mcVelocityModelConstructorTable::iterator cstrIter =
         mcVelocityModelConstructorTablePtr_->find(velocityModelType);
@@ -74,30 +75,7 @@ Foam::autoPtr<Foam::mcVelocityModel> Foam::mcVelocityModel::New
             << exit(FatalError);
     }
 
-    return autoPtr<mcVelocityModel>
-    (
-        cstrIter()
-        (
-            db,
-            dict,
-            dict.subOrEmptyDict(velocityModelType+"VelocityModelCoeffs")
-        )
-    );
-}
-
-// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
-
-void Foam::mcVelocityModel::setupInternals(const mcParticleCloud& cloud)
-{}
-
-
-void Foam::mcVelocityModel::correct(mcParticleCloud& cloud)
-{
-    setupInternals(cloud);
-    forAllIter(mcParticleCloud, cloud, pIter)
-    {
-        correct(cloud, pIter(), false);
-    }
+    return autoPtr<mcVelocityModel>(cstrIter()(cloud, db, sd));
 }
 
 // ************************************************************************* //

@@ -49,18 +49,17 @@ namespace Foam
 
 Foam::mcSLMFullVelocityModel::mcSLMFullVelocityModel
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& parentDict,
-    const Foam::dictionary& dict
+    mcParticleCloud& cloud,
+    const objectRegistry& db,
+    const word& subDictName
 )
 :
-    mcVelocityModel(db, parentDict, dict),
-    mesh_(refCast<const fvMesh>(db)),
+    mcVelocityModel(cloud, db, subDictName),
     pfv_
     (
         db.lookupObject<volScalarField>
         (
-            lookupOrDefault<word>("pName", "p", true)
+            thermoDict().lookupOrDefault<word>("pName", "p")
         )
     ),
     p_
@@ -68,12 +67,12 @@ Foam::mcSLMFullVelocityModel::mcSLMFullVelocityModel
         IOobject
         (
             "SLMFullVelocityModel::p",
-            mesh_.time().timeName(),
-            mesh_,
+            cloud.mesh().time().timeName(),
+            cloud.mesh(),
             IOobject::NO_READ,
             IOobject::NO_WRITE
         ),
-        mesh_,
+        cloud.mesh(),
         dimensionedScalar("zero", dimPressure, 0.0),
         zeroGradientFvPatchScalarField::typeName
     ),
@@ -82,50 +81,41 @@ Foam::mcSLMFullVelocityModel::mcSLMFullVelocityModel
         IOobject
         (
             "SLMFullVelocityModel::diffU",
-            mesh_,
+            cloud.mesh(),
             IOobject::NO_READ,
             IOobject::NO_WRITE
         ),
-        mesh_,
+        cloud.mesh(),
         dimVelocity/dimTime,
         zeroGradientFvPatchScalarField::typeName
     ),
-    tetDecomp_(mesh_),
-    C0_(lookupOrAddDefault<scalar>("C0", 2.1, true)),
-    C1_(lookupOrAddDefault<scalar>("C1", 1.0, true))
+    tetDecomp_(cloud.mesh()),
+    C0_(thermoDict().lookupOrDefault<scalar>("C0", 2.1)),
+    C1_(thermoDict().lookupOrDefault<scalar>("C1", 1.0))
 {
     // Sanitize input
     C0_ = max(0.0, C0_);
-    set("C0", C0_);
-
     C1_ = max(0.0, min(1.0, C1_));
-    set("C1", C1_);
-
-    if (debug)
-    {
-        Info<< "Sanitized " << dictionary::name() << ":\n"
-            << *this << endl;
-    }
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::mcSLMFullVelocityModel::setupInternals(const mcParticleCloud& cloud)
+void Foam::mcSLMFullVelocityModel::updateInternals()
 {
     const volVectorField& Updf =
-        mesh_.lookupObject<volVectorField>("UCloudPDF");
-    const mcSolution& solDict = cloud.solutionDict();
+        cloud().mesh().lookupObject<volVectorField>("UCloudPDF");
+    const mcSolution& solDict = cloud().solutionDict();
 
-    p_ = pfv_ - 2./3.*cloud.rhocPdf()*cloud.kfv();
+    p_ = pfv_ - 2./3.*cloud().rhocPdf()*cloud().kfv();
 
-    diffU_.internalField() = (cloud.Ufv() - Updf)/solDict.relaxationTime("U");
+    diffU_.internalField() = (cloud().Ufv() - Updf)/solDict.relaxationTime("U");
     diffU_.correctBoundaryConditions();
 
-    diffk_ = (sqrt(cloud.kfv()/cloud.kcPdf()) - 1.0)
+    diffk_ = (sqrt(cloud().kfv()/cloud().kcPdf()) - 1.0)
             /solDict.relaxationTime("k");
 
-    rhoInterp_.reset(new interpolationCellPointFace<scalar>(cloud.rhocPdf()));
-    UInterp_.reset(new interpolationCellPointFace<vector>(cloud.Ufv()));
+    rhoInterp_.reset(new interpolationCellPointFace<scalar>(cloud().rhocPdf()));
+    UInterp_.reset(new interpolationCellPointFace<vector>(cloud().Ufv()));
     gradPInterp_.reset
     (
         new gradInterpolationConstantTet<scalar>
@@ -134,25 +124,15 @@ void Foam::mcSLMFullVelocityModel::setupInternals(const mcParticleCloud& cloud)
             p_
         )
     );
-    kInterp_.reset(new interpolationCellPointFace<scalar>(cloud.kfv()));
+    kInterp_.reset(new interpolationCellPointFace<scalar>(cloud().kfv()));
     diffUInterp_.reset(new interpolationCellPointFace<vector>(diffU_));
-    kcPdfInterp_.reset(new interpolationCellPointFace<scalar>(cloud.kcPdf()));
+    kcPdfInterp_.reset(new interpolationCellPointFace<scalar>(cloud().kcPdf()));
 }
 
 
-void Foam::mcSLMFullVelocityModel::correct
-(
-    Foam::mcParticleCloud& cloud,
-    Foam::mcParticle& p,
-    bool prepare
-)
+void Foam::mcSLMFullVelocityModel::correct(mcParticle& p)
 {
-    if (prepare)
-    {
-        setupInternals(cloud);
-    }
-
-    scalar deltaT = p.eta()*mesh_.time().deltaT().value();
+    scalar deltaT = p.eta()*cloud().mesh().time().deltaT().value();
 
     const point& pos = p.position();
     label c = p.cell();
@@ -170,9 +150,9 @@ void Foam::mcSLMFullVelocityModel::correct
     const vector xi =
         vector
         (
-            cloud.random().GaussNormal(),
-            cloud.random().GaussNormal(),
-            cloud.random().GaussNormal()
+            cloud().random().GaussNormal(),
+            cloud().random().GaussNormal(),
+            cloud().random().GaussNormal()
         );
 
     const scalar A = -(0.5*C1_ + 0.75*C0_)*p.Omega();

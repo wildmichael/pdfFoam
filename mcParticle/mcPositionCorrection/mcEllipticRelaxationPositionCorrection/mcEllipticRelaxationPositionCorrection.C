@@ -50,115 +50,144 @@ namespace Foam
 Foam::mcEllipticRelaxationPositionCorrection::
 mcEllipticRelaxationPositionCorrection
 (
-    const Foam::objectRegistry& db,
-    const Foam::dictionary& parentDict,
-    const Foam::dictionary& dict
+    mcParticleCloud& cloud,
+    const objectRegistry& db,
+    const word& subDictName
 )
 :
-    mcPositionCorrection(db, parentDict, dict),
+    mcPositionCorrection(cloud, db, subDictName),
 
     Q_
     (
         IOobject
         (
-            lookupOrDefault<word>("QName", "QPosCorr"),
+            thermoDict().lookupOrDefault<word>("QName", "QPosCorr"),
             db.time().timeName(),
             db,
             IOobject::MUST_READ,
             IOobject::AUTO_WRITE
         ),
-        mesh()
+        cloud.mesh()
     ),
 
-    kf_
+    QInst_
     (
-        "kf",
-        dimless,
-        lookupOrAddDefault<scalar>("kf", 3.)
-    ),
-    kb_
-    (
-        "kb",
-        dimDensity,
-        lookupOrAddDefault<scalar>("kb", 8.)
-    ),
-    N_
-    (
-        "N",
-        dimless,
-        lookupOrAddDefault<scalar>("N", 20.)
-    ),
-    CFL_
-    (
-        "CFL",
-        dimless,
-        lookupOrAddDefault<scalar>("CFL", 0.4)
-    ),
-    eps_
-    (
-        "eps",
-        dimless,
-        lookupOrAddDefault<scalar>("eps", 0.25)
-    ),
-    c_
-    (
-        "c",
-        dimless,
-        lookupOrAddDefault<scalar>
+        IOobject
         (
-            "c",
-            1./(mathematicalConstant::pi*CFL_*N_).value()
-        )
-    ),
-    f_
-    (
-        "f",
+            "mcEllipticRelaxationPositionCorrection::QInst",
+            db.time().timeName(),
+            db,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        cloud.mesh(),
         dimless,
-        lookupOrAddDefault<scalar>
-        (
-            "f",
-            (kf_*c_).value()
-        )
+        zeroGradientFvPatchScalarField::typeName
     ),
-    b_
+
+    gradQInst_
     (
-        "b",
-        dimless,
-        lookupOrAddDefault<scalar>
+        IOobject
         (
-            "b",
-            (kb_*sqr(f_)).value()
-        )
+            "mcEllipticRelaxationPositionCorrection::grad(QInst)",
+            db.time().timeName(),
+            db,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        cloud.mesh(),
+        dimless,
+        zeroGradientFvPatchScalarField::typeName
     ),
-    a_
+
+    gradQ_
     (
-        "a",
-        dimless,
-        lookupOrAddDefault<scalar>
+        IOobject
         (
-            "a",
-            f_.value()*(1. + (b_/sqr(c_)).value())
-        )
+            "mcEllipticRelaxationPositionCorrection::grad(Q)",
+            db.time().timeName(),
+            db,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        cloud.mesh(),
+        dimless,
+        zeroGradientFvPatchScalarField::typeName
     ),
+
+    zeta_
+    (
+        IOobject
+        (
+            "mcEllipticRelaxationPositionCorrection::zeta",
+            db.time().timeName(),
+            db,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        cloud.mesh(),
+        dimless,
+        zeroGradientFvPatchScalarField::typeName
+    ),
+
+    U0_("U0", dimVelocity, 0.),
+    eps_("eps", dimless, 0.),
+    c_("c", dimless, 0.),
+    f_("f", dimless, 0.),
+    b_("b", dimless, 0.),
+    a_("a", dimless, 0.),
     LInterp_(L())
 {}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-
-void Foam::mcEllipticRelaxationPositionCorrection::correct
-(
-    Foam::mcParticleCloud& cloud
-)
+void Foam::mcEllipticRelaxationPositionCorrection::readCoeffs()
 {
-    // maximum mean velocity
-    dimensionedScalar U0 = max(mag(cloud.Ufv()));
-
-    // normalized density difference
-    volScalarField QInst =
+    dimensionedScalar kf
     (
-        cloud.pndcPdfInst() - cloud.rhocPdfInst()
-    )/cloud.rhocPdf();
+        "kf",
+        dimless,
+        solutionDict().lookupOrDefault<scalar>("kf", 3.)
+    );
+    dimensionedScalar kb
+    (
+        "kb",
+        dimDensity,
+        solutionDict().lookupOrDefault<scalar>("kb", 8.)
+    );
+    dimensionedScalar N
+    (
+        "N",
+        dimless,
+        solutionDict().lookupOrDefault<scalar>("N", 20.)
+    );
+    dimensionedScalar CFL
+    (
+        "CFL",
+        dimless,
+        solutionDict().lookupOrDefault<scalar>("CFL", 0.4)
+    );
+    eps_ = solutionDict().lookupOrDefault<scalar>("eps", 0.25);
+    c_ = solutionDict().lookupOrDefault<scalar>
+        (
+            "c",
+            1./(mathematicalConstant::pi*CFL*N).value()
+        );
+    f_ = solutionDict().lookupOrDefault<scalar>("f", (kf*c_).value());
+    b_ = solutionDict().lookupOrDefault<scalar>("b", (kb*sqr(f_)).value());
+    a_ = solutionDict().lookupOrDefault<scalar>
+        (
+            "a",
+            f_.value()*(1. + (b_/sqr(c_)).value())
+        );
+}
+
+void Foam::mcEllipticRelaxationPositionCorrection::updateInternals()
+{
+    readCoeffs();
+    U0_ = max(mag(cloud().Ufv()));
+
+    QInst_ = (cloud().pndcPdfInst() - cloud().rhocPdfInst())/cloud().rhocPdf();
 
     // elliptic relaxation
     fvScalarMatrix QEqn
@@ -166,35 +195,31 @@ void Foam::mcEllipticRelaxationPositionCorrection::correct
         fvm::Sp(1, Q_)
       - f_*sqr(L())/c_*fvm::laplacian(Q_)
         ==
-        QInst
+        QInst_
     );
 
     QEqn.setReference(0, 0.0);
     QEqn.solve();
 
-    // indicator variable
-    volScalarField zeta = pos(cloud.pndcPdfInst()/cloud.rhocPdfInst() - eps_);
+    zeta_ = pos(cloud().pndcPdfInst()/cloud().rhocPdfInst() - eps_);
+    gradQ_ = fvc::grad(Q_);
+    gradQInst_ = fvc::grad(QInst_);
+    gradQInterp_.reset(new interpolationCellPointFace<vector>(gradQ_));
+    gradQInstInterp_.reset(new interpolationCellPointFace<vector>(gradQInst_));
+    zetaInterp_.reset(new interpolationCellPointFace<scalar>(zeta_));
+}
 
-    // TODO try gradInterpolationConstantTet
-    volVectorField gradQ = fvc::grad(Q_);
-    volVectorField gradQInst = fvc::grad(QInst);
-    interpolationCellPointFace<vector> gradQInterp(gradQ);
-    interpolationCellPointFace<vector> gradQInstInterp(gradQInst);
-    interpolationCellPointFace<scalar> zetaInterp(zeta);
 
-    // apply
-    forAllIter(mcParticleCloud, cloud, pIter)
-    {
-        mcParticle& part = pIter();
-        const point& p = part.position();
-        label c = part.cell();
-        label f = part.face();
-        scalar z = zetaInterp.interpolate(p, c, f);
-        dimensionedScalar l = LInterp_.interpolate(p, c, f);
-        part.Ucorrection() -=
-          + (a_*U0*l).value()
-          * (z != 0 ? gradQInterp : gradQInstInterp).interpolate(p, c, f);
-    }
+void Foam::mcEllipticRelaxationPositionCorrection::correct(mcParticle& part)
+{
+    const point& p = part.position();
+    label c = part.cell();
+    label f = part.face();
+    scalar z = zetaInterp_().interpolate(p, c, f);
+    dimensionedScalar l = LInterp_.interpolate(p, c, f);
+    part.Ucorrection() -=
+      + (a_*U0_*l).value()
+      * (z != 0 ? gradQInterp_ : gradQInstInterp_)().interpolate(p, c, f);
 }
 
 // ************************************************************************* //

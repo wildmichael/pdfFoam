@@ -202,7 +202,7 @@ Foam::mcParticleCloud::mcParticleCloud
 :
     Cloud<mcParticle>(mesh, cloudName, false),
     mesh_(mesh),
-    dict_(dict),
+    thermoDict_(dict),
     solutionDict_(mesh),
     runTime_(mesh.time()),
     turbModel_
@@ -212,12 +212,12 @@ Foam::mcParticleCloud::mcParticleCloud
     Ufv_
     (
         U ? *U : mesh_.lookupObject<volVectorField>
-                     (dict_.lookupOrDefault<word>("UName", "U"))
+                     (thermoDict_.lookupOrDefault<word>("UName", "U"))
     ),
     pfv_
     (
         p ? *p : mesh_.lookupObject<volScalarField>
-                     (dict_.lookupOrDefault<word>("pName", "p"))
+                     (thermoDict_.lookupOrDefault<word>("pName", "p"))
     ),
     random_(55555+12345*Pstream::myProcNo()),
     scalarNames_(0),
@@ -306,7 +306,7 @@ Foam::mcParticleCloud::mcParticleCloud
     (
         rho ? *rho : const_cast<volScalarField&>(
             mesh_.lookupObject<volScalarField>(
-                dict_.lookupOrDefault<word>("rhoName", "rho")))
+                thermoDict_.lookupOrDefault<word>("rhoName", "rho")))
     ),
 
     rhocPdfInst_
@@ -434,13 +434,13 @@ Foam::mcParticleCloud::mcParticleCloud
 
     initScalarFields();
 
-    // Now that the fields exist, create the models
-    velocityModel_ = mcVelocityModel::New(mesh_, dict);
-    OmegaModel_ = mcOmegaModel::New(mesh_, dict);
-    mixingModel_ = mcMixingModel::New(mesh_, dict);
-    reactionModel_ = mcReactionModel::New(mesh_, dict);
-    positionCorrection_ = mcPositionCorrection::New(mesh_, dict);
-    localTimeStepping_ = mcLocalTimeStepping::New(mesh_, dict);
+    // Now that the fields exist, create the persisten models
+    velocityModel_ = mcVelocityModel::New(*this, mesh_);
+    OmegaModel_ = mcOmegaModel::New(*this, mesh_);
+    mixingModel_ = mcMixingModel::New(*this, mesh_);
+    reactionModel_ = mcReactionModel::New(*this, mesh_);
+    positionCorrection_ = mcPositionCorrection::New(*this, mesh_);
+    localTimeStepping_ = mcLocalTimeStepping::New(*this, mesh_);
 
     // Now determine whether this is an axi-symmetric case
     label nAxiSymmetric = 0;
@@ -945,7 +945,7 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     {
         pIter().Ucorrection() = vector::zero;
     }
-    positionCorrection_().correct(*this);
+    positionCorrection_().correct();
 
     // First half-step
     //////////////////
@@ -975,11 +975,11 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     {
         pIter().nSteps() = 0;
     }
-    localTimeStepping_().correct(*this);
-    OmegaModel_().correct(*this);
-    mixingModel_().correct(*this);
-    reactionModel_().correct(*this);
-    velocityModel_().correct(*this);
+    localTimeStepping_().correct();
+    OmegaModel_().correct();
+    mixingModel_().correct();
+    reactionModel_().correct();
+    velocityModel_().correct();
 
     // Send back to original processor
     if (Pstream::parRun())
@@ -1197,13 +1197,13 @@ void Foam::mcParticleCloud::initReleaseParticles()
         particleGenInCell(celli, Npc, m, Updf, uscales, Phi);
     }
     // correct mass according to local time-stepping
-    localTimeStepping_().correct(*this);
+    localTimeStepping_().correct();
     forAllIter(mcParticleCloud, *this, pIter)
     {
         pIter().m() /= pIter().eta();
     }
-    OmegaModel_().correct(*this);
-    reactionModel_().correct(*this);
+    OmegaModel_().correct();
+    reactionModel_().correct();
     // writeFields();
 }
 
@@ -1304,9 +1304,9 @@ void Foam::mcParticleCloud::initMoments()
 void Foam::mcParticleCloud::initScalarFields()
 {
     // Find scalar fields
-    if (dict_.found("scalarFields"))
+    if (thermoDict_.found("scalarFields"))
     {
-        dict_.lookup("scalarFields") >> scalarNames_;
+        thermoDict_.lookup("scalarFields") >> scalarNames_;
         // Check for duplicates
         labelList order;
         uniqueOrder_FIX(scalarNames_, order);
@@ -1317,7 +1317,7 @@ void Foam::mcParticleCloud::initScalarFields()
                 "mcParticleCloud::initScalarFields()"
             )
                 << "The list "
-                << dict_.lookupEntry("scalarFields", false, false).name()
+                << thermoDict_.lookupEntry("scalarFields", false, false).name()
                 << " contains duplicate entries.\n"
                 << exit(FatalError);
         }
@@ -1392,9 +1392,9 @@ void Foam::mcParticleCloud::initScalarFields()
     // Find labels of mixed scalars
     scalarNames_.setSize(nScalarFields);
     wordList mixedScalarNames;
-    if (dict_.found("mixedScalars"))
+    if (thermoDict_.found("mixedScalars"))
     {
-        dict_.lookup("mixedScalars") >> mixedScalarNames;
+        thermoDict_.lookup("mixedScalars") >> mixedScalarNames;
         // Check for duplicates
         labelList order;
         uniqueOrder_FIX(mixedScalarNames, order);
@@ -1405,7 +1405,7 @@ void Foam::mcParticleCloud::initScalarFields()
                 "mcParticleCloud::initScalarFields()"
             )
                 << "The list "
-                << dict_.lookupEntry("mixedScalars", false, false).name()
+                << thermoDict_.lookupEntry("mixedScalars", false, false).name()
                 << " contains duplicate entries.\n"
                 << exit(FatalError);
         }
@@ -1442,7 +1442,7 @@ void Foam::mcParticleCloud::initBCHandlers()
 {
     boundaryHandlers_.clear();
     boundaryHandlers_.setSize(mesh_.boundaryMesh().size());
-    const dictionary& bd = dict_.subDict("boundaryHandlers");
+    const dictionary& bd = thermoDict_.subDict("boundaryHandlers");
     forAll(mesh_.boundaryMesh(), patchI)
     {
         const polyPatch& pp = mesh_.boundaryMesh()[patchI];
