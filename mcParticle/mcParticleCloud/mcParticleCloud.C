@@ -284,6 +284,8 @@ Foam::mcParticleCloud::mcParticleCloud
 
     PhiMom_(0),
 
+    PhiRMSMom_(0),
+
     uuMom_
     (
         IOobject
@@ -508,10 +510,12 @@ void Foam::mcParticleCloud::checkMoments()
         uuMom_.headerOk();
     // Create moment fields
     PhiMom_.setSize(PhicPdf_.size());
+    PhiRMSMom_.setSize(PhicPdf_.size());
     forAll(PhicPdf_, PhiI)
     {
         // Figure out a field name
         word name = PhicPdf_[PhiI]->name() + "Moment";
+        word RMSName = PhiRMScPdf_[PhiI]->name() + "Moment";
         dimensionSet dims = dimMass*PhicPdf_[PhiI]->dimensions();
         PhiMom_.set(PhiI, new DimensionedField<scalar, volMesh>
             (
@@ -527,7 +531,21 @@ void Foam::mcParticleCloud::checkMoments()
                 dimensionedScalar(name, dims, 0)
             ));
         readIfPresent(PhiMom_[PhiI]);
-        if (!PhiMom_[PhiI].headerOk())
+        PhiRMSMom_.set(PhiI, new DimensionedField<scalar, volMesh>
+            (
+                IOobject
+                (
+                    RMSName,
+                    runTime_.timeName(),
+                    mesh_,
+                    IOobject::READ_IF_PRESENT,
+                    IOobject::AUTO_WRITE
+                ),
+                mesh_,
+                dimensionedScalar(RMSName, dims, 0)
+            ));
+        readIfPresent(PhiRMSMom_[PhiI]);
+        if (!PhiMom_[PhiI].headerOk() || !PhiRMSMom_[PhiI].headerOk())
         {
             readOk = false;
         }
@@ -586,10 +604,12 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
         mesh_,
         dimensionedVector("UMomInstant", dimMass*dimVelocity, vector::zero)
     );
-    PtrList<DimensionedField<scalar, volMesh> > PhiMomInstant(PhiMom_.size());
+    PtrList<DimensionedField<scalar, volMesh> >
+        PhiMomInstant(PhiMom_.size()), PhiRMSMomInstant(PhiMom_.size());
     forAll(PhiMom_, PhiI)
     {
         word name = PhiMom_[PhiI].name()+"Instant";
+        word RMSName = PhiRMSMom_[PhiI].name()+"Instant";
         PhiMomInstant.set
         (
             PhiI,
@@ -605,6 +625,23 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
                 ),
                 mesh_,
                 dimensionedScalar(name, PhiMom_[PhiI].dimensions(), 0.0)
+            )
+        );
+        PhiRMSMomInstant.set
+        (
+            PhiI,
+            new DimensionedField<scalar, volMesh>
+            (
+                IOobject
+                (
+                    RMSName,
+                    mesh_.time().timeName(),
+                    mesh_,
+                    IOobject::NO_READ,
+                    IOobject::NO_WRITE
+                ),
+                mesh_,
+                dimensionedScalar(RMSName, PhiRMSMom_[PhiI].dimensions(), 0.0)
             )
         );
     }
@@ -642,7 +679,9 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
         UMomInstant[cellI]  += meta * p.UParticle();
         forAll(PhicPdf_, PhiI)
         {
-            PhiMomInstant[PhiI][cellI]  += meta * p.Phi()[PhiI];
+            const scalar& Phi = (*PhicPdf_[PhiI])[cellI];
+            PhiMomInstant[PhiI][cellI] += meta*p.Phi()[PhiI];
+            PhiRMSMomInstant[PhiI][cellI] += meta*sqr(p.Phi()[PhiI]-Phi);
         }
         uuMomInstant[cellI] += meta * symm(u * u);
     }
@@ -672,6 +711,10 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
         PhiMom_[PhiI] = existWt * PhiMom_[PhiI] + newWt * PhiMomInstant[PhiI];
         PhicPdf_[PhiI]->internalField() = PhiMom_[PhiI] / mMomBounded;
         PhicPdf_[PhiI]->correctBoundaryConditions();
+        PhiRMSMom_[PhiI] =
+            existWt*PhiRMSMom_[PhiI] + newWt*PhiRMSMomInstant[PhiI];
+        PhiRMScPdf_[PhiI]->internalField() = sqrt(PhiRMSMom_[PhiI]/mMomBounded);
+        PhiRMScPdf_[PhiI]->correctBoundaryConditions();
     }
 
     uuMom_ = existWt * uuMom_ + newWt * uuMomInstant;
@@ -1248,6 +1291,7 @@ void Foam::mcParticleCloud::initMoments()
     forAll(PhicPdf_, PhiI)
     {
         PhiMom_[PhiI] = mMom_ * (*PhicPdf_[PhiI]);
+        PhiRMSMom_[PhiI] = mMom_ * (*PhiRMScPdf_[PhiI]);
     }
 
     uuMom_ = mMom_ * turbulenceModel().R()();
@@ -1280,6 +1324,7 @@ void Foam::mcParticleCloud::initScalarFields()
     }
     label nScalarFields = scalarNames_.size();
     PhicPdf_.setSize(nScalarFields);
+    PhiRMScPdf_.setSize(nScalarFields);
     forAll(scalarNames_, fieldI)
     {
         if (mesh_.foundObject<volScalarField>(scalarNames_[fieldI]))
@@ -1310,6 +1355,37 @@ void Foam::mcParticleCloud::initScalarFields()
                 )
             );
             PhicPdf_[fieldI] = &ownedScalarFields_.first();
+        }
+        // RMS fields
+        word RMSName = scalarNames_[fieldI]+"RMS";
+        if (mesh_.foundObject<volScalarField>(RMSName))
+        {
+            // Try to find that field
+            PhiRMScPdf_[fieldI] =  &const_cast<volScalarField&>
+                (mesh_.lookupObject<volScalarField>(RMSName));
+        }
+        else
+        {
+            // Field doesn't exist already, so insert a new one into
+            // ownedScalarFields_
+            Info<< "Creating mcParticleCloud-owned field "
+                << RMSName << endl;
+            ownedScalarFields_.insert
+            (
+                new volScalarField
+                (
+                    IOobject
+                    (
+                        RMSName,
+                        runTime_.timeName(),
+                        mesh_,
+                        IOobject::MUST_READ,
+                        IOobject::AUTO_WRITE
+                    ),
+                    mesh_
+                )
+            );
+            PhiRMScPdf_[fieldI] = &ownedScalarFields_.first();
         }
     }
 
