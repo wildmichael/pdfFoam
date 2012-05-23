@@ -324,7 +324,7 @@ public:
         inline const tmp<volScalarField> kfv() const;
         //- The turbulent dissipation field
         inline const tmp<volScalarField> epsilonfv() const;
-        //- The instantaneous PADF density field
+        //- The instantaneous PDF density field
         inline const volScalarField& rhocPdfInst() const;
         //- The PDF density field
         inline const volScalarField& rhocPdf() const;
