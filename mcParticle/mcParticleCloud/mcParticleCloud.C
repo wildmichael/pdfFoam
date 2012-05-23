@@ -512,6 +512,7 @@ void Foam::mcParticleCloud::checkMoments()
     {
         // Figure out a field name
         word name = PhicPdf_[PhiI]->name() + "Moment";
+        dimensionSet dims = dimMass*PhicPdf_[PhiI]->dimensions();
         PhiMom_.set(PhiI, new DimensionedField<scalar, volMesh>
             (
                 IOobject
@@ -523,7 +524,7 @@ void Foam::mcParticleCloud::checkMoments()
                     IOobject::AUTO_WRITE
                 ),
                 mesh_,
-                dimensionedScalar(name, dimMass, 0)
+                dimensionedScalar(name, dims, 0)
             ));
         readIfPresent(PhiMom_[PhiI]);
         if (!PhiMom_[PhiI].headerOk())
