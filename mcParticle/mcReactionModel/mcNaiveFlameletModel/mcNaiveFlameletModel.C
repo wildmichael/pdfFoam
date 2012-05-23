@@ -75,6 +75,7 @@ void Foam::mcNaiveFlameletModel::correct
     Foam::mcParticle& p
 )
 {
+    setTIdx(cloud);
     if (zIdx_ < 0)
     {
         const wordList& names = cloud.scalarNames();
@@ -93,6 +94,7 @@ void Foam::mcNaiveFlameletModel::correct
     }
     const scalar& z = p.Phi()[zIdx_];
     p.rho() = (1. - 3.2*z*(1.-z));
+    p.Phi()[TIdx_] = 1e5/p.rho();
 }
 
 // ************************************************************************* //

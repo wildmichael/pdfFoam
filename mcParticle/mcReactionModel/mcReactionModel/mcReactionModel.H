@@ -66,6 +66,18 @@ class mcReactionModel :
         mcReactionModel(const mcReactionModel&);
         void operator=(const mcReactionModel&);
 
+protected:
+
+    // Protected Member Data
+
+        //- Index of the temperature property
+        label TIdx_;
+
+    // Protected Member Functions
+
+        //- Find the index of the temperature property
+        void setTIdx(const mcParticleCloud& cloud);
+
 public:
 
     //- Runtime type information

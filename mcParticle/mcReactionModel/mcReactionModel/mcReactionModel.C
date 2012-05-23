@@ -24,6 +24,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "mcReactionModel.H"
+#include "mcParticleCloud.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -44,7 +45,8 @@ Foam::mcReactionModel::mcReactionModel
     const Foam::dictionary& mcReactionModelDict
 )
 :
-    mcModel(db, parentDict, mcReactionModelDict)
+    mcModel(db, parentDict, mcReactionModelDict),
+    TIdx_(-1)
 {}
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
@@ -79,6 +81,28 @@ Foam::autoPtr<Foam::mcReactionModel> Foam::mcReactionModel::New
             dict.subOrEmptyDict(reactionType+"ReactionModelCoeffs")
         )
     );
+}
+
+// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+
+void Foam::mcReactionModel::setTIdx(const mcParticleCloud& cloud)
+{
+    if (TIdx_ < 0)
+    {
+        word TName = lookupOrDefault<word>("TName", "T", true);
+        const wordList& sn = cloud.scalarNames();
+        wordList::const_iterator f = sn.cbegin(), e = sn.cend();
+        TIdx_ = std::distance(f, std::find(f, e, TName));
+        if (TIdx_ == sn.size())
+        {
+            FatalErrorIn
+            (
+                "mcReactionModel::setTIdx(const mcParticleCloud&)"
+            )
+            << "Failed to find a scalar property names `" << TName << "'\n"
+            << exit(FatalError);
+        }
+    }
 }
 
 // ************************************************************************* //
