@@ -77,7 +77,7 @@ void Foam::mcIEMMixingModel::correct(Foam::mcParticleCloud& cloud)
             // apply IEM mixing
             scalar& phi = p.Phi()[mixedScalars[mixedI]];
             scalar& phiap = (*cloud.PhicPdf()[mixedScalars[mixedI]])[cellI];
-            phi -= (1.0 - exp(-0.5*Cmix2_*Omega*eta*dt))*(phi - phiap);
+            phi -= (1.0 - exp(-Cmix2_*Omega*eta*dt))*(phi - phiap);
         }
     }
 }
