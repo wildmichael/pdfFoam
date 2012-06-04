@@ -320,6 +320,14 @@ void Foam::mcInletOutletBoundary::correct
             cloud.localTimeStepping().correct(cloud, *p, prepare);
             prepare = false;
             p->m() /= p->eta();
+            if (mGen + p->m() > mIn)
+            {
+                if (cloud.random().scalar01() > (mIn - mGen)/p->m())
+                {
+                    delete p;
+                    break;
+                }
+            }
             cloud.addParticle(p);
             genParticles.append(p);
             mGen += p->m();
@@ -332,12 +340,10 @@ void Foam::mcInletOutletBoundary::correct
             }
 #endif
         }
-        scalar mCorrect = mIn/mGen;
-        forAll(genParticles, i)
+        if (genParticles.size())
         {
-            genParticles[i]->m() *= mCorrect;
+            cloud.adjustAxiSymmetricMass(genParticles);
         }
-        cloud.adjustAxiSymmetricMass(genParticles);
     }
     if (debug)
     {
