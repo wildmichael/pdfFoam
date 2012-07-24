@@ -517,6 +517,7 @@ void Foam::mcParticleCloud::checkMoments()
         word name = PhicPdf_[PhiI]->name() + "Moment";
         word RMSName = PhiRMScPdf_[PhiI]->name() + "Moment";
         dimensionSet dims = dimMass*PhicPdf_[PhiI]->dimensions();
+        dimensionSet dimsRMS = dimMass*sqr(PhicPdf_[PhiI]->dimensions());
         PhiMom_.set(PhiI, new DimensionedField<scalar, volMesh>
             (
                 IOobject
@@ -542,7 +543,7 @@ void Foam::mcParticleCloud::checkMoments()
                     IOobject::AUTO_WRITE
                 ),
                 mesh_,
-                dimensionedScalar(RMSName, dims, 0)
+                dimensionedScalar(RMSName, dimsRMS, 0)
             ));
         readIfPresent(PhiRMSMom_[PhiI]);
         if (!PhiMom_[PhiI].headerOk() || !PhiRMSMom_[PhiI].headerOk())
@@ -679,9 +680,8 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
         UMomInstant[cellI]  += meta * p.UParticle();
         forAll(PhicPdf_, PhiI)
         {
-            const scalar& Phi = (*PhicPdf_[PhiI])[cellI];
             PhiMomInstant[PhiI][cellI] += meta*p.Phi()[PhiI];
-            PhiRMSMomInstant[PhiI][cellI] += meta*sqr(p.Phi()[PhiI]-Phi);
+            PhiRMSMomInstant[PhiI][cellI] += meta*sqr(p.Phi()[PhiI]);
         }
         uuMomInstant[cellI] += meta * symm(u * u);
     }
@@ -713,7 +713,12 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
         PhicPdf_[PhiI]->correctBoundaryConditions();
         PhiRMSMom_[PhiI] =
             existWt*PhiRMSMom_[PhiI] + newWt*PhiRMSMomInstant[PhiI];
-        PhiRMScPdf_[PhiI]->internalField() = sqrt(PhiRMSMom_[PhiI]/mMomBounded);
+        PhiRMScPdf_[PhiI]->internalField() =
+            sqrt
+            (
+                PhiRMSMom_[PhiI]/mMomBounded
+              - sqr(PhicPdf_[PhiI]->dimensionedInternalField())
+            );
         PhiRMScPdf_[PhiI]->correctBoundaryConditions();
     }
 
@@ -1326,7 +1331,12 @@ void Foam::mcParticleCloud::initMoments()
     forAll(PhicPdf_, PhiI)
     {
         PhiMom_[PhiI] = mMom_ * (*PhicPdf_[PhiI]);
-        PhiRMSMom_[PhiI] = mMom_ * (*PhiRMScPdf_[PhiI]);
+        PhiRMSMom_[PhiI] =
+            mMom_
+           *(
+               sqr(PhiRMScPdf_[PhiI]->dimensionedInternalField())
+             + sqr(PhicPdf_[PhiI]->dimensionedInternalField())
+            );
     }
 
     uuMom_ = mMom_ * turbulenceModel().R()();
