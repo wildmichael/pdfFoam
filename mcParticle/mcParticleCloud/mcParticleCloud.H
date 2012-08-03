@@ -182,7 +182,7 @@ class mcParticleCloud:
             //- Averaged 1st statistical moments of scalar properties
             PtrList<DimensionedField<scalar, volMesh> > PhiMom_;
             //- Averaged 2nd statistical moments of scalar properties
-            PtrList<DimensionedField<scalar, volMesh> > PhiRMSMom_;
+            PtrList<DimensionedField<scalar, volMesh> > PhiPhiMom_;
             //- Averaged 2nd statistical moment of fluctuating velocity
             DimensionedField<symmTensor, volMesh> uuMom_;
 
@@ -209,8 +209,8 @@ class mcParticleCloud:
         volScalarField kcPdf_;
         //- Extracted, time-averaged scalar fields
         List<volScalarField*> PhicPdf_;
-        //- Extracted, time-averaged RMS scalar fields
-        List<volScalarField*> PhiRMScPdf_;
+        //- Extracted, time-averaged covariances of scalar fields
+        List<volScalarField*> PhiPhicPdf_;
 
         //- The particle velocity model
         autoPtr<mcVelocityModel> velocityModel_;
