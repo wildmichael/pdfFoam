@@ -286,18 +286,18 @@ Foam::mcParticleCloud::mcParticleCloud
 
     PhiPhiMom_(0),
 
-    uuMom_
+    UUMom_
     (
         IOobject
         (
-            "uuMoment",
+            "UUMoment",
             runTime_.timeName(),
             mesh,
             IOobject::READ_IF_PRESENT,
             IOobject::AUTO_WRITE
         ),
         mesh,
-        dimensionedSymmTensor("uuMoment", dimEnergy, symmTensor::zero)
+        dimensionedSymmTensor("UUMoment", dimEnergy, symmTensor::zero)
     ),
 
     ownedScalarFields_(),
@@ -428,7 +428,7 @@ Foam::mcParticleCloud::mcParticleCloud
     readIfPresent(mMom_);
     readIfPresent(VMom_);
     readIfPresent(UMom_);
-    readIfPresent(uuMom_);
+    readIfPresent(UUMom_);
 
     CourantCoeffs_.boundaryField() /= 2.;
 
@@ -507,7 +507,7 @@ void Foam::mcParticleCloud::checkMoments()
         mMom_.headerOk() &&
         VMom_.headerOk() &&
         UMom_.headerOk() &&
-        uuMom_.headerOk();
+        UUMom_.headerOk();
     // Create moment fields
     label nPhi = PhicPdf_.size();
     PhiMom_.setSize(nPhi);
@@ -666,31 +666,29 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
             );
         }
     }
-    DimensionedField<symmTensor, volMesh> uuMomInstant
+    DimensionedField<symmTensor, volMesh> UUMomInstant
     (
         IOobject
         (
-            "uuMomInstant",
+            "UUMomInstant",
             mesh_.time().timeName(),
             mesh_,
             IOobject::NO_READ,
             IOobject::NO_WRITE
         ),
         mesh_,
-        dimensionedSymmTensor("uuMomInstant", dimEnergy, symmTensor::zero)
+        dimensionedSymmTensor("UUMomInstant", dimEnergy, symmTensor::zero)
     );
 
     PaNIC_ *= 0;
 
     // Loop through particles to accumulate moments (0, 1, 2 order)
     // as well as particle number
-    interpolationCellPointFace<vector> UInterp(Ufv_);
     forAllConstIter(mcParticleCloud, *this, pIter)
     {
         const mcParticle& p = pIter();
         label cellI = p.cell();
-        vector U = UInterp.interpolate(p.position(), cellI, p.face());
-        vector u = p.UParticle() - U;
+        const vector& Up = p.UParticle();
 
         ++PaNIC_[cellI];
 
@@ -708,7 +706,7 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
                     meta*p.Phi()[PhiI]*p.Phi()[PhiJ];
             }
         }
-        uuMomInstant[cellI] += meta * symm(u * u);
+        UUMomInstant[cellI] += meta*symm(Up*Up);
     }
 
     scalar newWt = 1.0 - existWt;
@@ -751,8 +749,12 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
         }
     }
 
-    uuMom_ = existWt * uuMom_ + newWt * uuMomInstant;
-    TaucPdf_.internalField() = uuMom_/mMomBounded;
+    UUMom_ = existWt*UUMom_ + newWt*UUMomInstant;
+    TaucPdf_.internalField() =
+        (
+            UUMom_/mMomBounded
+          - symm(UcPdf_*UcPdf_)().dimensionedInternalField()
+        );
     TaucPdf_.correctBoundaryConditions();
 
     kcPdf_.internalField()   = 0.5 * tr(TaucPdf_.internalField());
@@ -1375,7 +1377,7 @@ void Foam::mcParticleCloud::initMoments()
         }
     }
 
-    uuMom_ = mMom_ * turbulenceModel().R()();
+    UUMom_ = mMom_ * turbulenceModel().R()();
 
     kcPdf_.internalField()   = turbulenceModel().k()().internalField();
     kcPdf_.correctBoundaryConditions();

@@ -184,7 +184,7 @@ class mcParticleCloud:
             //- Averaged 2nd statistical moments of scalar properties
             PtrList<DimensionedField<scalar, volMesh> > PhiPhiMom_;
             //- Averaged 2nd statistical moment of fluctuating velocity
-            DimensionedField<symmTensor, volMesh> uuMom_;
+            DimensionedField<symmTensor, volMesh> UUMom_;
 
         //- List of boundary condition handlers
         PtrList<mcBoundary> boundaryHandlers_;
