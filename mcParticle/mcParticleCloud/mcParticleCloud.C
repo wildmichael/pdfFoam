@@ -708,6 +708,32 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
         }
         UUMomInstant[cellI] += meta*symm(Up*Up);
     }
+    // Catch cells where the statistical mass is too small and don't extract
+    // from them by setting the instantaneous moment to the averaged one.
+    forAll(PaNIC_, cellI)
+    {
+        if (PaNIC_[cellI] < 1)
+        {
+            WarningIn("mcParticleCloud::evolve()")
+                << "Cell " << cellI << " is empty, skipping extraction and "
+                << "averaging in this cell." << nl << nl;
+            mMomInstant[cellI] = mMom_[cellI];
+            VMomInstant[cellI] = VMom_[cellI];
+            UMomInstant[cellI] = UMom_[cellI];
+            PhiPhiI = 0;
+            forAll(PhicPdf_, PhiI)
+            {
+                PhiMomInstant[PhiI][cellI] = PhiMom_[PhiI][cellI];
+                label PhiJ = PhiI;
+                for (;PhiJ != PhicPdf_.size(); ++PhiJ, ++PhiPhiI)
+                {
+                    PhiPhiMomInstant[PhiPhiI][cellI] =
+                        PhiPhiMom_[PhiPhiI][cellI];
+                }
+            }
+            UUMomInstant[cellI] = UUMom_[cellI];
+        }
+    }
 
     scalar newWt = 1.0 - existWt;
     // Do time-averaging of moments and compute mean fields
