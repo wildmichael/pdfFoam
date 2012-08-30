@@ -785,6 +785,7 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
 
     kcPdf_.internalField()   = 0.5 * tr(TaucPdf_.internalField());
     kcPdf_.correctBoundaryConditions();
+    bound(kcPdf_, solutionDict_.kMin());
 }
 
 
@@ -994,9 +995,6 @@ void Foam::mcParticleCloud::eliminateParticles(label celli)
 
 Foam::scalar Foam::mcParticleCloud::evolve()
 {
-
-    // lower bound for k
-    kcPdf_ = max(kcPdf_, solutionDict_.kMin());
 
     // Correct boundary conditions
     forAll(boundaryHandlers_, boundaryI)
