@@ -1225,7 +1225,10 @@ Foam::scalar Foam::mcParticleCloud::evolve()
             )
         )
     );
-    deltaU.write();
+    if (mesh_.time().outputTime())
+    {
+        deltaU.write();
+    }
     Info<< "DEBUG: maximum deltaU = " << gMax(deltaU) << endl;
 #endif
     // Mass and integrated scalars after the evolution done
