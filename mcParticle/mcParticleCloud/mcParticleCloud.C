@@ -1404,7 +1404,12 @@ void Foam::mcParticleCloud::initMoments()
         }
     }
 
-    UUMom_ = mMom_ * turbulenceModel().R()();
+    UUMom_ =
+        mMom_
+       *(
+           turbulenceModel().R()()
+         + symm(UcPdf_*UcPdf_)().dimensionedInternalField()
+        );
 
     kcPdf_.internalField()   = turbulenceModel().k()().internalField();
     kcPdf_.correctBoundaryConditions();
