@@ -708,6 +708,9 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
         }
         UUMomInstant[cellI] += meta*symm(Up*Up);
     }
+    // Always extract particle mass density, important for position correction
+    pndcPdfInst_.internalField() = mMomInstant / mesh_.V();
+    pndcPdfInst_.correctBoundaryConditions();
     // Catch cells where the statistical mass is too small and don't extract
     // from them by setting the instantaneous moment to the averaged one.
     forAll(PaNIC_, cellI)
@@ -739,9 +742,7 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
     // Do time-averaging of moments and compute mean fields
     mMom_  = existWt * mMom_  + newWt * mMomInstant;
     DimensionedField<scalar, volMesh> mMomBounded = max(mMom_, SMALL_MASS);
-    pndcPdfInst_.internalField() = mMomInstant / mesh_.V();
-    pndcPdfInst_.correctBoundaryConditions();
-    pndcPdf_.internalField() = mMom_ / mesh_.V();
+    pndcPdf_ = existWt*pndcPdf_ + newWt*pndcPdfInst_;
     pndcPdf_.correctBoundaryConditions();
 
     VMom_  = existWt * VMom_  + newWt * VMomInstant;
