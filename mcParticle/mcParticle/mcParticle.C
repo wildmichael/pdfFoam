@@ -33,7 +33,7 @@ License
 namespace // anonymous
 {
 
-Foam::scalar computeCourantNo(const Foam::mcParticle& p)
+Foam::scalar computeCourantNo(const Foam::mcParticle& p, const Foam::scalar dt)
 {
     using namespace Foam;
     const mcParticleCloud& cloud = refCast<const mcParticleCloud>(p.cloud());
@@ -41,7 +41,6 @@ Foam::scalar computeCourantNo(const Foam::mcParticle& p)
     const surfaceVectorField& CourantCoeffs = cloud.CourantCoeffs();
     const cell& c = mesh.cells()[p.cell()];
     const vector& U = p.Utracking();
-    scalar dt = mesh.time().deltaT().value();
     scalar Co = 0.0;
     forAll(c, cellFaceI)
     {
@@ -75,7 +74,8 @@ Foam::mcParticle::trackData::trackData(mcParticleCloud& mcpc, scalar trackTime)
 :
     Particle<mcParticle>::trackData(mcpc),
     cloud_(mcpc),
-    trackTime_(trackTime)
+    trackTime_(trackTime),
+    deltaT_(mcpc.mesh().time().deltaT().value())
 {}
 
 
@@ -110,7 +110,8 @@ Foam::mcParticle::mcParticle
 {
     const polyMesh& mesh = c.mesh();
     meshTools::constrainDirection(mesh, mesh.geometricD(), Utracking_);
-    Co_ = computeCourantNo(*this);
+    scalar dt = c.mesh().time().deltaT().value();
+    Co_ = computeCourantNo(*this, dt);
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
@@ -137,7 +138,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
 
     isOnInletBoundary_ = false;
 
-    Co_ = computeCourantNo(*this);
+    Co_ = computeCourantNo(*this, td.deltaT());
 
     while (td.keepParticle && !td.switchProcessor && tEnd > SMALL)
     {

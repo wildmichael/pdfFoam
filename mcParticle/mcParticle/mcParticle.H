@@ -154,6 +154,9 @@ public:
         //- The time span over which to track the particle (deltaT)
         scalar trackTime_;
 
+        //- The global deltaT
+        scalar deltaT_;
+
     public:
 
         // Constructors
@@ -162,11 +165,14 @@ public:
 
         // Access
 
+            //- Return a reference to the cloud
+            mcParticleCloud& cloud() { return cloud_; }
+
             //- The time span over which to track the particle (deltaT)
             scalar trackTime() const { return trackTime_; }
 
-            //- Return a reference to the cloud
-            mcParticleCloud& cloud() { return cloud_; }
+            //- The global time step
+            scalar deltaT() const { return deltaT_; }
     };
 
 
