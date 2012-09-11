@@ -422,6 +422,7 @@ Foam::mcParticleCloud::mcParticleCloud
         mesh_.surfaceInterpolation::deltaCoeffs()*mesh_.Sf()/mesh_.magSf()
     ),
     lostParticles_(*this),
+    lostMass_(mesh_.V().size()),
     hNum_(0)
 {
     // HACK work around annoying bug in OpenFOAM < 2.0
@@ -956,6 +957,7 @@ void Foam::mcParticleCloud::eliminateParticles(label celli)
         ++nKilled;
         deleteParticle(**pIter);
     }
+    PaNIC_[celli] -= nKilled;
 
     if (debug)
     {
@@ -987,6 +989,8 @@ Foam::scalar Foam::mcParticleCloud::evolve()
         p.Ucorrection() = vector::zero;
     }
     positionCorrection_().correct();
+    // Reset lost mass
+    lostMass_ = 0;
 
     // First half-step
     //////////////////
@@ -1144,6 +1148,16 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     updateCloudPDF(existWt);
 
     particleNumberControl();
+
+    // Redistribute lost mass and reset lost mass counter
+    // FIXME Doing this after the extraction is probably suboptimal
+    lostMass_ = lostMass_ / PaNIC_.internalField();
+    forAllIter(mcParticleCloud, *this, pIter)
+    {
+        mcParticle& p = pIter();
+        p.m() += lostMass_[p.cell()];
+    }
+    lostMass_ = 0;
 
     if (debug)
     {
@@ -1744,7 +1758,7 @@ Foam::mcParticleCloud::randomPointsInCell(label n, label celli)
 
 void Foam::mcParticleCloud::notifyLostParticle(const Foam::mcParticle& p)
 {
-    // TODO Distribute mass to other particles in cell
+    lostMass_[p.cell()] += p.m();
     lostParticles_.add(p);
 }
 

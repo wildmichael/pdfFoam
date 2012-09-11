@@ -238,6 +238,9 @@ class mcParticleCloud:
         //- Keeps track of the lost particles
         IOLostParticles<mcParticle> lostParticles_;
 
+        //- Keeps track of the mass lost in a cell by lost particles
+        scalarList lostMass_;
+
         //- Scaling factors for the numerical diffusion (~ @c cbrt(mesh.V()))
         scalarList hNum_;
 
