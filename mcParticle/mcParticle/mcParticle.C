@@ -162,12 +162,12 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         if (nSteps_ > 1000)
         {
 #ifdef FULLDEBUG
-            Perr<< "DEBUG: particle " << origId_ << " made more than 100 "
+            Perr<< "DEBUG: particle " << origId_ << " made more than 1000 "
                    "steps, droping it. Info:\n"
                 << info() << nl;
 #endif
             mcpc.notifyLostParticle(*this);
-            td.keepParticle = 0;
+            td.keepParticle = false;
             break;
         };
 
