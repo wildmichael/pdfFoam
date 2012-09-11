@@ -155,6 +155,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         // set the lagrangian time-step
         scalar dt = min(dtMax, tEnd);
         point destPos = position() + dt * Utracking_;
+        meshTools::constrainDirection(mesh, mesh.geometricD(), destPos);
         scalar tf = trackToFace(destPos, td);
         ++nSteps_;
 
