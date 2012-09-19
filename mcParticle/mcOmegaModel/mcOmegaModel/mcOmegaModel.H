@@ -41,7 +41,6 @@ Author
 #include "mcModel.H"
 
 #include "autoPtr.H"
-#include "interpolationCellPoint.H"
 #include "runTimeSelectionTables.H"
 #include "typeInfo.H"
 

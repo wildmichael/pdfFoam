@@ -27,6 +27,7 @@ License
 
 #include "addToRunTimeSelectionTable.H"
 #include "fvCFD.H"
+#include "interpolation.H"
 #include "mcParticleCloud.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
@@ -84,6 +85,21 @@ mcSimplePositionCorrection
         cloud.mesh(),
         dimless,
         zeroGradientFvPatchScalarField::typeName
+    ),
+
+    gradPhi_
+    (
+        IOobject
+        (
+            "mcSimplePositionCorrection::grad(phi)",
+            db.time().timeName(),
+            db,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        cloud.mesh(),
+        dimless/dimLength,
+        zeroGradientFvPatchScalarField::typeName
     )
 {
     const fvMesh& m = cloud.mesh();
@@ -128,8 +144,12 @@ void Foam::mcSimplePositionCorrection::updateInternals()
     phi_.correctBoundaryConditions();
 
     // TODO try gradInterpolationConstantTet
-    gradPhi_.reset(new volVectorField(C*mag(cloud().Ufv())*fvc::grad(phi_)));
-    gradPhiInterp_.reset(new interpolationCellPointFace<vector>(gradPhi_));
+    gradPhi_ = C*mag(cloud().Ufv())*fvc::grad(phi_);
+    gradPhiInterp_ = interpolation<vector>::New
+    (
+        cloud().solutionDict().interpolationScheme(gradPhi_.name()),
+        gradPhi_
+    );
 }
 
 

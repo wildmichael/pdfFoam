@@ -27,6 +27,7 @@ License
 
 #include "addToRunTimeSelectionTable.H"
 #include "fvCFD.H"
+#include "interpolation.H"
 #include "mcParticleCloud.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
@@ -114,8 +115,18 @@ void Foam::mcSLMFullVelocityModel::updateInternals()
     diffk_ = (sqrt(cloud().kfv()/cloud().kcPdf()) - 1.0)
             /solDict.relaxationTime("k");
 
-    rhoInterp_.reset(new interpolationCellPointFace<scalar>(cloud().rhocPdf()));
-    UInterp_.reset(new interpolationCellPointFace<vector>(cloud().Ufv()));
+    const volScalarField& rho = cloud().rhocPdf();
+    rhoInterp_ = interpolation<scalar>::New
+    (
+        solDict.interpolationScheme(rho.name()),
+        rho
+    );
+    const volVectorField& Ufv = cloud().Ufv();
+    UInterp_ = interpolation<vector>::New
+    (
+        solDict.interpolationScheme(Ufv.name()),
+        Ufv
+    );
     gradPInterp_.reset
     (
         new gradInterpolationConstantTet<scalar>
@@ -124,9 +135,23 @@ void Foam::mcSLMFullVelocityModel::updateInternals()
             p_
         )
     );
-    kInterp_.reset(new interpolationCellPointFace<scalar>(cloud().kfv()));
-    diffUInterp_.reset(new interpolationCellPointFace<vector>(diffU_));
-    kcPdfInterp_.reset(new interpolationCellPointFace<scalar>(cloud().kcPdf()));
+    const volScalarField& kfv = cloud().kfv();
+    kInterp_ = interpolation<scalar>::New
+    (
+        solDict.interpolationScheme(kfv.name()),
+        kfv
+    );
+    diffUInterp_ = interpolation<vector>::New
+    (
+        solDict.interpolationScheme(diffU_.name()),
+        diffU_
+    );
+    const volScalarField& kcPdf = cloud().kcPdf();
+    kcPdfInterp_ = interpolation<scalar>::New
+    (
+        solDict.interpolationScheme(kcPdf.name()),
+        kcPdf
+    );
 }
 
 

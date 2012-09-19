@@ -54,7 +54,7 @@ namespace Foam
 {
 
 class mcParticleCloud;
-template<class> class interpolationCellPointFace;
+template<class> class interpolation;
 
 /*---------------------------------------------------------------------------*\
                   Class mcSimplePositionCorrection Declaration
@@ -72,10 +72,10 @@ class mcSimplePositionCorrection :
         volScalarField phi_;
 
         //- Gradient of the correction potential
-        autoPtr<volVectorField> gradPhi_;
+        volVectorField gradPhi_;
 
         //- Interpolator for the correction potential
-        autoPtr<interpolationCellPointFace<vector> > gradPhiInterp_;
+        autoPtr<interpolation<vector> > gradPhiInterp_;
 
     // Private Member Functions
 

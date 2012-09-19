@@ -27,7 +27,6 @@ License
 
 #include "addToRunTimeSelectionTable.H"
 #include "fvCFD.H"
-#include "interpolationCellPointFace.H"
 #include "mcParticleCloud.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //

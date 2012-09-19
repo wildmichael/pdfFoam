@@ -44,6 +44,8 @@ Foam::mcSolution::mcSolution(const objectRegistry& obr)
     averagingTime_("averagingTime", 0.01*obr.time().endTime()),
     defaultRelaxationTime_("relaxationTime", dimTime, GREAT),
     relaxationTimes_(ITstream("relaxationTimes", tokenList())()),
+    defaultInterpolationScheme_("cell"),
+    interpolationSchemes_(ITstream("interpolationSchemes", tokenList())()),
     particlesPerCell_(0),
     particleNumberControl_(),
     cloneAt_(),
@@ -77,6 +79,17 @@ bool Foam::mcSolution::read()
         {
             defaultRelaxationTime_.value() =
                 readScalar(relaxationTimes_.lookup("default"));
+        }
+
+        if (dict.found("interpolationSchemes"))
+        {
+            interpolationSchemes_ = dict.subDict("interpolationSchemes");
+        }
+
+        if (interpolationSchemes_.found("default"))
+        {
+            interpolationSchemes_.lookup("default")
+                >> defaultInterpolationScheme_;
         }
 
         particlesPerCell_ = readLabel(dict.lookup("particlesPerCell"));
@@ -160,6 +173,16 @@ Foam::mcSolution::relaxationTime(const word& name) const
             );
     }
     return defaultRelaxationTime_;
+}
+
+
+Foam::word Foam::mcSolution::interpolationScheme(const word& name) const
+{
+    if (interpolationSchemes_.found(name))
+    {
+        return relaxationTimes_.lookup(name);
+    }
+    return defaultInterpolationScheme_;
 }
 
 // ************************************************************************* //

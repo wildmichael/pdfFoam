@@ -43,8 +43,7 @@ Author
 #define mcEllipticRelaxationPositionCorrection_H
 
 #include "mcPositionCorrection.H"
-
-#include "interpolationCellPointFace.H"
+#include "volFields.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -52,6 +51,7 @@ namespace Foam
 {
 
 class mcParticleCloud;
+template<class> class interpolation;
 
 /*---------------------------------------------------------------------------*\
             Class mcEllipticRelaxationPositionCorrection Declaration
@@ -93,11 +93,11 @@ protected:
         dimensionedScalar a_;
 
         //- Interpolators
-        interpolationCellPointFace<scalar> LInterp_;
+        autoPtr<interpolation<scalar> > LInterp_;
         // TODO try gradInterpolationConstantTet
-        autoPtr<interpolationCellPointFace<vector> >
-            gradQInstInterp_, gradQInterp_;
-        autoPtr<interpolationCellPointFace<scalar> > zetaInterp_;
+        autoPtr<interpolation<vector> > gradQInterp_;
+        autoPtr<interpolation<vector> > gradQInstInterp_;
+        autoPtr<interpolation<scalar> > zetaInterp_;
 
     // Protected Member Functions
 

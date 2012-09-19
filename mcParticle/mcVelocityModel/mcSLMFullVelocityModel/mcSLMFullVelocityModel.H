@@ -52,7 +52,6 @@ Author
 #include "mcVelocityModel.H"
 
 #include "autoPtr.H"
-#include "interpolationCellPointFace.H"
 #include "gradInterpolationConstantTet.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -61,6 +60,7 @@ namespace Foam
 {
 
 class mcParticleCloud;
+template<class> class interpolation;
 
 /*---------------------------------------------------------------------------*\
                     Class mcSLMFullVelocityModel Declaration
@@ -88,11 +88,11 @@ class mcSLMFullVelocityModel :
 
         //- Interpolators
         autoPtr<gradInterpolationConstantTet<scalar> > gradPInterp_;
-        autoPtr<interpolationCellPointFace<scalar> >   kcPdfInterp_;
-        autoPtr<interpolationCellPointFace<scalar> >   kInterp_;
-        autoPtr<interpolationCellPointFace<scalar> >   rhoInterp_;
-        autoPtr<interpolationCellPointFace<vector> >   diffUInterp_;
-        autoPtr<interpolationCellPointFace<vector> >   UInterp_;
+        autoPtr<interpolation<scalar> >   kcPdfInterp_;
+        autoPtr<interpolation<scalar> >   kInterp_;
+        autoPtr<interpolation<scalar> >   rhoInterp_;
+        autoPtr<interpolation<vector> >   diffUInterp_;
+        autoPtr<interpolation<vector> >   UInterp_;
 
         // Model parameters
 

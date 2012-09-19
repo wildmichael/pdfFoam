@@ -27,6 +27,7 @@ License
 
 #include "addToRunTimeSelectionTable.H"
 #include "mcParticleCloud.H"
+#include "interpolation.H"
 #include "Pair.H"
 
 #include <algorithm>
@@ -286,12 +287,12 @@ Foam::mcSteadyFlamelet::mcSteadyFlamelet
 void Foam::mcSteadyFlamelet::updateInternals()
 {
     mcReactionModel::updateInternals();
-    zVarInterp_.reset
+    const volScalarField& zzCov =
+        db().lookupObject<volScalarField>(zName_ + zName_ + "Cov");
+    zVarInterp_ = interpolation<scalar>::New
     (
-        new interpolationCellPointFace<scalar>
-        (
-            db().lookupObject<volScalarField>(zName_ + zName_ + "Cov")
-        )
+        cloud().solutionDict().interpolationScheme(zzCov.name()),
+        zzCov
     );
 }
 

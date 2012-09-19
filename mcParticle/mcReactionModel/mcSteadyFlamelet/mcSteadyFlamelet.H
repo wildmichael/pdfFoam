@@ -62,13 +62,14 @@ Author
 #include "mcReactionModel.H"
 
 #include "autoPtr.H"
-#include "interpolationCellPointFace.H"
 #include "scalarIOList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
+
+template<class> class interpolation;
 
 /*---------------------------------------------------------------------------*\
                        Class mcSteadyFlamelet Declaration
@@ -115,7 +116,7 @@ class mcSteadyFlamelet :
         const volScalarField& p_;
 
         //- The interpolator for the mixture fraction variance
-        autoPtr<interpolationCellPointFace<scalar> > zVarInterp_;
+        autoPtr<interpolation<scalar> > zVarInterp_;
 
     // Private Member Functions
 

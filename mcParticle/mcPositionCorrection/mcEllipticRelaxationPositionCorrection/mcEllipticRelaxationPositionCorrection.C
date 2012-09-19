@@ -27,6 +27,7 @@ License
 
 #include "addToRunTimeSelectionTable.H"
 #include "fvCFD.H"
+#include "interpolation.H"
 #include "mcParticleCloud.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
@@ -136,7 +137,14 @@ mcEllipticRelaxationPositionCorrection
     f_("f", dimless, 0.),
     b_("b", dimless, 0.),
     a_("a", dimless, 0.),
-    LInterp_(L())
+    LInterp_
+    (
+        interpolation<scalar>::New
+        (
+            cloud.solutionDict().interpolationScheme(L().name()),
+            L()
+        )
+    )
 {}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
@@ -204,9 +212,21 @@ void Foam::mcEllipticRelaxationPositionCorrection::updateInternals()
     zeta_ = pos(cloud().pndcPdfInst()/cloud().rhocPdfInst() - eps_);
     gradQ_ = fvc::grad(Q_);
     gradQInst_ = fvc::grad(QInst_);
-    gradQInterp_.reset(new interpolationCellPointFace<vector>(gradQ_));
-    gradQInstInterp_.reset(new interpolationCellPointFace<vector>(gradQInst_));
-    zetaInterp_.reset(new interpolationCellPointFace<scalar>(zeta_));
+    gradQInterp_ = interpolation<vector>::New
+    (
+        cloud().solutionDict().subDict("interpolationSchemes"),
+        gradQ_
+    );
+    gradQInstInterp_  = interpolation<vector>::New
+    (
+        cloud().solutionDict().subDict("interpolationSchemes"),
+        gradQInst_
+    );
+    zetaInterp_  = interpolation<scalar>::New
+    (
+        cloud().solutionDict().subDict("interpolationSchemes"),
+        zeta_
+    );
 }
 
 
@@ -216,7 +236,7 @@ void Foam::mcEllipticRelaxationPositionCorrection::correct(mcParticle& part)
     label c = part.cell();
     label f = part.face();
     scalar z = zetaInterp_().interpolate(p, c, f);
-    dimensionedScalar l = LInterp_.interpolate(p, c, f);
+    dimensionedScalar l = LInterp_().interpolate(p, c, f);
     part.Ucorrection() -=
       + (a_*U0_*l).value()
       * (z != 0 ? gradQInterp_ : gradQInstInterp_)().interpolate(p, c, f);

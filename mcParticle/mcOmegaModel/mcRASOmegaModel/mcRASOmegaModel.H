@@ -45,7 +45,6 @@ Author
 #include "mcOmegaModel.H"
 
 #include "autoPtr.H"
-#include "interpolationCellPointFace.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -53,6 +52,7 @@ namespace Foam
 {
 
 class mcParticleCloud;
+template<class> class interpolation;
 
 /*---------------------------------------------------------------------------*\
                        Class mcRASOmegaModel Declaration
@@ -67,7 +67,7 @@ class mcRASOmegaModel :
         autoPtr<volScalarField> Omega_;
 
         //- Interpolator for Omega
-        autoPtr<interpolationCellPointFace<scalar> > OmegaInterp_;
+        autoPtr<interpolation<scalar> > OmegaInterp_;
 
     // Private Member Functions
 

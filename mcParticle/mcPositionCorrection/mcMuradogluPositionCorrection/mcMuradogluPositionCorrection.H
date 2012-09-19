@@ -53,6 +53,7 @@ namespace Foam
 {
 
 class mcParticleCloud;
+template<class> class interpolation;
 
 /*---------------------------------------------------------------------------*\
                 Class mcMuradogluPositionCorrection Declaration
@@ -68,7 +69,7 @@ class mcMuradogluPositionCorrection :
         //- Gradient of the integrated density correction potential
         volVectorField gradPhi_;
         //- Interpolator for the integrated density correction potential
-        autoPtr<interpolationCellPointFace<vector> > gradPhiInterp_;
+        autoPtr<interpolation<vector> > gradPhiInterp_;
 
     // Private Member Functions
 

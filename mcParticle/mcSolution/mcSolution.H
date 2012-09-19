@@ -59,6 +59,10 @@ class mcSolution:
         dimensionedScalar defaultRelaxationTime_;
         //- The relaxation time scales
         dictionary relaxationTimes_;
+        //- Default interpolation scheme
+        word defaultInterpolationScheme_;
+        //- The interpolation schemes
+        dictionary interpolationSchemes_;
         //- The number of particles per cell
         label particlesPerCell_;
         //- Whether particle number control is enabled
@@ -102,6 +106,9 @@ public:
 
             //- Return the relaxation time for the given field
             dimensionedScalar relaxationTime(const word& name) const;
+
+            //- Return the name of the interpolator for the given field
+            word interpolationScheme(const word& name) const;
 
             //- Return the number of particles per cell
             label particlesPerCell() const {return particlesPerCell_;}

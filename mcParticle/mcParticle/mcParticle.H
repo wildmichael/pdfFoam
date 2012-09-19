@@ -42,8 +42,6 @@ Author: Heng Xiao with Patrick Jenny, 2010-08-29
 #include "Particle.H"
 #include "IOstream.H"
 #include "autoPtr.H"
-#include "interpolationCellPointFace.H"
-#include "gradInterpolationConstantTet.H"
 #include "contiguous.H"
 #include "meshTools.H"
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

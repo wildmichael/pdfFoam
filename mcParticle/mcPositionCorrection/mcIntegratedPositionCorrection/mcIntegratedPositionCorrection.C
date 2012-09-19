@@ -27,6 +27,7 @@ License
 
 #include "addToRunTimeSelectionTable.H"
 #include "fvCFD.H"
+#include "interpolation.H"
 #include "mcParticleCloud.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
@@ -120,7 +121,11 @@ void Foam::mcIntegratedPositionCorrection::updateInternals()
     // time-integrator for correction velocity
     solve(fvm::ddt(cloud().pndcPdf(), UPosCorr_) == -fvc::grad(pPosCorr_));
 
-    UPosCorrInterp_.reset(new interpolationCellPointFace<vector>(UPosCorr_));
+    UPosCorrInterp_ = interpolation<vector>::New
+    (
+        cloud().solutionDict().interpolationScheme(UPosCorr_.name()),
+        UPosCorr_
+    );
 }
 
 

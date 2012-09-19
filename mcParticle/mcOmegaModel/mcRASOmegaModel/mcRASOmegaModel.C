@@ -28,6 +28,7 @@ License
 #include "addToRunTimeSelectionTable.H"
 #include "compressible/turbulenceModel/turbulenceModel.H"
 #include "compressible/RAS/kOmegaSST/kOmegaSST.H"
+#include "interpolation.H"
 #include "mcParticleCloud.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
@@ -84,7 +85,11 @@ void Foam::mcRASOmegaModel::updateInternals()
             )
         );
     }
-    OmegaInterp_.reset( new interpolationCellPointFace<scalar>(Omega_));
+    OmegaInterp_ = interpolation<scalar>::New
+    (
+        cloud().solutionDict().interpolationScheme(Omega_().name()),
+        Omega_
+    );
 }
 
 

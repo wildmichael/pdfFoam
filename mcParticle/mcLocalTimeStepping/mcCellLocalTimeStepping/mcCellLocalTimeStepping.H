@@ -43,13 +43,14 @@ Author
 
 #include "mcLocalTimeStepping.H"
 
-#include "interpolationCellPointFace.H"
 #include "volFields.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
+
+template<class> class interpolation;
 
 /*---------------------------------------------------------------------------*\
                    Class mcCellLocalTimeStepping Declaration
@@ -64,7 +65,7 @@ class mcCellLocalTimeStepping :
         volScalarField eta_;
 
         //- Interpolator for Omega
-        autoPtr<interpolationCellPointFace<scalar> > etaInterp_;
+        autoPtr<interpolation<scalar> > etaInterp_;
 
     // Private Member Functions
 

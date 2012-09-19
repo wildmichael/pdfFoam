@@ -50,7 +50,7 @@ namespace Foam
 {
 
 class mcParticleCloud;
-template<class> class interpolationCellPointFace;
+template<class> class interpolation;
 
 /*---------------------------------------------------------------------------*\
                 Class mcIntegratedPositionCorrection Declaration
@@ -74,7 +74,7 @@ class mcIntegratedPositionCorrection :
         volVectorField UPosCorr_;
 
         //- Correction velocity interpolator
-        autoPtr<interpolationCellPointFace<vector> > UPosCorrInterp_;
+        autoPtr<interpolation<vector> > UPosCorrInterp_;
 
     // Private Member Functions
 

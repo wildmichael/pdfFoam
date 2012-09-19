@@ -27,6 +27,7 @@ License
 
 #include "addToRunTimeSelectionTable.H"
 #include "fvCFD.H"
+#include "interpolation.H"
 #include "mcParticleCloud.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
@@ -116,10 +117,26 @@ void Foam::mcMuradogluPositionCorrection::updateInternals()
     gradPhi_ = fvc::grad(phi_);
     gradQInst_ = fvc::grad(QInst_);
     gradQ_ = fvc::grad(Q_);
-    gradPhiInterp_.reset(new interpolationCellPointFace<vector>(gradPhi_));
-    gradQInstInterp_.reset(new interpolationCellPointFace<vector>(gradQInst_));
-    gradQInterp_.reset(new interpolationCellPointFace<vector>(gradQ_));
-    zetaInterp_.reset(new interpolationCellPointFace<scalar>(zeta_));
+    gradPhiInterp_ = interpolation<vector>::New
+    (
+        cloud().solutionDict().interpolationScheme(gradPhi_.name()),
+        gradPhi_
+    );
+    gradQInstInterp_ = interpolation<vector>::New
+    (
+        cloud().solutionDict().interpolationScheme(gradQInst_.name()),
+        gradQInst_
+    );
+    gradQInterp_ = interpolation<vector>::New
+    (
+        cloud().solutionDict().interpolationScheme(gradQ_.name()),
+        gradQ_
+    );
+    zetaInterp_ = interpolation<scalar>::New
+    (
+        cloud().solutionDict().interpolationScheme(zeta_.name()),
+        zeta_
+    );
 }
 
 
@@ -129,7 +146,7 @@ void Foam::mcMuradogluPositionCorrection::correct(mcParticle& part)
     label c = part.cell();
     label f = part.face();
     scalar z = zetaInterp_().interpolate(p, c, f);
-    dimensionedScalar l = LInterp_.interpolate(p, c, f);
+    dimensionedScalar l = LInterp_().interpolate(p, c, f);
     part.Ucorrection() -=
         gradPhiInterp_().interpolate(p, c, f)
       + (a_*U0_*l).value()

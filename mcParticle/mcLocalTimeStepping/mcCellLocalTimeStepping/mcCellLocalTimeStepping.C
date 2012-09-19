@@ -28,6 +28,7 @@ License
 #include "addToRunTimeSelectionTable.H"
 #include "compressible/RAS/RASModel/RASModel.H"
 #include "fvCFD.H"
+#include "interpolation.H"
 #include "mcParticleCloud.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
@@ -149,7 +150,11 @@ void Foam::mcCellLocalTimeStepping::updateInternals()
     etaInt -= etaMin;
     etaInt = (etaMax - etaMin)/gMax(etaInt)*etaInt + etaMin;
     eta_.correctBoundaryConditions();
-    etaInterp_.reset(new interpolationCellPointFace<scalar>(eta_));
+    etaInterp_ = interpolation<scalar>::New
+    (
+        cloud().solutionDict().interpolationScheme(eta_.name()),
+        eta_
+    );
 }
 
 

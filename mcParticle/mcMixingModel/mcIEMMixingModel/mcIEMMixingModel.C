@@ -26,7 +26,6 @@ License
 #include "mcIEMMixingModel.H"
 
 #include "addToRunTimeSelectionTable.H"
-#include "interpolationCellPoint.H"
 #include "mcParticleCloud.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
