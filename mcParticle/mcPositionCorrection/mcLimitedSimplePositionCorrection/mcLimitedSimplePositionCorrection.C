@@ -179,6 +179,21 @@ void Foam::mcLimitedSimplePositionCorrection::correct(mcParticle& part)
     label c = part.cell();
     label f = part.face();
     part.Ucorrection() += UPosCorrInterp_().interpolate(p, c, f);
+    if (debug)
+    {
+        scalar UPosCorrMax = gMax(mag(UPosCorr_)());
+        scalar UCorrMag = mag(part.Ucorrection());
+        if (UCorrMag > 1.5*UPosCorrMax)
+        {
+            WarningIn
+            (
+                "mcLimitedSimplePositionCorrection::correct(mcParticle&)"
+            )   << "Interpolation of UPosCorr to location " << p
+                << " yielded a correction velocity magnitude of "
+                << UCorrMag << ", where the maximum magnitude in the field is "
+                << UPosCorrMax << endl;
+        }
+    }
 }
 
 // ************************************************************************* //
