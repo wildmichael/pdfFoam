@@ -64,12 +64,11 @@ Foam::mcLimitedSimplePositionCorrection::mcLimitedSimplePositionCorrection
             db.time().timeName(),
             db,
             IOobject::NO_READ,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
         ),
         cloud.mesh(),
-        #warning This dimension is BOGUS
-        dimless/dimLength,
-        zeroGradientFvPatchScalarField::typeName
+        dimVelocity,
+        fixedValueFvPatchScalarField::typeName
     )
 {}
 
@@ -91,6 +90,8 @@ void Foam::mcLimitedSimplePositionCorrection::updateInternals()
         solutionDict().lookupOrDefault<scalar>("CFL", 0.5)
     );
 
+    static const dimensionedScalar one("one", dimLength*dimVelocity, 1.);
+
     const fvMesh& mesh = cloud().mesh();
     scalar dt = mesh.time().deltaT().value();
     volScalarField phi
@@ -103,11 +104,11 @@ void Foam::mcLimitedSimplePositionCorrection::updateInternals()
             IOobject::NO_WRITE
         ),
         mesh,
-        dimensionedScalar("0", dimless, 0.0),
+        0.*one,
         zeroGradientFvPatchField<scalar>::typeName
     );
     phi.internalField() =
-        (cloud().pndcPdf() - cloud().rhocPdf())/cloud().rhocPdf();
+        one*(cloud().pndcPdf() - cloud().rhocPdf())/cloud().rhocPdf();
     phi.correctBoundaryConditions();
 
     // limiter
