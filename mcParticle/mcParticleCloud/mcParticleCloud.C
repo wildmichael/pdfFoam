@@ -26,7 +26,6 @@ License
 #include "mcParticleCloud.H"
 #include "fvMesh.H"
 #include "volFields.H"
-#include "interpolationCellPointFace.H"
 #include "fixedValueFvPatchField.H"
 #include "boundBox.H"
 #include "fvc.H"
@@ -957,15 +956,16 @@ void Foam::mcParticleCloud::eliminateParticles(label celli)
         if (random().scalar01() < P)
         {
             mcParticle* p = *pIter;
+            scalar meta = p->eta()*p->m();
             if (random().scalar01() < 0.5)
             {
                 popA.append(p);
-                mA += p->eta()*p->m();
+                mA += meta;
             }
             else
             {
                 popB.append(p);
-                mB += p->eta()*p->m();
+                mB += meta;
             }
         }
     }
