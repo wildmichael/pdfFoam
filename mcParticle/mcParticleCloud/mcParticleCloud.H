@@ -82,6 +82,7 @@ SourceFiles
 #include "surfaceMesh.H"
 #include "fvsPatchField.H"
 #include "IOLostParticles.H"
+#include "scalarIOField.H"
 #include "richTetPointRef.H"
 #include "tetFacePointCellDecomposition.H"
 #include "vectorList.H"
@@ -160,6 +161,8 @@ class mcParticleCloud:
         wordList scalarNames_;
         //- The scalars to which to apply the mixing model
         labelList mixedScalars_;
+        //- The scalars for which to track conservation
+        labelList conservedScalars_;
         //- Number of cells
         const label Nc_;
         //- How many particle existed in history (including living ones)
@@ -244,8 +247,8 @@ class mcParticleCloud:
         //- Scaling factors for the numerical diffusion (~ @c cbrt(mesh.V()))
         scalarList hNum_;
 
-        //- Original, total mass
-        scalar m0_;
+        //- Averaged change in interior, in- and outflux
+        scalarIOField deltaScalar_, scalarInFlux_, scalarOutFlux_;
 
     // Private Member Functions
 
@@ -355,6 +358,8 @@ public:
         inline const wordList& scalarNames() const;
         //- List of indices of the scalar fields to which mixing is applied
         inline const labelList& mixedScalars() const;
+        //- List of indices of the scalar fields for which conservation is tracked
+        inline const labelList& conservedScalars() const;
         //- Whether the case is axi-symmetric
         inline bool isAxiSymmetric() const;
         //- Centerline axis for axi-symmetric cases

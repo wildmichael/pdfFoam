@@ -423,7 +423,46 @@ Foam::mcParticleCloud::mcParticleCloud
     ),
     lostParticles_(*this),
     lostMass_(mesh_.V().size()),
-    hNum_(0)
+    hNum_(0),
+    deltaScalar_
+    (
+        IOobject
+        (
+            "deltaScalar",
+            runTime_.timeName(),
+            "uniform"/cloud::prefix/name(),
+            mesh,
+            IOobject::READ_IF_PRESENT,
+            IOobject::AUTO_WRITE
+        ),
+        0
+    ),
+    scalarInFlux_
+    (
+        IOobject
+        (
+            "scalarInFlux",
+            runTime_.timeName(),
+            "uniform"/cloud::prefix/name(),
+            mesh,
+            IOobject::READ_IF_PRESENT,
+            IOobject::AUTO_WRITE
+        ),
+        0
+    ),
+    scalarOutFlux_
+    (
+        IOobject
+        (
+            "scalarOutFlux",
+            runTime_.timeName(),
+            "uniform"/cloud::prefix/name(),
+            mesh,
+            IOobject::READ_IF_PRESENT,
+            IOobject::AUTO_WRITE
+        ),
+        0
+    )
 {
     // HACK work around annoying bug in OpenFOAM < 2.0
     readIfPresent(mMom_);
@@ -496,7 +535,12 @@ Foam::mcParticleCloud::mcParticleCloud
         Info<< "I am releasing particles initially!" << endl;
         initReleaseParticles();
     }
-    m0_ = fvc::domainIntegrate(rhocPdf_).value();
+    if (!deltaScalar_.headerOk())
+    {
+        static_cast<scalarList>(deltaScalar_) = 0.;
+        scalarInFlux_  = deltaScalar_;
+        scalarOutFlux_ = deltaScalar_;
+    }
 }
 
 
@@ -981,11 +1025,17 @@ Foam::scalar Foam::mcParticleCloud::evolve()
         b.correct(false);
     }
     // Integrate scalars across domain and reset correction velocity
-    scalarField deltaScalar(PhicPdf_.size(), 0.);
+    scalarField deltaScalarInst(deltaScalar_.size(), 0.);
     forAllIter(mcParticleCloud, *this, pIter)
     {
         mcParticle& p = pIter();
-        deltaScalar -= p.eta()*p.m()*p.Phi();
+        scalar meta = p.eta()*p.m();
+        deltaScalarInst[0] -= meta;
+        deltaScalarInst[1] -= meta*p.rho();
+        forAll(conservedScalars_, csI)
+        {
+            deltaScalarInst[csI+2] -= meta*p.Phi()[conservedScalars_[csI]];
+        }
         p.Ucorrection() = vector::zero;
     }
     positionCorrection_().correct();
@@ -1131,17 +1181,15 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     Cloud<mcParticle>::move(td2);
 
     // Correct boundary conditions
-    scalarField scalarInFlux(PhicPdf_.size(), 0.);
-    scalarField scalarOutFlux(PhicPdf_.size(), 0.);
+    scalarField scalarInFluxInst(scalarInFlux_.size(), 0.);
+    scalarField scalarOutFluxInst(scalarOutFlux_.size(), 0.);
     forAll(boundaryHandlers_, boundaryI)
     {
         mcBoundary& b = boundaryHandlers_[boundaryI];
         b.correct(true);
-        scalarInFlux += b.scalarInFlux();
-        scalarOutFlux += b.scalarOutFlux();
+        scalarInFluxInst += b.scalarInFlux();
+        scalarOutFluxInst += b.scalarOutFlux();
     }
-    gSum(scalarInFlux);
-    gSum(scalarOutFlux);
 
     // Extract statistical averaging to obtain mesh-based quantities
     scalar existWt = 1.0/(1.0 + deltaT/solutionDict_.averagingTime().value());
@@ -1220,43 +1268,62 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     Info<< "DEBUG: maximum deltaU = " << gMax(deltaU) << endl;
 #endif
     // Mass and integrated scalars after the evolution done
-    scalar m1 = 0;
+    scalar totalMass = fvc::domainIntegrate(rhocPdfInst_).value();
+    scalar totalParticleMass = fvc::domainIntegrate(pndcPdfInst_).value();
     forAllConstIter(mcParticleCloud, *this, pIter)
     {
         const mcParticle& p = pIter();
         scalar meta = p.eta()*p.m();
-        m1 += meta;
-        deltaScalar += meta*p.Phi();
-    }
-    gSum(deltaScalar);
-    scalar m2 = fvc::domainIntegrate(pndcPdf_).value();
-    // Difference of the masses
-    scalar diffM1 = m1-m0_;
-    scalar diffM2 = m2-m0_;
-    Info<< "    m0 is "<< m0_ << nl
-        << "    m1 is "<< m1 << nl
-        << "    m2 is "<< m2 << nl
-        << "    The difference of the masses is "
-        << diffM1 << ", " << diffM2 << nl
-        << "    The relative difference of the masses (fraction) is "
-        << diffM1/m0_  << ", " << diffM2/m0_ << endl;
-
-    if (deltaScalar.size())
-    {
-        static scalarField dsm = deltaScalar;
-        static scalarField sim = scalarInFlux;
-        static scalarField som = scalarOutFlux;
-        static const scalar w = 0.999;
-        dsm = w*dsm + (1-w)*deltaScalar;
-        sim = w*sim + (1-w)*scalarInFlux;
-        som = w*som + (1-w)*scalarOutFlux;
-        scalarField ds = (dsm + sim + som)/sim;
-        Info<< "    scalar mass error (fraction of influx):";
-        forAll(scalarNames_, i)
+        deltaScalarInst[0] += meta;
+        deltaScalarInst[1] += meta*p.rho();
+        forAll(conservedScalars_, csI)
         {
-            Info<< " " << scalarNames_[i] << " = " << ds[i];
+            deltaScalarInst[csI+2] += meta*p.Phi()[conservedScalars_[csI]];
         }
-        Info<< nl;
+    }
+    forAll(deltaScalarInst, i)
+    {
+        reduce(deltaScalarInst[i],   sumOp<scalar>());
+        reduce(scalarInFluxInst[i],  sumOp<scalar>());
+        reduce(scalarOutFluxInst[i], sumOp<scalar>());
+    }
+
+    scalarField scalarErrorInst =
+        (deltaScalarInst-scalarInFluxInst-scalarOutFluxInst)/scalarInFluxInst;
+
+    deltaScalar_   = existWt*deltaScalar_   + (1-existWt)*deltaScalarInst;
+    scalarInFlux_  = existWt*scalarInFlux_  + (1-existWt)*scalarInFluxInst;
+    scalarOutFlux_ = existWt*scalarOutFlux_ + (1-existWt)*scalarOutFluxInst;
+    scalar meanTotalMass = fvc::domainIntegrate(rhocPdf_).value();
+    scalarField scalarError =
+        (deltaScalar_ - scalarInFlux_ + scalarOutFlux_)/meanTotalMass;
+
+    Info<< "    instant mass:  density = " << totalMass
+        << ", particle = " << totalParticleMass
+        << ", error/densityMass = "
+        << (totalParticleMass - totalMass)/totalMass << nl
+        << "    min(rhoCloudPdfInst) = " << gMin(rhocPdfInst_)
+        << ", max(rhoCloudPdfInst) = " << gMax(rhocPdfInst_) << nl
+        << "    min(pndCloudPdfInst) = " << gMin(pndcPdfInst_)
+        << ", max(pndCloudPdfInst) = " << gMax(pndcPdfInst_) << nl;
+    Info<< "    particle mass: "
+        << "change = " << deltaScalar_[0]
+        << ", influx = " << scalarInFlux_[0]
+        << ", outflux = " << scalarOutFlux_[0]
+        << ", error/mass = " << scalarError[0] << nl;
+    Info<< "    mass: "
+        << "change = " << deltaScalar_[1]
+        << ", influx = " << scalarInFlux_[1]
+        << ", outflux = " << scalarOutFlux_[1]
+        << ", error/mass = " << scalarError[1] << nl;
+    forAll(conservedScalars_, csI)
+    {
+        label i = conservedScalars_[csI];
+        Info<< "    " << scalarNames_[i] << ": "
+            << "change = " << deltaScalar_[csI+2]
+            << ", influx = " << scalarInFlux_[csI+2]
+            << ", outflux = " << scalarOutFlux_[csI+2]
+            << ", error/mass = " << scalarError[csI+2] << nl;
     }
     return rhoRes;
 }
@@ -1542,6 +1609,54 @@ void Foam::mcParticleCloud::initScalarFields()
                 << exit(FatalError);
         }
     }
+    // Find conserved scalars
+    wordList conservedScalarNames;
+    if (thermoDict_.found("conservedScalars"))
+    {
+        thermoDict_.lookup("conservedScalars") >> conservedScalarNames;
+        // Check for duplicates
+        labelList order;
+        uniqueOrder_FIX(conservedScalarNames, order);
+        if (conservedScalarNames.size() != order.size())
+        {
+            FatalErrorIn
+            (
+                "mcParticleCloud::initScalarFields()"
+            )
+                << "The list "
+                << thermoDict_.lookupEntry("conservedScalars", false, false).name()
+                << " contains duplicate entries.\n"
+                << exit(FatalError);
+        }
+    }
+    label nConservedScalarFields = conservedScalarNames.size();
+    conservedScalars_.setSize(nConservedScalarFields);
+    forAll(conservedScalarNames, conservedScalarI)
+    {
+        bool found = false;
+        forAll(scalarNames_, fieldI)
+        {
+            if (conservedScalarNames[conservedScalarI] == scalarNames_[fieldI])
+            {
+                conservedScalars_[conservedScalarI] = fieldI;
+                found = true;
+                break;
+            }
+        }
+        if (!found)
+        {
+            FatalErrorIn
+            (
+                "mcParticleCloud::initScalarFields()"
+            )
+                << "No such scalar field: " << conservedScalarNames[conservedScalarI] << "\n"
+                << "Available field names are:\n" << scalarNames_ << "\n"
+                << exit(FatalError);
+        }
+    }
+    deltaScalar_.setSize(conservedScalars_.size()+2, 0.);
+    scalarInFlux_.setSize(deltaScalar_.size(), 0.);
+    scalarOutFlux_.setSize(deltaScalar_.size(), 0.);
 }
 
 

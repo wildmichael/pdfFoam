@@ -90,6 +90,7 @@ void Foam::mcOpenBoundary::correct(bool afterMove)
         const vectorField  n      = mesh.Sf().boundaryField()[patchID()] / magSf;
         const vectorField& Cf     = mesh.Cf().boundaryField()[patchID()];
         const scalar dt           = mesh.time().deltaT().value();
+        const labelList& conservedScalars = cloud().conservedScalars();
 
         // Estimate location of "moving boundary" at t=t0
         scalarList x0 = sign(phi_)*phi_/magSf*dt;
@@ -116,10 +117,17 @@ void Foam::mcOpenBoundary::correct(bool afterMove)
                         scalar xp = n[faceI]&(Cf[faceI]-p.position());
                         if (xp < p.eta()*x0[faceI])
                         {
+                            scalar meta = p.eta()*p.m();
+                            scalarOutFlux()[0] -= meta;
+                            scalarOutFlux()[1] -= meta*p.rho();
+                            forAll(conservedScalars, csI)
+                            {
+                                label i = conservedScalars[csI];
+                                scalarOutFlux()[csI+2] -= meta*p.Phi()[i];
+                            }
                             // FIXME Does deletion invalidate the iteration?
                             // Not sure how IDLListBase implements this...
-                            scalarOutFlux() -= p.eta()*p.m()*p.Phi();
-                            cloud().deleteParticle(pIter());
+                            cloud().deleteParticle(p);
                         }
                     }
                 }
@@ -150,18 +158,31 @@ void Foam::mcOpenBoundary::hitPatch
 )
 {
     label faceI = patch().whichFace(p.face());
+    const labelList& conservedScalars = cloud().conservedScalars();
 
     // If this boundary is not reflecting or if it is an inflow boundary,
     // delete particle.
     if (phi_[faceI] < 0)
     {
-        scalarInFlux() -= p.eta()*p.m()*p.Phi();
+        scalar meta = p.eta()*p.m();
+        scalarInFlux()[0] -= meta;
+        scalarInFlux()[1] -= meta*p.rho();
+        forAll(conservedScalars, csI)
+        {
+            scalarInFlux()[csI+2] -= meta*p.Phi()[conservedScalars[csI]];
+        }
         td.keepParticle = false;
         return;
     }
     if (!reflecting_)
     {
-        scalarOutFlux() -= p.eta()*p.m()*p.Phi();
+        scalar meta = p.eta()*p.m();
+        scalarOutFlux()[0] -= meta;
+        scalarOutFlux()[1] -= meta*p.rho();
+        forAll(conservedScalars, csI)
+        {
+            scalarOutFlux()[csI+2] -= meta*p.Phi()[conservedScalars[csI]];
+        }
         td.keepParticle = false;
         return;
     }

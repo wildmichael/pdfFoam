@@ -70,6 +70,12 @@ inline const Foam::labelList& Foam::mcParticleCloud::mixedScalars() const
 }
 
 
+inline const Foam::labelList& Foam::mcParticleCloud::conservedScalars() const
+{
+    return conservedScalars_;
+}
+
+
 inline const Foam::volVectorField& Foam::mcParticleCloud::Ufv() const
 {
     return Ufv_;

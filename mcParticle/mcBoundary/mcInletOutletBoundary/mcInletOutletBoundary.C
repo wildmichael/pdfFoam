@@ -257,6 +257,7 @@ void Foam::mcInletOutletBoundary::correct(bool afterMove)
     }
     scalar dt = mesh.time().deltaT().value();
     const label Npc = cloud().solutionDict().particlesPerCell();
+    const labelList& conservedScalars = cloud().conservedScalars();
     forAll(pp, faceI)
     {
         label cellI = pp.faceCells()[faceI];
@@ -327,7 +328,14 @@ void Foam::mcInletOutletBoundary::correct(bool afterMove)
             forAll(genParticles, i)
             {
                 mcParticle& p = *genParticles[i];
-                scalarInFlux() += p.eta()*p.m()*p.Phi();
+                scalar meta = p.eta()*p.m();
+                scalarInFlux()[0] += meta;
+                scalarInFlux()[1] += meta*p.rho();
+                forAll(conservedScalars, csI)
+                {
+                    scalarInFlux()[csI+2] +=
+                        meta*p.Phi()[conservedScalars[csI]];
+                }
             }
         }
     }

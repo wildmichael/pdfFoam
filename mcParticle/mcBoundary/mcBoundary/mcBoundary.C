@@ -50,8 +50,8 @@ Foam::mcBoundary::mcBoundary
     cloud_(cloud),
     patchID_(patchID),
     patch_(cloud.mesh().boundaryMesh()[patchID]),
-    scalarInFlux_(cloud.scalarNames().size(), 0.0),
-    scalarOutFlux_(cloud.scalarNames().size(), 0.0)
+    scalarInFlux_(cloud.conservedScalars().size()+2, 0.0),
+    scalarOutFlux_(cloud.conservedScalars().size()+2, 0.0)
 {}
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
