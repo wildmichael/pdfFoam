@@ -99,12 +99,12 @@ void Foam::mcInletRandom::updateCoeffs
     uRms_ = uRms;
     b_ = M_SQRT1_2/uRms_;
     b2_ = b_*b_;
-    expma2b2_ = exp(-UMean_*UMean_*b2_);
-    abSqrtPi_ = UMean_*b_*sqrt(M_PI);
-    erfab_ = erf(UMean_*b_);
-    denom_ = expma2b2_+abSqrtPi_*(1.+erfab_);
+    expmU2b2_ = exp(-UMean_*UMean_*b2_);
+    UbSqrtPi_ = UMean_*b_*sqrt(M_PI);
+    erfUb_ = erf(UMean_*b_);
+    denom_ = expmU2b2_+UbSqrtPi_*(1.+erfUb_);
     b22denom_ = 2.*b2_/denom_;
-    UCondMean_ = 0.5*(UMean_+expma2b2_/(b_*sqrt(M_PI))+UMean_*erfab_);
+    Q_ = 0.5*(UMean_ + expmU2b2_/(b_*sqrt(M_PI)) + UMean_*erfUb_);
 }
 
 // ************************************************************************* //

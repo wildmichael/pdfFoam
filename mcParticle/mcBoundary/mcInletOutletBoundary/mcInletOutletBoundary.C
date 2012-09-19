@@ -275,7 +275,7 @@ void Foam::mcInletOutletBoundary::correct(bool afterMove)
         // Mass of every particle generated
         scalar mp = rho[faceI]*mesh.V()[cellI]/Npc;
         // Mass flowing into domain across faceI during dt
-        scalar mIn = rho[faceI]*inrnd.UCondMean()*magSf[faceI]*dt;
+        scalar mIn = rho[faceI]*inrnd.Q()*magSf[faceI]*dt;
 
         scalarField phi(PhicPdf.size());
         forAll(PhicPdf, PhiI)

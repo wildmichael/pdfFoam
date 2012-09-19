@@ -28,11 +28,11 @@ Description
     Abstract base class for inlet velocity random number generators
 
     Generate random values from the PDF
-    \f[ f_x = \frac{X}{N} e^{-(X-a)^2 b^2} \f]
+    \f[ f_x = \frac{X}{Q} e^{-(X-a)^2 b^2} \f]
     where
     \f{eqnarray*}{
         b &=& \frac{1}{\sqrt{2}u_\mathrm{rms}} \quad \text{and} \\
-        N &=& b^2 e^{-\frac{a^2}{2 b^2}} + a \sqrt{\frac{\pi b^2}{2}}
+        Q &=& b^2 e^{-\frac{a^2}{2 b^2}} + a \sqrt{\frac{\pi b^2}{2}}
               \left(1+\mathrm{erf}\left(\frac{a}{\sqrt{2 b^2}}\right)\right)
     \f}
     using various methods.
@@ -76,9 +76,11 @@ class mcInletRandom
         //- RMS of fluctuations (stddev)
         scalar uRms_;
         //- Inlet mean velocity
-        scalar UCondMean_;
+        scalar Q_;
+        //- Outflow mean velocity
+        scalar Qout_;
         //- Commonly used, precomputed factors
-        scalar b_, b2_, expma2b2_, abSqrtPi_, erfab_, denom_, b22denom_;
+        scalar b_, b2_, expmU2b2_, UbSqrtPi_, erfUb_, denom_, b22denom_;
 
     // Private member functions
 
@@ -95,21 +97,6 @@ protected:
 
         //- pow(b(), 2)
         scalar b2() const { return b2_; }
-
-        //- exp(-pow(UMean()*b(), 2))
-        scalar expma2b2() const { return expma2b2_; }
-
-        //- Umean()*b()*sqrt*(pi)
-        scalar abSqrtPi() const { return abSqrtPi_; }
-
-        //- erf(UMean()*b())
-        scalar erfab() const { return erfab_; }
-
-        //- expma2b2()+abSqrtPi()*(1+erfab())
-        scalar denom() const { return denom_; }
-
-        //- 2*b2()/denom
-        scalar b22denom() const { return b22denom_; }
 
 public:
 
@@ -168,17 +155,11 @@ public:
         //- The unconditional mean velocity
         scalar UMean() const { return UMean_; }
 
-        //- The unconditional mean velocity
-        scalar& UMean() { return UMean_; }
-
         //- The unconditional standard deviation of the velocity
         scalar uRms() const { return uRms_; }
 
-        //- The unconditional standard deviation of the velocity
-        scalar& uRms() { return uRms_; }
-
-        //- The conditional mean velocity (normalization factor)
-        inline scalar UCondMean() const { return UCondMean_; }
+        //- The mean velocity of the inflowing fluid (normalization factor)
+        inline scalar Q() const { return Q_; }
 
     // Public member functions
 

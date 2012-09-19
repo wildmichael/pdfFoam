@@ -35,7 +35,7 @@ Foam::scalar Foam::mcInletRandom::PDF(scalar x) const
 Foam::scalar Foam::mcInletRandom::CDF(scalar x) const
 {
     x -= UMean_;
-    return (expma2b2_-exp(-b2_*x*x)+abSqrtPi_*(erfab_+erf(b_*x)))/denom_;
+    return (expmU2b2_-exp(-b2_*x*x)+UbSqrtPi_*(erfUb_+erf(b_*x)))/denom_;
 }
 
 // ************************************************************************* //
