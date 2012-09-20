@@ -165,34 +165,34 @@ void Foam::mcOpenBoundary::hitPatch
 {
     const polyPatch& pp = patch().patch();
     label faceI = pp.whichFace(p.face());
-    const labelList& conservedScalars = cloud().conservedScalars();
-
+    //const labelList& conservedScalars = cloud().conservedScalars();
+    //
     // If this boundary is not reflecting or if it is an inflow boundary,
     // delete particle.
-    if (Un_[faceI] < 0)
-    {
-        scalar meta = p.eta()*p.m();
-        scalarInFlux()[0] -= meta;
-        scalarInFlux()[1] -= meta*p.rho();
-        forAll(conservedScalars, csI)
-        {
-            scalarInFlux()[csI+2] -= meta*p.Phi()[conservedScalars[csI]];
-        }
-        td.keepParticle = false;
-        return;
-    }
-    if (!reflecting_)
-    {
-        scalar meta = p.eta()*p.m();
-        scalarOutFlux()[0] -= meta;
-        scalarOutFlux()[1] -= meta*p.rho();
-        forAll(conservedScalars, csI)
-        {
-            scalarOutFlux()[csI+2] -= meta*p.Phi()[conservedScalars[csI]];
-        }
-        td.keepParticle = false;
-        return;
-    }
+    //if (Un_[faceI] < 0)
+    //{
+    //    scalar meta = p.eta()*p.m();
+    //    scalarInFlux()[0] -= meta;
+    //    scalarInFlux()[1] -= meta*p.rho();
+    //    forAll(conservedScalars, csI)
+    //    {
+    //        scalarInFlux()[csI+2] -= meta*p.Phi()[conservedScalars[csI]];
+    //    }
+    //    td.keepParticle = false;
+    //    return;
+    //}
+    //if (!reflecting_)
+    //{
+    //    scalar meta = p.eta()*p.m();
+    //    scalarOutFlux()[0] -= meta;
+    //    scalarOutFlux()[1] -= meta*p.rho();
+    //    forAll(conservedScalars, csI)
+    //    {
+    //        scalarOutFlux()[csI+2] -= meta*p.Phi()[conservedScalars[csI]];
+    //    }
+    //    td.keepParticle = false;
+    //    return;
+    //}
 
     p.transformProperties(I - 2.0*n_[faceI]*n_[faceI]);
     p.reflected() = true;
