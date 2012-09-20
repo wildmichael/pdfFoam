@@ -109,7 +109,7 @@ void Foam::mcPositionCorrection::makeL()
         (
             IOobject
             (
-                "LPosCorr_",
+                "mcPositionCorrecton::L",
                 mesh.time().timeName(),
                 mesh,
                 IOobject::NO_READ,

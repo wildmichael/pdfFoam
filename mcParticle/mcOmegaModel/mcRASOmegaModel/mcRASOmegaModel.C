@@ -81,6 +81,7 @@ void Foam::mcRASOmegaModel::updateInternals()
         (
             new volScalarField
             (
+                "mcRASOmegaModel::Omega",
                 turbModel.epsilon() / max(turbModel.k(), kMin)
             )
         );
