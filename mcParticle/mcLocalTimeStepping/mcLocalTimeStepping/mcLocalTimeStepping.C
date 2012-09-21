@@ -93,7 +93,9 @@ Foam::autoPtr<Foam::mcLocalTimeStepping> Foam::mcLocalTimeStepping::New
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::mcLocalTimeStepping::correct(mcParticle&)
-{}
+void Foam::mcLocalTimeStepping::correct(mcParticle& p)
+{
+    p.eta() = 1.0;
+}
 
 // ************************************************************************* //
