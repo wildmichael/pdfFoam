@@ -724,7 +724,7 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
         dimensionedSymmTensor("UUMomInstant", dimEnergy, symmTensor::zero)
     );
 
-    PaNIC_ *= 0;
+    PaNIC_ = 0;
 
     // Loop through particles to accumulate moments (0, 1, 2 order)
     // as well as particle number
