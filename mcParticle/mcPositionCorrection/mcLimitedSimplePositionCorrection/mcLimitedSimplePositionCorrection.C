@@ -69,9 +69,19 @@ Foam::mcLimitedSimplePositionCorrection::mcLimitedSimplePositionCorrection
         ),
         cloud.mesh(),
         dimVelocity,
-        fixedValueFvPatchScalarField::typeName
+        cloud.rhocPdf().boundaryField().types()
     )
-{}
+{
+    // Set fixedValue boundaries of UPosCorr to vector::zero
+    forAll(UPosCorr_.boundaryField(), patchi)
+    {
+        fvPatchField<vector>& fpf = UPosCorr_.boundaryField()[patchi];
+        if (isA<fixedValueFvPatchVectorField>(fpf))
+        {
+            fpf.vectorField::operator=(vector::zero);
+        }
+    }
+}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
@@ -161,6 +171,7 @@ void Foam::mcLimitedSimplePositionCorrection::updateInternals()
     }
 
     UPosCorr_ *= corr;
+    UPosCorr_.correctBoundaryConditions();
     UPosCorrInterp_ = interpolation<vector>::New
     (
         cloud().solutionDict().interpolationScheme(UPosCorr_.name()),
