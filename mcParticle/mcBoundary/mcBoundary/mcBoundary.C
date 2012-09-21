@@ -49,7 +49,9 @@ Foam::mcBoundary::mcBoundary
     dictionary(dict),
     cloud_(cloud),
     patchID_(patchID),
-    patch_(cloud.mesh().boundaryMesh()[patchID])
+    patch_(cloud.mesh().boundaryMesh()[patchID]),
+    scalarInFlux_(cloud.scalarNames().size(), 0.0),
+    scalarOutFlux_(cloud.scalarNames().size(), 0.0)
 {}
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //

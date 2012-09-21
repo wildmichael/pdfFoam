@@ -940,10 +940,16 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     forAll(boundaryHandlers_, boundaryI)
     {
         mcBoundary& b = boundaryHandlers_[boundaryI];
+        b.scalarInFlux() = 0.;
+        b.scalarOutFlux() = 0.;
         b.correct(false);
     }
+    // Integrate scalars across domain and reset correction velocity
+    scalarField deltaScalar(PhicPdf_.size(), 0.);
     forAllIter(mcParticleCloud, *this, pIter)
     {
+        mcParticle& p = pIter();
+        deltaScalar -= p.eta()*p.m()*p.Phi();
         p.Ucorrection() = vector::zero;
     }
     positionCorrection_().correct();
@@ -1087,15 +1093,21 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     Cloud<mcParticle>::move(td2);
 
     // Correct boundary conditions
+    scalarField scalarInFlux(PhicPdf_.size(), 0.);
+    scalarField scalarOutFlux(PhicPdf_.size(), 0.);
     forAll(boundaryHandlers_, boundaryI)
     {
-        boundaryHandlers_[boundaryI].correct(true);
+        mcBoundary& b = boundaryHandlers_[boundaryI];
+        b.correct(true);
+        scalarInFlux += b.scalarInFlux();
+        scalarOutFlux += b.scalarOutFlux();
     }
+    gSum(scalarInFlux);
+    gSum(scalarOutFlux);
 
     // Extract statistical averaging to obtain mesh-based quantities
     scalar existWt = 1.0/(1.0 + deltaT/solutionDict_.averagingTime().value());
     updateCloudPDF(existWt);
-    printParticleCo();
 
     particleNumberControl();
 
@@ -1110,16 +1122,16 @@ Foam::scalar Foam::mcParticleCloud::evolve()
           - rhocPdf_.internalField()
         )/rhocPdf_.internalField();
     scalar rhoRes = gAverage(mag(rhoErr));
-    Info<< "Cloud " << name()
-        << " pmd relative error: averageMag = " << rhoRes
+    Info<< "Cloud " << name() << nl
+        << "    pmd relative error: averageMag = " << rhoRes
         << ", min = " << gMin(rhoErr)
         << ", max = " << gMax(rhoErr)
-        << endl;
+        << nl;
+    printParticleCo();
 
     label nLostPart = lostParticles_.size();
     reduce(nLostPart, sumOp<label>());
-    Info<< "Cloud " << name() << " number of lost particles: "
-        << nLostPart << nl;
+    Info<< "    number of lost particles: " << nLostPart << nl;
 #ifdef FULLDEBUG
     volVectorField stabUfv = Ufv_;
     forAll(stabUfv, cellI)
@@ -1156,12 +1168,16 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     deltaU.write();
     Info<< "DEBUG: maximum deltaU = " << gMax(deltaU) << endl;
 #endif
-    // Mass after the evolution done
+    // Mass and integrated scalars after the evolution done
     scalar m1 = 0;
     forAllConstIter(mcParticleCloud, *this, pIter)
     {
-        m1 += pIter().eta()*pIter().m();
+        const mcParticle& p = pIter();
+        scalar meta = p.eta()*p.m();
+        m1 += meta;
+        deltaScalar += meta*p.Phi();
     }
+    gSum(deltaScalar);
     scalar m2 = fvc::domainIntegrate(pndcPdf_).value();
     // Difference of the masses
     scalar diffM1 = m1-m0_;
@@ -1171,8 +1187,26 @@ Foam::scalar Foam::mcParticleCloud::evolve()
         << "    m2 is "<< m2 << nl
         << "    The difference of the masses is "
         << diffM1 << ", " << diffM2 << nl
-        << "    The relative difference of the masses (in percent) is "
-        << diffM1/m0_*100  << ", " << diffM2/m0_*100 << endl;
+        << "    The relative difference of the masses (fraction) is "
+        << diffM1/m0_  << ", " << diffM2/m0_ << endl;
+
+    if (deltaScalar.size())
+    {
+        static scalarField dsm = deltaScalar;
+        static scalarField sim = scalarInFlux;
+        static scalarField som = scalarOutFlux;
+        static const scalar w = 0.999;
+        dsm = w*dsm + (1-w)*deltaScalar;
+        sim = w*sim + (1-w)*scalarInFlux;
+        som = w*som + (1-w)*scalarOutFlux;
+        scalarField ds = (dsm + sim + som)/sim;
+        Info<< "    scalar mass error (fraction of influx):";
+        forAll(scalarNames_, i)
+        {
+            Info<< " " << scalarNames_[i] << " = " << ds[i];
+        }
+        Info<< nl;
+    }
     return rhoRes;
 }
 
@@ -1596,9 +1630,9 @@ void Foam::mcParticleCloud::printParticleCo()
         reduce(maxPartCoNum, maxOp<scalar>());
     }
 
-    Info<< "Particle Courant Number in cloud " << name()
+    Info<< "    particle Courant Number"
         << " mean: " << meanPartCoNum
-        << " max: " << maxPartCoNum << endl;
+        << " max: " << maxPartCoNum << nl;
 }
 
 

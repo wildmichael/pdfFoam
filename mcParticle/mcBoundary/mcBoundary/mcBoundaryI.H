@@ -48,4 +48,28 @@ const Foam::polyPatch& Foam::mcBoundary::patch() const
     return patch_;
 }
 
+
+const Foam::scalarField& Foam::mcBoundary::scalarInFlux() const
+{
+    return scalarInFlux_;
+}
+
+
+Foam::scalarField& Foam::mcBoundary::scalarInFlux()
+{
+    return scalarInFlux_;
+}
+
+
+const Foam::scalarField& Foam::mcBoundary::scalarOutFlux() const
+{
+    return scalarOutFlux_;
+}
+
+
+Foam::scalarField& Foam::mcBoundary::scalarOutFlux()
+{
+    return scalarOutFlux_;
+}
+
 // ************************************************************************* //

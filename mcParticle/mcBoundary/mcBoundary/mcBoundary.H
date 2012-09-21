@@ -70,6 +70,12 @@ class mcBoundary :
         //- The associated patch
         const polyPatch& patch_;
 
+        //- The scalar influx through this boundary
+        scalarField scalarInFlux_;
+
+        //- The scalar outflux through this boundary
+        scalarField scalarOutFlux_;
+
     // Private Member Functions
 
         // Disallow default bitwise copy construct and assignment
@@ -155,6 +161,18 @@ public:
         inline label patchID() const;
 
         inline const polyPatch& patch() const;
+
+        //- The scalar influx through this patch
+        inline const scalarField& scalarInFlux() const;
+
+        //- The scalar influx through this patch
+        inline scalarField& scalarInFlux();
+
+        //- The scalar outflux through this patch
+        inline const scalarField& scalarOutFlux() const;
+
+        //- The scalar outflux through this patch
+        inline scalarField& scalarOutFlux();
 
 };
 

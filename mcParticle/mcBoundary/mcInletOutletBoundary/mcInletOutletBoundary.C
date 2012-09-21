@@ -324,6 +324,11 @@ void Foam::mcInletOutletBoundary::correct(bool afterMove)
         if (genParticles.size())
         {
             cloud().adjustAxiSymmetricMass(genParticles);
+            forAll(genParticles, i)
+            {
+                mcParticle& p = *genParticles[i];
+                scalarInFlux() += p.eta()*p.m()*p.Phi();
+            }
         }
     }
     if (debug)

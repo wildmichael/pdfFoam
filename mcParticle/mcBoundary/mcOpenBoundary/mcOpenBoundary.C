@@ -118,6 +118,7 @@ void Foam::mcOpenBoundary::correct(bool afterMove)
                         {
                             // FIXME Does deletion invalidate the iteration?
                             // Not sure how IDLListBase implements this...
+                            scalarOutFlux() -= p.eta()*p.m()*p.Phi();
                             cloud().deleteParticle(pIter());
                         }
                     }
@@ -154,11 +155,13 @@ void Foam::mcOpenBoundary::hitPatch
     // delete particle.
     if (phi_[faceI] < 0)
     {
+        scalarInFlux() -= p.eta()*p.m()*p.Phi();
         td.keepParticle = false;
         return;
     }
     if (!reflecting_)
     {
+        scalarOutFlux() -= p.eta()*p.m()*p.Phi();
         td.keepParticle = false;
         return;
     }
