@@ -154,11 +154,8 @@ void Foam::mcGhostInletOutletBoundary::populateGhostCells()
     {
         reduce(np, sumOp<label>());
         reduce(ng, sumOp<label>());
-        if (Pstream::master())
-        {
-            Info<< "Ghost particles: " << np << " generated in "
-                << ng << " ghost cells of patch " << patch().name() << endl;
-        }
+        Info<< "Ghost particles: " << np << " generated in " << ng
+            << " ghost cells of patch " << patch().name() << endl;
     }
 }
 
@@ -226,11 +223,8 @@ void Foam::mcGhostInletOutletBoundary::purgeGhostParticles()
     {
         reduce(nDelete, sumOp<label>());
         reduce(nAdmit, sumOp<label>());
-        if (Pstream::master())
-        {
-            Info<< "Ghost particles: "
-                << nDelete << " deleted, " << nAdmit << " admitted." << endl;
-        }
+        Info<< "Ghost particles: " << nDelete << " deleted, "
+            << nAdmit << " admitted." << endl;
     }
 }
 

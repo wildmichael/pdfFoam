@@ -525,7 +525,7 @@ Foam::mcParticleCloud::mcParticleCloud
     checkMoments();
 
     // Populate cloud
-    if (size() > 0) // if particle data found
+    if (returnReduce(size() > 0, andOp<bool>())) // if particle data found
     {
         mcParticle::readFields(*this);
     }
@@ -534,7 +534,7 @@ Foam::mcParticleCloud::mcParticleCloud
         Info<< "I am releasing particles initially!" << endl;
         initReleaseParticles();
     }
-    if (!deltaScalar_.headerOk())
+    if (!returnReduce(deltaScalar_.headerOk(), andOp<bool>()))
     {
         static_cast<scalarList>(deltaScalar_) = 0.;
         scalarInFlux_  = deltaScalar_;
@@ -606,7 +606,7 @@ void Foam::mcParticleCloud::checkMoments()
             }
         }
     }
-    if (readOk)
+    if (returnReduce(readOk, andOp<bool>()))
     {
         Info<< "Moments read correctly." << endl;
     }
@@ -928,7 +928,7 @@ void Foam::mcParticleCloud::cloneParticles(label celli)
     histNp_ += n;
     if (debug)
     {
-        Info<< "Cloned " << n << " particles in cell " << celli << endl;
+        Pout<< "Cloned " << n << " particles in cell " << celli << endl;
     }
 }
 
@@ -1005,7 +1005,7 @@ void Foam::mcParticleCloud::eliminateParticles(label celli)
 
     if (debug)
     {
-        Info<< "Eliminated " << nKilled << " of " << ncur
+        Pout<< "Eliminated " << nKilled << " of " << ncur
             << " particles in cell " << celli << endl;
     }
 }
@@ -1225,8 +1225,7 @@ Foam::scalar Foam::mcParticleCloud::evolve()
         << nl;
     printParticleCo();
 
-    label nLostPart = lostParticles_.size();
-    reduce(nLostPart, sumOp<label>());
+    label nLostPart = returnReduce(lostParticles_.size(), sumOp<label>());
     Info<< "    number of lost particles: " << nLostPart << nl;
 #ifdef FULLDEBUG
     volVectorField stabUfv = Ufv_;
@@ -1281,15 +1280,9 @@ Foam::scalar Foam::mcParticleCloud::evolve()
             deltaScalarInst[csI+2] += meta*p.Phi()[conservedScalars_[csI]];
         }
     }
-    forAll(deltaScalarInst, i)
-    {
-        reduce(deltaScalarInst[i],   sumOp<scalar>());
-        reduce(scalarInFluxInst[i],  sumOp<scalar>());
-        reduce(scalarOutFluxInst[i], sumOp<scalar>());
-    }
-
-    scalarField scalarErrorInst =
-        (deltaScalarInst-scalarInFluxInst-scalarOutFluxInst)/scalarInFluxInst;
+    reduce(deltaScalarInst,   sumOp<scalarField>());
+    reduce(scalarInFluxInst,  sumOp<scalarField>());
+    reduce(scalarOutFluxInst, sumOp<scalarField>());
 
     deltaScalar_   = existWt*deltaScalar_   + (1-existWt)*deltaScalarInst;
     scalarInFlux_  = existWt*scalarInFlux_  + (1-existWt)*scalarInFluxInst;
@@ -1332,6 +1325,7 @@ Foam::scalar Foam::mcParticleCloud::evolve()
 // Initialization: populate the FV field with particles
 void Foam::mcParticleCloud::initReleaseParticles()
 {
+    clear();
     const label Npc = solutionDict_.particlesPerCell();
     // Populate each cell with particlesPerCell() particles in each cell
     forAll(Ufv_, celli)
@@ -1810,8 +1804,7 @@ void Foam::mcParticleCloud::printParticleCo()
             meanPartCoNum += pIter().Co();
             maxPartCoNum = max(maxPartCoNum, pIter().Co());
         }
-        label nPart = size();
-        reduce(nPart, sumOp<label>());
+        label nPart = returnReduce(size(), sumOp<label>());
         reduce(meanPartCoNum, sumOp<scalar>());
         meanPartCoNum /= nPart;
         reduce(maxPartCoNum, maxOp<scalar>());

@@ -341,8 +341,7 @@ void Foam::mcInletOutletBoundary::correct(bool afterMove)
     }
     if (debug)
     {
-        reduce(np, sumOp<label>());
-        Info<< "Inlet particles: " << np << " generated"
+        Pout<< "Inlet particles: " << np << " generated"
             " on patch " << patch().name() << endl;
     }
 #ifdef FULLDEBUG

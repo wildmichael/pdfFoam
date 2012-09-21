@@ -144,7 +144,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
     {
         if (debug)
         {
-            Info<< "Time = " << mesh.time().timeName()
+            Pout<< "Time = " << mesh.time().timeName()
                 << "  trackTime = " << trackTime
                 << "  tEnd = " << tEnd
                 << "  stepFraction() = " << stepFraction()
@@ -175,7 +175,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
         dt *= tf;
         if (debug)
         {
-            Info<< "  trackFraction = " << tf
+            Pout<< "  trackFraction = " << tf
                 << endl;
         }
 
