@@ -54,12 +54,12 @@ namespace Foam
 
 Foam::mcGhostInletOutletBoundary::mcGhostInletOutletBoundary
 (
-    const Foam::fvMesh& mesh,
-    Foam::label patchID,
-    const Foam::dictionary& dict
+    mcParticleCloud& cloud,
+    label patchID,
+    const dictionary& dict
 )
 :
-    mcOpenBoundary(mesh, patchID, dict)
+    mcOpenBoundary(cloud, patchID, dict)
 {
     // FIXME: Is this correct?
     reflecting() = false;
@@ -69,11 +69,9 @@ Foam::mcGhostInletOutletBoundary::mcGhostInletOutletBoundary
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 // Enforce in/out flow BCs by populating ghost cells
-void Foam::mcGhostInletOutletBoundary::populateGhostCells
-(
-    Foam::mcParticleCloud& cloud
-)
+void Foam::mcGhostInletOutletBoundary::populateGhostCells()
 {
+    const fvMesh& mesh = cloud().mesh();
 #ifdef FULLDEBUG
     if (debug > 1 && !statFile_.valid())
     {
@@ -81,14 +79,14 @@ void Foam::mcGhostInletOutletBoundary::populateGhostCells
         (
             new OFstream
             (
-                mesh().time().path() / patch().name()+".ghostInletOutlet"
+                mesh.time().path()/patch().name()+".ghostInletOutlet"
             )
         );
     }
 #endif
     label np = 0;
     label ng = 0;
-    const label Npc = cloud.solutionDict().particlesPerCell();
+    const label Npc = cloud().solutionDict().particlesPerCell();
     forAll(ghostCellLayer_, faceCelli)
     {
         ++ng;
@@ -96,20 +94,20 @@ void Foam::mcGhostInletOutletBoundary::populateGhostCells
 
         label celli = ghostCellLayer_[faceCelli];
         label patchI = patchID();
-        scalar m = mesh().V()[celli]
-                 * cloud.rhocPdf().boundaryField()[patchI][faceCelli]
+        scalar m = mesh.V()[celli]
+                 * cloud().rhocPdf().boundaryField()[patchI][faceCelli]
                  / Npc;
-        const vector& Updf = cloud.Ufv().boundaryField()[patchI][faceCelli];
+        const vector& Updf = cloud().Ufv().boundaryField()[patchI][faceCelli];
         scalar urms = sqrt(
-            2./3.*cloud.kfv()().boundaryField()[patchI][faceCelli]);
+            2./3.*cloud().kfv()().boundaryField()[patchI][faceCelli]);
         vector uscales(urms, urms, urms);
         label  ghost = 1;
         vector shift = ghostCellShifts_[faceCelli];
         // Phi: from patch value (boundary condition)
-        scalarField Phi(cloud.PhicPdf().size());
+        scalarField Phi(cloud().PhicPdf().size());
         forAll(Phi, PhiI)
         {
-            const volScalarField& f = *(cloud.PhicPdf()[PhiI]);
+            const volScalarField& f = *(cloud().PhicPdf()[PhiI]);
             Phi[PhiI] = f.boundaryField()[patchID()][faceCelli];
         }
 
@@ -121,7 +119,7 @@ void Foam::mcGhostInletOutletBoundary::populateGhostCells
 #else
         label N = Npc;
 #endif
-        cloud.particleGenInCell
+        cloud().particleGenInCell
         (
             celli,
             N,
@@ -135,8 +133,9 @@ void Foam::mcGhostInletOutletBoundary::populateGhostCells
 #ifdef FULLDEBUG
         if (debug > 1)
         {
-            const vector& u = cloud.last()->UParticle();
-            if ((mesh().Sf().boundaryField()[patchID()][faceCelli] & u) < 0.)
+            const vector& u = cloud().last()->UParticle();
+            const vector& Sf = mesh.Sf().boundaryField()[patchID()][faceCelli];
+            if ((Sf & u) < 0.)
             {
                 statFile_() << u.x() << tab << u.y() << tab << u.z() << nl;
             }
@@ -164,16 +163,14 @@ void Foam::mcGhostInletOutletBoundary::populateGhostCells
 }
 
 
-void Foam::mcGhostInletOutletBoundary::purgeGhostParticles
-(
-    Foam::mcParticleCloud& cloud
-)
+void Foam::mcGhostInletOutletBoundary::purgeGhostParticles()
 {
     if (purgedGhosts_)
         return;
+    const fvMesh& mesh = cloud().mesh();
     label nDelete = 0;
     label nAdmit = 0;
-    forAllIter(mcParticleCloud, cloud, pIter)
+    forAllIter(mcParticleCloud, cloud(), pIter)
     {
         // only operate on ghost particles
         if(!pIter().ghost())
@@ -182,7 +179,7 @@ void Foam::mcGhostInletOutletBoundary::purgeGhostParticles
         label celli = p.cell();
         if (ghostCellHash_.found(celli)) // still in ghost cell
         {
-            cloud.deleteParticle(p);
+            cloud().deleteParticle(p);
             ++nDelete;
         }
         else
@@ -191,10 +188,10 @@ void Foam::mcGhostInletOutletBoundary::purgeGhostParticles
             p.position() -= p.shift(); // update position
             label newCelli = -1;
             label curCelli = p.cell();
-            forAll(mesh().cellCells()[curCelli], nei)
+            forAll(mesh.cellCells()[curCelli], nei)
             {
-                label neiCellId = mesh().cellCells()[curCelli][nei];
-                if (mesh().pointInCell(p.position(), neiCellId))
+                label neiCellId = mesh.cellCells()[curCelli][nei];
+                if (mesh.pointInCell(p.position(), neiCellId))
                 {
                     newCelli = neiCellId;
                     break;
@@ -203,7 +200,7 @@ void Foam::mcGhostInletOutletBoundary::purgeGhostParticles
             // Not found in neighbour cells: global search
             if (newCelli < 0)
             {
-                newCelli = mesh().findCell(p.position());
+                newCelli = mesh.findCell(p.position());
             }
             if (newCelli < 0)
             {
@@ -215,7 +212,7 @@ void Foam::mcGhostInletOutletBoundary::purgeGhostParticles
                     << "  (2) parallel computing + large time steps" << nl
                     << " Info for the lost particle: " << nl
                     << p.info() << endl;
-                cloud.deleteParticle(p);
+                cloud().deleteParticle(p);
                 ++nDelete;
             }
             p.cell()  = newCelli;
@@ -246,8 +243,9 @@ void Foam::mcGhostInletOutletBoundary::findGhostLayer()
     {
         ghostCellLayer_.setSize(nf);
         ghostCellShifts_.setSize(nf);
-        const cellList& cells = mesh().cells();
-        const faceList& faces = mesh().faces();
+        const fvMesh& mesh = cloud().mesh();
+        const cellList& cells = mesh.cells();
+        const faceList& faces = mesh.faces();
         // Find the ghost cells and faces
         const polyPatch& pp = patch();
         forAll(pp, facei)
@@ -270,27 +268,23 @@ void Foam::mcGhostInletOutletBoundary::findGhostLayer()
             else
             {
                 ghostCellShifts_[facei] =
-                      mesh().Cf()[oppositeFaceI]
-                    - mesh().Cf().boundaryField()[patchID()][facei];
+                      mesh.Cf()[oppositeFaceI]
+                    - mesh.Cf().boundaryField()[patchID()][facei];
             }
         }
     }
 }
 
 
-void Foam::mcGhostInletOutletBoundary::correct
-(
-    Foam::mcParticleCloud& cloud,
-    bool afterMove
-)
+void Foam::mcGhostInletOutletBoundary::correct(bool afterMove)
 {
     if (afterMove)
     {
-        purgeGhostParticles(cloud);
+        purgeGhostParticles();
     }
     else
     {
-        populateGhostCells(cloud);
+        populateGhostCells();
     }
 }
 

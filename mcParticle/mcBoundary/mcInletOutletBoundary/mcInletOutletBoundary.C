@@ -56,12 +56,12 @@ namespace Foam
 
 Foam::mcInletOutletBoundary::mcInletOutletBoundary
 (
-    const Foam::fvMesh& mesh,
-    Foam::label patchID,
-    const Foam::dictionary& dict
+    mcParticleCloud& cloud,
+    label patchID,
+    const dictionary& dict
 )
 :
-    mcOpenBoundary(mesh, patchID, dict),
+    mcOpenBoundary(cloud, patchID, dict),
     probVec_(patch().size()),
     fwdTrans_(patch().size()),
     revTrans_(patch().size()),
@@ -73,6 +73,7 @@ Foam::mcInletOutletBoundary::mcInletOutletBoundary
     // areas), transformations and transform R_ into wall-normal system
     const polyPatch& pp = patch();
     vector ex(1.0, 0.0, 0.0);
+    const fvMesh& mesh = cloud.mesh();
     const vectorField& Sf = mesh.Sf().boundaryField()[patchID];
     const scalarField& magSf = mesh.magSf().boundaryField()[patchID];
     forAll(pp, faceI)
@@ -103,31 +104,25 @@ Foam::mcInletOutletBoundary::mcInletOutletBoundary
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-const Foam::vectorField& Foam::mcInletOutletBoundary::getU
-(
-    const Foam::mcParticleCloud& cloud
-)
+const Foam::vectorField& Foam::mcInletOutletBoundary::getU()
 {
     if (U_.empty())
     {
-        const vectorField& U = cloud.Ufv().boundaryField()[patchID()];
+        const vectorField& U = cloud().Ufv().boundaryField()[patchID()];
         U_ = transform(fwdTrans_, U)();
     }
     return U_;
 }
 
 
-const Foam::symmTensorField& Foam::mcInletOutletBoundary::getR
-(
-    const Foam::mcParticleCloud& cloud
-)
+const Foam::symmTensorField& Foam::mcInletOutletBoundary::getR()
 {
     if (R_.empty())
     {
         const symmTensorField& tau =
-            cloud.TaucPdf().boundaryField()[patchID()];
+            cloud().TaucPdf().boundaryField()[patchID()];
         // clipping to compensate for bad divergence errors
-        const compressible::turbulenceModel& tm = cloud.turbulenceModel();
+        const compressible::turbulenceModel& tm = cloud().turbulenceModel();
         scalar k0;
         if (isA<compressible::RASModel>(tm))
         {
@@ -153,18 +148,15 @@ const Foam::symmTensorField& Foam::mcInletOutletBoundary::getR
 
 
 Foam::PtrList<Foam::mcInletRandom>&
-Foam::mcInletOutletBoundary::getInRnd
-(
-    Foam::mcParticleCloud& cloud
-)
+Foam::mcInletOutletBoundary::getInRnd()
 {
     if (inRnd_.empty())
     {
         const polyPatch& pp = patch();
         inRnd_.setSize(pp.size());
-        const vectorField& U = getU(cloud);
-        const symmTensorField& R = getR(cloud);
-        Random& rnd = cloud.random();
+        const vectorField& U = getU();
+        const symmTensorField& R = getR();
+        Random& rnd = cloud().random();
         forAll(pp, faceI)
         {
             inRnd_.set(faceI, mcInletRandom::New
@@ -180,18 +172,15 @@ Foam::mcInletOutletBoundary::getInRnd
 }
 
 
-Foam::point Foam::mcInletOutletBoundary::randomPoint
-(
-    Foam::mcParticleCloud& cloud,
-    Foam::label faceI
-)
+Foam::point Foam::mcInletOutletBoundary::randomPoint(label faceI)
 {
+    const fvMesh& mesh = cloud().mesh();
     const face& f = patch()[faceI];
     const scalarList& w = probVec_[faceI];
-    const point& C = mesh().C().boundaryField()[patchID()][faceI];
-    const vector& Sf = mesh().Sf().boundaryField()[patchID()][faceI];
-    pointField points = f.points(mesh().points());
-    Random& rnd = cloud.random();
+    const point& C = mesh.C().boundaryField()[patchID()][faceI];
+    const vector& Sf = mesh.Sf().boundaryField()[patchID()][faceI];
+    pointField points = f.points(mesh.points());
+    Random& rnd = cloud().random();
     // find triangle in which to place point
     label idx1 = std::distance(w.begin(), std::lower_bound(
             w.begin(), w.end(), rnd.scalar01()));
@@ -211,27 +200,23 @@ Foam::point Foam::mcInletOutletBoundary::randomPoint
     point p = a1*points[idx1] + a2*points[idx2] + (1.0-a1-a2)*C - SMALL*Sf;
     // If the case has reduced dimensionality, put the coordinate of the
     // reduced dimension onto the coordinate plane
-    if (mesh().nGeometricD() <= 2)
+    if (mesh.nGeometricD() <= 2)
     {
-        meshTools::constrainDirection(mesh(), mesh().geometricD(), p);
+        meshTools::constrainDirection(mesh, mesh.geometricD(), p);
     }
     return p;
 }
 
 
-Foam::vector Foam::mcInletOutletBoundary::randomVelocity
-(
-    Foam::mcParticleCloud& cloud,
-    Foam::label faceI
-)
+Foam::vector Foam::mcInletOutletBoundary::randomVelocity(label faceI)
 {
-    Random& rnd = cloud.random();
-    const vector& U = getU(cloud)[faceI];
-    const symmTensor& R = getR(cloud)[faceI];
+    Random& rnd = cloud().random();
+    const vector& U = getU()[faceI];
+    const symmTensor& R = getR()[faceI];
     // Normal component has a special distributions, other components are Gaussian
     vector Up = vector
     (
-        getInRnd(cloud)[faceI].value(),
+        getInRnd()[faceI].value(),
         U.y() + sqrt(R.yy()) * rnd.GaussNormal(),
         U.z() + sqrt(R.zz()) * rnd.GaussNormal()
     );
@@ -240,18 +225,15 @@ Foam::vector Foam::mcInletOutletBoundary::randomVelocity
 }
 
 
-void Foam::mcInletOutletBoundary::correct
-(
-    Foam::mcParticleCloud& cloud,
-    bool afterMove
-)
+void Foam::mcInletOutletBoundary::correct(bool afterMove)
 {
-    mcOpenBoundary::correct(cloud, afterMove);
+    mcOpenBoundary::correct(afterMove);
 
     if (afterMove)
     {
         return;
     }
+    const fvMesh& mesh = cloud().mesh();
 #ifdef FULLDEBUG
     if (debug > 1 && !statFile_.valid())
     {
@@ -259,22 +241,22 @@ void Foam::mcInletOutletBoundary::correct
         (
             new OFstream
             (
-                mesh().time().path() / patch().name()+".inletOutlet"
+                mesh.time().path() / patch().name()+".inletOutlet"
             )
         );
     }
 #endif
     label np = 0;
     const polyPatch& pp = patch();
-    const scalarField& magSf = mesh().magSf().boundaryField()[patchID()];
-    const scalarField& rho = cloud.rhocPdf().boundaryField()[patchID()];
-    List<scalarField*> PhicPdf(cloud.PhicPdf().size());
+    const scalarField& magSf = mesh.magSf().boundaryField()[patchID()];
+    const scalarField& rho = cloud().rhocPdf().boundaryField()[patchID()];
+    List<scalarField*> PhicPdf(cloud().PhicPdf().size());
     forAll(PhicPdf, PhiI)
     {
-        PhicPdf[PhiI] = &cloud.PhicPdf()[PhiI]->boundaryField()[patchID()];
+        PhicPdf[PhiI] = &cloud().PhicPdf()[PhiI]->boundaryField()[patchID()];
     }
-    scalar dt = mesh().time().deltaT().value();
-    const label Npc = cloud.solutionDict().particlesPerCell();
+    scalar dt = mesh.time().deltaT().value();
+    const label Npc = cloud().solutionDict().particlesPerCell();
     forAll(pp, faceI)
     {
         label cellI = pp.faceCells()[faceI];
@@ -283,14 +265,14 @@ void Foam::mcInletOutletBoundary::correct
             // Mean velocity points out of the domain, so this is an outlet
             continue;
         }
-        mcInletRandom& inrnd = getInRnd(cloud)[faceI];
+        mcInletRandom& inrnd = getInRnd()[faceI];
         inrnd.updateCoeffs
         (
-            getU(cloud)[faceI].x(),
-            sqrt(getR(cloud)[faceI].xx())
+            getU()[faceI].x(),
+            sqrt(getR()[faceI].xx())
         );
         // Mass of every particle generated
-        scalar mp = rho[faceI]*mesh().V()[cellI]/Npc;
+        scalar mp = rho[faceI]*mesh.V()[cellI]/Npc;
         // Mass flowing into domain across faceI during dt
         scalar mIn = rho[faceI]*inrnd.UCondMean()*magSf[faceI]*dt;
 
@@ -303,31 +285,31 @@ void Foam::mcInletOutletBoundary::correct
         DynamicList<mcParticle*> genParticles;
         genParticles.reserve(mIn/mp);
         scalar mGen = 0;
-        cloud.localTimeStepping().updateInternals();
+        cloud().localTimeStepping().updateInternals();
         while (mGen < mIn)
         {
-            vector Up = randomVelocity(cloud, faceI);
+            vector Up = randomVelocity(faceI);
             mcParticle* p = new mcParticle
             (
-                cloud,
-                randomPoint(cloud, faceI),
+                cloud(),
+                randomPoint(faceI),
                 cellI,
                 mp,
                 Up,
                 phi
             );
             p->isOnInletBoundary() = true;
-            cloud.localTimeStepping().correct(*p);
+            cloud().localTimeStepping().correct(*p);
             p->m() /= p->eta();
             if (mGen + p->m() > mIn)
             {
-                if (cloud.random().scalar01() > (mIn - mGen)/p->m())
+                if (cloud().random().scalar01() > (mIn - mGen)/p->m())
                 {
                     delete p;
                     break;
                 }
             }
-            cloud.addParticle(p);
+            cloud().addParticle(p);
             genParticles.append(p);
             mGen += p->m();
             ++np;
@@ -341,7 +323,7 @@ void Foam::mcInletOutletBoundary::correct
         }
         if (genParticles.size())
         {
-            cloud.adjustAxiSymmetricMass(genParticles);
+            cloud().adjustAxiSymmetricMass(genParticles);
         }
     }
     if (debug)

@@ -43,16 +43,16 @@ namespace Foam
 
 Foam::mcOpenBoundary::mcOpenBoundary
 (
-    const Foam::fvMesh& mesh,
+    mcParticleCloud& cloud,
     label patchID,
-    const Foam::dictionary& dict
+    const dictionary& dict
 )
 :
-    mcBoundary(mesh, patchID, dict),
+    mcBoundary(cloud, patchID, dict),
     reflecting_(lookupOrDefault<Switch>("reflecting", true)),
     phi_
     (
-        mesh.lookupObject<surfaceScalarField>
+        cloud.mesh().lookupObject<surfaceScalarField>
         (
             lookupOrDefault<word>("phiName", "phi")
         ).boundaryField()[patchID]
@@ -72,11 +72,7 @@ Foam::mcOpenBoundary::mcOpenBoundary
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::mcOpenBoundary::correct
-(
-    Foam::mcParticleCloud& cloud,
-    bool afterMove
-)
+void Foam::mcOpenBoundary::correct(bool afterMove)
 {
     if (!reflecting_)
     {
@@ -88,17 +84,18 @@ void Foam::mcOpenBoundary::correct
     static bool handledReflectedParticles = false;
     if (!afterMove)
     {
+        const fvMesh& mesh = cloud().mesh();
         handledReflectedParticles = false;
-        const scalarField& magSf  = mesh().magSf().boundaryField()[patchID()];
-        const vectorField  n      = mesh().Sf().boundaryField()[patchID()] / magSf;
-        const vectorField& Cf     = mesh().Cf().boundaryField()[patchID()];
-        const scalar dt           = mesh().time().deltaT().value();
+        const scalarField& magSf  = mesh.magSf().boundaryField()[patchID()];
+        const vectorField  n      = mesh.Sf().boundaryField()[patchID()] / magSf;
+        const vectorField& Cf     = mesh.Cf().boundaryField()[patchID()];
+        const scalar dt           = mesh.time().deltaT().value();
 
         // Estimate location of "moving boundary" at t=t0
         scalarList x0 = sign(phi_)*phi_/magSf*dt;
 
         // Discard particles behind the "moving boundary"
-        forAllIter(mcParticleCloud, cloud, pIter)
+        forAllIter(mcParticleCloud, cloud(), pIter)
         {
             label cellI = pIter().cell();
             dynamicLabelListPtrMap::const_iterator cfIter
@@ -115,12 +112,13 @@ void Foam::mcOpenBoundary::correct
                     // outflow? (intentionally "not inflow")
                     if (!(phi_[faceI] < 0.))
                     {
-                        scalar xp = n[faceI]&(Cf[faceI]-pIter().position());
-                        if (xp < pIter().eta()*x0[faceI])
+                        mcParticle& p = pIter();
+                        scalar xp = n[faceI]&(Cf[faceI]-p.position());
+                        if (xp < p.eta()*x0[faceI])
                         {
                             // FIXME Does deletion invalidate the iteration?
                             // Not sure how IDLListBase implements this...
-                            cloud.deleteParticle(pIter());
+                            cloud().deleteParticle(pIter());
                         }
                     }
                 }
@@ -130,7 +128,7 @@ void Foam::mcOpenBoundary::correct
     else if (!handledReflectedParticles)
     {
         // Update velocities of all reflected particles
-        forAllIter(mcParticleCloud, cloud, pIter)
+        forAllIter(mcParticleCloud, cloud(), pIter)
         {
             mcParticle& p = pIter();
             if (p.reflectedAtOpenBoundary())
@@ -154,13 +152,19 @@ void Foam::mcOpenBoundary::hitPatch
 
     // If this boundary is not reflecting or if it is an inflow boundary,
     // delete particle.
-    if (!reflecting_ || phi_[faceI] < 0)
+    if (phi_[faceI] < 0)
+    {
+        td.keepParticle = false;
+        return;
+    }
+    if (!reflecting_)
     {
         td.keepParticle = false;
         return;
     }
 
-    const scalar& magSf = mesh().magSf().boundaryField()[patchID()][faceI];
+    const scalar& magSf =
+        cloud().mesh().magSf().boundaryField()[patchID()][faceI];
     vector n = patch().faceAreas()[faceI] / magSf;
 
     p.transformProperties(I - 2.0*n*n);

@@ -939,11 +939,12 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     // Correct boundary conditions
     forAll(boundaryHandlers_, boundaryI)
     {
-        boundaryHandlers_[boundaryI].correct(*this, false);
+        mcBoundary& b = boundaryHandlers_[boundaryI];
+        b.correct(false);
     }
     forAllIter(mcParticleCloud, *this, pIter)
     {
-        pIter().Ucorrection() = vector::zero;
+        p.Ucorrection() = vector::zero;
     }
     positionCorrection_().correct();
 
@@ -1088,7 +1089,7 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     // Correct boundary conditions
     forAll(boundaryHandlers_, boundaryI)
     {
-        boundaryHandlers_[boundaryI].correct(*this, true);
+        boundaryHandlers_[boundaryI].correct(true);
     }
 
     // Extract statistical averaging to obtain mesh-based quantities
@@ -1451,7 +1452,7 @@ void Foam::mcParticleCloud::initBCHandlers()
         {
             bcHandler.reset(new mcProcessorBoundary
             (
-                mesh_,
+                *this,
                 patchI
             ));
         }
@@ -1459,7 +1460,7 @@ void Foam::mcParticleCloud::initBCHandlers()
         {
             bcHandler = mcBoundary::New
             (
-                mesh_,
+                *this,
                 patchI,
                 bd.subDict(pp.name())
             );

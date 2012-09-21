@@ -98,7 +98,7 @@ public:
         //- Construct from components
         mcOpenBoundary
         (
-            const fvMesh& mesh,
+            mcParticleCloud& cloud,
             label patchID,
             const dictionary& dict
         );
@@ -112,11 +112,7 @@ public:
         Switch& reflecting() { return reflecting_; }
 
         //- Delete particles at the outlet boundary
-        virtual void correct
-        (
-            mcParticleCloud& cloud,
-            bool afterMove
-        );
+        virtual void correct(bool afterMove);
 
         //- Deal with a particle hitting the patch
         virtual void hitPatch

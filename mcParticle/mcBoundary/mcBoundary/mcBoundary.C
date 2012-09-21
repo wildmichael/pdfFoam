@@ -24,6 +24,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "mcBoundary.H"
+#include "mcParticleCloud.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -40,24 +41,24 @@ namespace Foam
 
 Foam::mcBoundary::mcBoundary
 (
-    const Foam::fvMesh& mesh,
+    mcParticleCloud& cloud,
     label patchID,
-    const Foam::dictionary& dict
+    const dictionary& dict
 )
 :
     dictionary(dict),
-    mesh_(mesh),
+    cloud_(cloud),
     patchID_(patchID),
-    patch_(mesh.boundaryMesh()[patchID])
+    patch_(cloud.mesh().boundaryMesh()[patchID])
 {}
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
 
 Foam::autoPtr<Foam::mcBoundary> Foam::mcBoundary::New
 (
-    const Foam::fvMesh& mesh,
+    mcParticleCloud& cloud,
     label patchID,
-    const Foam::dictionary& dict
+    const dictionary& dict
 )
 {
     word boundaryType(dict.lookup("type"));
@@ -75,7 +76,7 @@ Foam::autoPtr<Foam::mcBoundary> Foam::mcBoundary::New
             << mcBoundaryConstructorTablePtr_->sortedToc()
             << exit(FatalError);
     }
-    return autoPtr<mcBoundary>(cstrIter()(mesh, patchID, dict));
+    return autoPtr<mcBoundary>(cstrIter()(cloud, patchID, dict));
 }
 
 // ************************************************************************* //

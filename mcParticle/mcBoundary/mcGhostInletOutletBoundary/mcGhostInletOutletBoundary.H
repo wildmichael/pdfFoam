@@ -71,10 +71,10 @@ class mcGhostInletOutletBoundary :
     // Private Member Functions
 
         //- Enforce in/out flow BCs by populating ghost cells
-        void populateGhostCells(mcParticleCloud& cloud);
+        void populateGhostCells();
 
         //- Remove all ghost particles from cloud
-        void purgeGhostParticles(mcParticleCloud& cloud);
+        void purgeGhostParticles();
 
         //- Finds the ghost cell layers
         void findGhostLayer();
@@ -94,7 +94,7 @@ public:
         //- Construct from components
         mcGhostInletOutletBoundary
         (
-            const fvMesh& mesh,
+            mcParticleCloud& cloud,
             label patchID,
             const dictionary& dict
         );
@@ -102,11 +102,7 @@ public:
     // Member Functions
 
         //- Release ghost particles at the boundary
-        virtual void correct
-        (
-            mcParticleCloud& cloud,
-            bool afterMove
-        );
+        virtual void correct(bool afterMove);
 
 };
 

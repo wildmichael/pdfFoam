@@ -70,7 +70,7 @@ public:
         //- Construct from components
         mcSlipBoundary
         (
-            const fvMesh& mesh,
+            mcParticleCloud& cloud,
             label patchID,
             const dictionary& dict
         );

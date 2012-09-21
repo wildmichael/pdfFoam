@@ -48,12 +48,12 @@ namespace Foam
 
 Foam::mcSlipBoundary::mcSlipBoundary
 (
-    const Foam::fvMesh& mesh,
-    Foam::label patchID,
-    const Foam::dictionary& dict
+    mcParticleCloud& cloud,
+    label patchID,
+    const dictionary& dict
 )
 :
-    mcBoundary(mesh, patchID, dict)
+    mcBoundary(cloud, patchID, dict)
 {}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //

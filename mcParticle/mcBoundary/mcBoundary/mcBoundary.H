@@ -61,8 +61,8 @@ class mcBoundary :
 
     // Private Data
 
-        //- The mesh
-        const fvMesh& mesh_;
+        //- The particle cloud
+        mcParticleCloud& cloud_;
 
         //- The associated patch ID
         const label patchID_;
@@ -89,11 +89,11 @@ public:
             mcBoundary,
             mcBoundary,
             (
-                const fvMesh& mesh,
+                mcParticleCloud& cloud,
                 label patchID,
                 const dictionary& dict
             ),
-            (mesh, patchID, dict)
+            (cloud, patchID, dict)
         );
 
 
@@ -102,7 +102,7 @@ public:
         //- Construct from components
         mcBoundary
         (
-            const fvMesh& mesh,
+            mcParticleCloud& cloud,
             label patchID,
             const dictionary& dict
         );
@@ -113,7 +113,7 @@ public:
         //- Return a reference to the selected reaction model
         static autoPtr<mcBoundary> New
         (
-            const fvMesh& mesh,
+            mcParticleCloud& cloud,
             label patchID,
             const dictionary& dict
         );
@@ -126,11 +126,7 @@ public:
 
         //- Apply the boundary condition to the particle cloud, does nothing by
         // default
-        virtual void correct
-        (
-            mcParticleCloud& cloud,
-            bool afterMove
-        )
+        virtual void correct(bool afterMove)
         {}
 
         //- Deal with a particle hitting the patch
@@ -149,8 +145,11 @@ public:
             int&
         ) = 0;
 
-        //- The object registry
-        inline const fvMesh& mesh() const;
+        //- The particle cloud
+        inline const mcParticleCloud& cloud() const;
+
+        //- The particle cloud
+        inline mcParticleCloud& cloud();
 
         //- The ID of the associated patch
         inline label patchID() const;

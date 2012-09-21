@@ -70,7 +70,7 @@ public:
         //- Construct from components
         mcProcessorBoundary
         (
-            const fvMesh& mesh,
+            mcParticleCloud& cloud,
             label patchID
         );
 

@@ -98,20 +98,20 @@ class mcInletOutletBoundary :
 
         //- Get the U_ data field in face-normal coordinate system and create
         // it if necessary
-        const vectorField& getU(const mcParticleCloud& cloud);
+        const vectorField& getU();
 
         //- Get the R_ data field in face-normal coordinate system and create
         // it if necessary
-        const symmTensorField& getR(const mcParticleCloud& cloud);
+        const symmTensorField& getR();
 
         //- Get the inRnd_ list and create it if necessary
-        PtrList<mcInletRandom>& getInRnd(mcParticleCloud& cloud);
+        PtrList<mcInletRandom>& getInRnd();
 
         //- Generate random point on a face
-        point randomPoint(mcParticleCloud& cloud, label faceI);
+        point randomPoint(label faceI);
 
         //- Generate random velocity on a face
-        vector randomVelocity(mcParticleCloud& cloud, label faceI);
+        vector randomVelocity(label faceI);
 
         // Disallow default bitwise copy construct and assignment
         mcInletOutletBoundary(const mcInletOutletBoundary&);
@@ -128,7 +128,7 @@ public:
         //- Construct from components
         mcInletOutletBoundary
         (
-            const fvMesh& mesh,
+            mcParticleCloud& cloud,
             label patchID,
             const dictionary& dict
         );
@@ -136,11 +136,7 @@ public:
     // Member Functions
 
         //- Release particles at the inlet boundary
-        virtual void correct
-        (
-            mcParticleCloud& cloud,
-            bool afterMove
-        );
+        virtual void correct(bool afterMove);
 
 };
 

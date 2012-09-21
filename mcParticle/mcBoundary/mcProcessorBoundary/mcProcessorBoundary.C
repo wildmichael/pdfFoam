@@ -40,11 +40,11 @@ namespace Foam
 
 Foam::mcProcessorBoundary::mcProcessorBoundary
 (
-    const Foam::fvMesh& mesh,
-    Foam::label patchID
+    mcParticleCloud& cloud,
+    label patchID
 )
 :
-    mcBoundary(mesh, patchID, dictionary())
+    mcBoundary(cloud, patchID, dictionary())
 {
     add("type", typeName_);
 }

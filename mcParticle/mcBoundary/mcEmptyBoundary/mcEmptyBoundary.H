@@ -71,7 +71,7 @@ public:
         //- Construct from components
         mcEmptyBoundary
         (
-            const fvMesh& mesh,
+            mcParticleCloud& cloud,
             label patchID,
             const dictionary& dict
         );

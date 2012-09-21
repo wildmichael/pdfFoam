@@ -25,9 +25,15 @@ License
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-const Foam::fvMesh& Foam::mcBoundary::mesh() const
+const Foam::mcParticleCloud& Foam::mcBoundary::cloud() const
 {
-    return mesh_;
+    return cloud_;
+}
+
+
+Foam::mcParticleCloud& Foam::mcBoundary::cloud()
+{
+    return cloud_;
 }
 
 
