@@ -75,10 +75,39 @@ bool Foam::mcSolution::read()
             relaxationTimes_ = dict.subDict("relaxationTimes");
         }
 
+        bool bad = false;
         if (relaxationTimes_.found("default"))
         {
-            defaultRelaxationTime_.value() =
-                readScalar(relaxationTimes_.lookup("default"));
+            token t(relaxationTimes_.lookup("default"));
+            if (t.isWord())
+            {
+                word value = t.wordToken();
+                if (value == "none")
+                {
+                    haveDefaultRelaxationTime_ = false;
+                }
+                else
+                {
+                    bad = true;
+                }
+            }
+            else if (t.isNumber())
+            {
+                haveDefaultRelaxationTime_ = true;
+                defaultRelaxationTime_.value() =
+                    readScalar(relaxationTimes_.lookup("default"));
+            }
+            else
+            {
+                bad = true;
+            }
+            if (bad)
+            {
+                FatalIOErrorIn("mcSolution::read()", relaxationTimes_)
+                    << relaxationTimes_.lookupEntry("default", false, false).name()
+                    << " must either be a scalar or none\n"
+                    << exit(FatalIOError);
+            }
         }
 
         if (dict.found("interpolationSchemes"))
@@ -90,6 +119,10 @@ bool Foam::mcSolution::read()
         {
             interpolationSchemes_.lookup("default")
                 >> defaultInterpolationScheme_;
+            if (defaultInterpolationScheme_ == "none")
+            {
+                haveDefaultInterpolationScheme_ = false;
+            }
         }
 
         particlesPerCell_ = readLabel(dict.lookup("particlesPerCell"));
@@ -163,7 +196,7 @@ const Foam::dictionary& Foam::mcSolution::solutionDict() const
 Foam::dimensionedScalar
 Foam::mcSolution::relaxationTime(const word& name) const
 {
-    if (relaxationTimes_.found(name))
+    if (relaxationTimes_.found(name) || !haveDefaultRelaxationTime_)
     {
         return dimensionedScalar
             (
@@ -178,9 +211,9 @@ Foam::mcSolution::relaxationTime(const word& name) const
 
 Foam::word Foam::mcSolution::interpolationScheme(const word& name) const
 {
-    if (interpolationSchemes_.found(name))
+    if (interpolationSchemes_.found(name) || !haveDefaultInterpolationScheme_)
     {
-        return relaxationTimes_.lookup(name);
+        return interpolationSchemes_.lookup(name);
     }
     return defaultInterpolationScheme_;
 }

@@ -55,10 +55,14 @@ class mcSolution:
 
         //- The averaging time scale
         dimensionedScalar averagingTime_;
+        //- Whether a default relaxation time is set
+        bool haveDefaultRelaxationTime_;
         //- Default relaxation time scale
         dimensionedScalar defaultRelaxationTime_;
         //- The relaxation time scales
         dictionary relaxationTimes_;
+        //- Whether a default interpolation scheme is set
+        bool haveDefaultInterpolationScheme_;
         //- Default interpolation scheme
         word defaultInterpolationScheme_;
         //- The interpolation schemes
