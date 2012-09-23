@@ -1199,7 +1199,7 @@ Foam::scalar Foam::mcParticleCloud::evolve()
 
     // Redistribute lost mass and reset lost mass counter
     // FIXME Doing this after the extraction is probably suboptimal
-    lostMass_ = lostMass_ / PaNIC_.internalField();
+    lostMass_ = lostMass_ / max(PaNIC_.internalField(), 1.);
     forAllIter(mcParticleCloud, *this, pIter)
     {
         mcParticle& p = pIter();
