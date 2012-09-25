@@ -534,12 +534,6 @@ Foam::mcParticleCloud::mcParticleCloud
         Info<< "I am releasing particles initially!" << endl;
         initReleaseParticles();
     }
-    if (!returnReduce(deltaScalar_.headerOk(), andOp<bool>()))
-    {
-        static_cast<scalarList>(deltaScalar_) = 0.;
-        scalarInFlux_  = deltaScalar_;
-        scalarOutFlux_ = deltaScalar_;
-    }
 }
 
 
@@ -551,7 +545,10 @@ void Foam::mcParticleCloud::checkMoments()
         mMom_.headerOk() &&
         VMom_.headerOk() &&
         UMom_.headerOk() &&
-        UUMom_.headerOk();
+        UUMom_.headerOk() &&
+        deltaScalar_.headerOk() &&
+        scalarInFlux_.headerOk() &&
+        scalarOutFlux_.headerOk();
     // Create moment fields
     label nPhi = PhicPdf_.size();
     PhiMom_.setSize(nPhi);
@@ -1462,6 +1459,32 @@ void Foam::mcParticleCloud::initMoments()
 
     kcPdf_.internalField()   = turbulenceModel().k()().internalField();
     kcPdf_.correctBoundaryConditions();
+    const surfaceScalarField& phi =
+        mesh().lookupObject<surfaceScalarField>
+        (
+            thermoDict_.lookupOrDefault<word>("phiName", "phi")
+        );
+    deltaScalar_.setSize(conservedScalars_.size()+2, 0.);
+    scalarInFlux_.setSize(deltaScalar_.size(), 0.);
+    scalarOutFlux_.setSize(deltaScalar_.size(), 0.);
+    forAll(phi.boundaryField(), patchI)
+    {
+        const scalarField& phiPatch = phi.boundaryField()[patchI];
+        forAll(phiPatch, faceI)
+        {
+            scalarField& flux =
+                phiPatch[faceI] < 0 ? scalarInFlux_ : scalarOutFlux_;
+            flux[0] += -phiPatch[faceI];
+            flux[1] += -phiPatch[faceI]*mag(phiPatch[faceI]);
+            forAll(conservedScalars_, csI)
+            {
+                const scalarField& PhiPatch =
+                    PhicPdf_[conservedScalars_[csI]]->boundaryField()[patchI];
+                flux[csI+2] += -PhiPatch[faceI]*phiPatch[faceI];
+            }
+        }
+    }
+    deltaScalar_ = scalarInFlux_ + scalarOutFlux_;
 }
 
 
@@ -1648,9 +1671,6 @@ void Foam::mcParticleCloud::initScalarFields()
                 << exit(FatalError);
         }
     }
-    deltaScalar_.setSize(conservedScalars_.size()+2, 0.);
-    scalarInFlux_.setSize(deltaScalar_.size(), 0.);
-    scalarOutFlux_.setSize(deltaScalar_.size(), 0.);
 }
 
 
