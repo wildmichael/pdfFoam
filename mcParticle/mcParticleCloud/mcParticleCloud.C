@@ -1281,12 +1281,19 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     reduce(scalarInFluxInst,  sumOp<scalarField>());
     reduce(scalarOutFluxInst, sumOp<scalarField>());
 
-    deltaScalar_   = existWt*deltaScalar_   + (1-existWt)*deltaScalarInst;
-    scalarInFlux_  = existWt*scalarInFlux_  + (1-existWt)*scalarInFluxInst;
-    scalarOutFlux_ = existWt*scalarOutFlux_ + (1-existWt)*scalarOutFluxInst;
-    scalar meanTotalMass = fvc::domainIntegrate(rhocPdf_).value();
+    scalar newWt = 1 - existWt;
+    deltaScalar_   = existWt*deltaScalar_   + newWt*deltaScalarInst/deltaT;
+    scalarInFlux_  = existWt*scalarInFlux_  + newWt*scalarInFluxInst/deltaT;
+    scalarOutFlux_ = existWt*scalarOutFlux_ + newWt*scalarOutFluxInst/deltaT;
+    // temporaries to divide out the particle mass from the density
+    scalarField deltaScalarM = deltaScalar_;
+    scalarField scalarInFluxM = scalarInFlux_;
+    scalarField scalarOutFluxM = scalarOutFlux_;
+    deltaScalarM[1] /= deltaScalarM[0];
+    scalarInFluxM[1] /= scalarInFluxM[0];
+    scalarOutFluxM[1] /= scalarOutFluxM[0];
     scalarField scalarError =
-        (deltaScalar_ - scalarInFlux_ + scalarOutFlux_)/meanTotalMass;
+        (deltaScalarM - scalarInFluxM - scalarOutFluxM)/max(scalarInFluxM, VSMALL);
 
     Info<< "    instant mass:  density = " << totalMass
         << ", particle = " << totalParticleMass
@@ -1297,23 +1304,23 @@ Foam::scalar Foam::mcParticleCloud::evolve()
         << "    min(pndCloudPdfInst) = " << gMin(pndcPdfInst_)
         << ", max(pndCloudPdfInst) = " << gMax(pndcPdfInst_) << nl;
     Info<< "    particle mass: "
-        << "change = " << deltaScalar_[0]
-        << ", influx = " << scalarInFlux_[0]
-        << ", outflux = " << scalarOutFlux_[0]
-        << ", error/mass = " << scalarError[0] << nl;
+        << "change = " << deltaScalarM[0]
+        << ", influx = " << scalarInFluxM[0]
+        << ", outflux = " << scalarOutFluxM[0]
+        << ", error/influx = " << scalarError[0] << nl;
     Info<< "    mass: "
-        << "change = " << deltaScalar_[1]
-        << ", influx = " << scalarInFlux_[1]
-        << ", outflux = " << scalarOutFlux_[1]
-        << ", error/mass = " << scalarError[1] << nl;
+        << "change = " << deltaScalarM[1]
+        << ", influx = " << scalarInFluxM[1]
+        << ", outflux = " << scalarOutFluxM[1]
+        << ", error/influx = " << scalarError[1] << nl;
     forAll(conservedScalars_, csI)
     {
         label i = conservedScalars_[csI];
         Info<< "    " << scalarNames_[i] << ": "
-            << "change = " << deltaScalar_[csI+2]
-            << ", influx = " << scalarInFlux_[csI+2]
-            << ", outflux = " << scalarOutFlux_[csI+2]
-            << ", error/mass = " << scalarError[csI+2] << nl;
+            << "change = " << deltaScalarM[csI+2]
+            << ", influx = " << scalarInFluxM[csI+2]
+            << ", outflux = " << scalarOutFluxM[csI+2]
+            << ", error/influx = " << scalarError[csI+2] << nl;
     }
     return rhoRes;
 }
