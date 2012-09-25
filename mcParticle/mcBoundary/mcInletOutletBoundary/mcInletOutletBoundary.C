@@ -71,7 +71,7 @@ Foam::mcInletOutletBoundary::mcInletOutletBoundary
 {
     // compute triangle probability vector (normalized, cummulative sum of
     // areas), transformations and transform R_ into wall-normal system
-    const polyPatch& pp = patch();
+    const polyPatch& pp = patch().patch();
     vector ex(1.0, 0.0, 0.0);
     const fvMesh& mesh = cloud.mesh();
     const vectorField& Sf = mesh.Sf().boundaryField()[patchID];
@@ -152,7 +152,7 @@ Foam::mcInletOutletBoundary::getInRnd()
 {
     if (inRnd_.empty())
     {
-        const polyPatch& pp = patch();
+        const polyPatch& pp = patch().patch();
         inRnd_.setSize(pp.size());
         const vectorField& U = getU();
         const symmTensorField& R = getR();
@@ -175,7 +175,7 @@ Foam::mcInletOutletBoundary::getInRnd()
 Foam::point Foam::mcInletOutletBoundary::randomPoint(label faceI)
 {
     const fvMesh& mesh = cloud().mesh();
-    const face& f = patch()[faceI];
+    const face& f = patch().patch()[faceI];
     const scalarList& w = probVec_[faceI];
     const point& C = mesh.C().boundaryField()[patchID()][faceI];
     const vector& Sf = mesh.Sf().boundaryField()[patchID()][faceI];
@@ -247,7 +247,7 @@ void Foam::mcInletOutletBoundary::correct(bool afterMove)
     }
 #endif
     label np = 0;
-    const polyPatch& pp = patch();
+    const polyPatch& pp = patch().patch();
     const scalarField& magSf = mesh.magSf().boundaryField()[patchID()];
     const scalarField& rho = cloud().rhocPdf().boundaryField()[patchID()];
     List<scalarField*> PhicPdf(cloud().PhicPdf().size());

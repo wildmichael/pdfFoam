@@ -68,7 +68,7 @@ class mcBoundary :
         const label patchID_;
 
         //- The associated patch
-        const polyPatch& patch_;
+        const fvPatch& patch_;
 
         //- The scalar influx through this boundary
         scalarField scalarInFlux_;
@@ -160,7 +160,7 @@ public:
         //- The ID of the associated patch
         inline label patchID() const;
 
-        inline const polyPatch& patch() const;
+        inline const fvPatch& patch() const;
 
         //- The scalar influx through this patch
         inline const scalarField& scalarInFlux() const;

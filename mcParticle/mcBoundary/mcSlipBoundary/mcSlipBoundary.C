@@ -64,7 +64,8 @@ void Foam::mcSlipBoundary::hitPatch
     Foam::mcParticle::trackData& td
 )
 {
-    vector nw = patch().faceAreas()[patch().whichFace(p.face())];
+    const polyPatch& pp = patch().patch();
+    vector nw = pp.faceAreas()[pp.whichFace(p.face())];
     nw /= mag(nw); // Wall normal (outward)
     p.transformProperties(I - 2.0*nw*nw);
     p.reflected() = true;

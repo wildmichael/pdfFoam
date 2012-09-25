@@ -241,7 +241,7 @@ void Foam::mcGhostInletOutletBoundary::findGhostLayer()
         const cellList& cells = mesh.cells();
         const faceList& faces = mesh.faces();
         // Find the ghost cells and faces
-        const polyPatch& pp = patch();
+        const polyPatch& pp = patch().patch();
         forAll(pp, facei)
         {
             // find ghost cell

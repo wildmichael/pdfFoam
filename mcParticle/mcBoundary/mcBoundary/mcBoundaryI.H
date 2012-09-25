@@ -43,7 +43,7 @@ Foam::label Foam::mcBoundary::patchID() const
 }
 
 
-const Foam::polyPatch& Foam::mcBoundary::patch() const
+const Foam::fvPatch& Foam::mcBoundary::patch() const
 {
     return patch_;
 }

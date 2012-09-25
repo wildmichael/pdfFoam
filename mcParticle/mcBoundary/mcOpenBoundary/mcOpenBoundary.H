@@ -86,6 +86,8 @@ protected:
 
         //- Flux boundary field
         const scalarField& phi_;
+        //- Density boundary field
+        const scalarField& rho_;
 
 public:
 
