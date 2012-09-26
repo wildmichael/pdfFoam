@@ -261,7 +261,7 @@ void Foam::mcInletOutletBoundary::correct(bool afterMove)
     forAll(pp, faceI)
     {
         label cellI = pp.faceCells()[faceI];
-        if (phi_[faceI] > 0)
+        if (Un_[faceI] > 0)
         {
             // Mean velocity points out of the domain, so this is an outlet
             continue;

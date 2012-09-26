@@ -50,20 +50,12 @@ Foam::mcOpenBoundary::mcOpenBoundary
 :
     mcBoundary(cloud, patchID, dict),
     reflecting_(lookupOrDefault<Switch>("reflecting", true)),
-    phi_
+    n_
     (
-        patch().lookupPatchField<surfaceScalarField, scalar>
-        (
-            lookupOrDefault<word>("phiName", "phi")
-        )
+        cloud.mesh().Sf().boundaryField()[patchID]
+      / cloud.mesh().magSf().boundaryField()[patchID]
     ),
-    rho_
-    (
-        patch().lookupPatchField<volScalarField, scalar>
-        (
-            lookupOrDefault<word>("rhoName", "rho")
-        )
-    )
+    Un_(patch().size(), 0.)
 {
     const polyPatch& pp = patch().patch();
     forAll(pp, faceI)
@@ -94,14 +86,20 @@ void Foam::mcOpenBoundary::correct(bool afterMove)
         const fvMesh& mesh = cloud().mesh();
         handledReflectedParticles = false;
         const label patchI = patchID();
-        const scalarField& magSf  = mesh.magSf().boundaryField()[patchI];
-        const vectorField  n      = mesh.Sf().boundaryField()[patchI]/magSf;
         const vectorField& Cf     = mesh.Cf().boundaryField()[patchI];
         const scalar dt           = mesh.time().deltaT().value();
         const labelList& conservedScalars = cloud().conservedScalars();
+        Un_ =
+            (
+                n_
+              & patch().lookupPatchField<volVectorField, vector>
+                (
+                    lookupOrDefault<word>("UName", "U")
+                )
+            );
 
         // Estimate location of "moving boundary" at t=t0
-        scalarList x0 = phi_/(rho_*magSf)*dt;
+        scalarList x0 = Un_*dt;
 
         // Discard particles behind the "moving boundary"
         forAllIter(mcParticleCloud, cloud(), pIter)
@@ -120,9 +118,9 @@ void Foam::mcOpenBoundary::correct(bool afterMove)
                 {
                     label faceI = faces[i];
                     // outflow? (intentionally "not inflow")
-                    if (!(phi_[faceI] < 0.))
+                    if (!(Un_[faceI] < 0.))
                     {
-                        scalar xp = n[faceI]&(Cf[faceI]-p.position());
+                        scalar xp = n_[faceI]&(Cf[faceI]-p.position());
                         if (xp < p.eta()*x0[faceI])
                         {
                             scalar meta = p.eta()*p.m();
@@ -171,7 +169,7 @@ void Foam::mcOpenBoundary::hitPatch
 
     // If this boundary is not reflecting or if it is an inflow boundary,
     // delete particle.
-    if (phi_[faceI] < 0)
+    if (Un_[faceI] < 0)
     {
         scalar meta = p.eta()*p.m();
         scalarInFlux()[0] -= meta;
@@ -196,14 +194,10 @@ void Foam::mcOpenBoundary::hitPatch
         return;
     }
 
-    const scalar& magSf =
-        cloud().mesh().magSf().boundaryField()[patchID()][faceI];
-    vector n = pp.faceAreas()[faceI] / magSf;
-
-    p.transformProperties(I - 2.0*n*n);
+    p.transformProperties(I - 2.0*n_[faceI]*n_[faceI]);
     p.reflected() = true;
     p.reflectedAtOpenBoundary() = true;
-    p.reflectionBoundaryVelocity() = n*phi_[faceI]/(rho_[faceI]*magSf);
+    p.reflectionBoundaryVelocity() = n_[faceI]*Un_[faceI];
 }
 
 

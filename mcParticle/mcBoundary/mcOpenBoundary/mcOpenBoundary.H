@@ -84,10 +84,11 @@ protected:
 
     // Protected data
 
-        //- Flux boundary field
-        const scalarField& phi_;
-        //- Density boundary field
-        const scalarField& rho_;
+        //- Patch normals
+        vectorField n_;
+
+        //- Patch-normal velocity field
+        scalarField Un_;
 
 public:
 
