@@ -967,43 +967,47 @@ void Foam::mcParticleCloud::eliminateParticles(label celli)
         }
     }
 
-    // Randomly pick one of the populations for deletion
-    // (proportional to relative mass of the other population)
-    SLList<mcParticle*> *popDel, *popKeep;
-    P = mB/(mA + mB);
-    scalar s;
-    if (random().scalar01() < P)
+    // Only continue if one of the populations has some mass
+    if (mA > 0 || mB > 0)
     {
-        s = 1./P;
-        popDel = &popA;
-        popKeep = &popB;
-    }
-    else
-    {
-        s = (mA + mB)/mA;
-        popDel = &popB;
-        popKeep = &popA;
-    }
+        // Randomly pick one of the populations for deletion
+        // (proportional to relative mass of the other population)
+        SLList<mcParticle*> *popDel, *popKeep;
+        P = mB/(mA + mB);
+        scalar s;
+        if (random().scalar01() < P)
+        {
+            s = 1./P;
+            popDel = &popA;
+            popKeep = &popB;
+        }
+        else
+        {
+            s = (mA + mB)/mA;
+            popDel = &popB;
+            popKeep = &popA;
+        }
 
-    // Scale masses of particles in popKeep
-    forAllIter(SLList<mcParticle*>, *popKeep, pIter)
-    {
-        (**pIter).m() *= s;
-    }
+        // Scale masses of particles in popKeep
+        forAllIter(SLList<mcParticle*>, *popKeep, pIter)
+        {
+            (**pIter).m() *= s;
+        }
 
-    // Delete particles in popDel
-    label nKilled = 0;
-    forAllIter(SLList<mcParticle*>, *popDel, pIter)
-    {
-        ++nKilled;
-        deleteParticle(**pIter);
-    }
-    PaNIC_[celli] -= nKilled;
+        // Delete particles in popDel
+        label nKilled = 0;
+        forAllIter(SLList<mcParticle*>, *popDel, pIter)
+        {
+            ++nKilled;
+            deleteParticle(**pIter);
+        }
+        PaNIC_[celli] -= nKilled;
 
-    if (debug)
-    {
-        Pout<< "Eliminated " << nKilled << " of " << ncur
-            << " particles in cell " << celli << endl;
+        if (debug)
+        {
+            Pout<< "Eliminated " << nKilled << " of " << ncur
+                << " particles in cell " << celli << endl;
+        }
     }
 }
 
