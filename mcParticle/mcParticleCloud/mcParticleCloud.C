@@ -1173,6 +1173,8 @@ Foam::scalar Foam::mcParticleCloud::evolve()
         p.Utracking() += p.Ucorrection();
 
         constrainParticle(*this, deltaT, p);
+
+        computeCourantNo(p, deltaT);
     }
 
     // Second half-step
@@ -1925,5 +1927,44 @@ void Foam::mcParticleCloud::adjustAxiSymmetricMass
         particles[i]->m() *= alpha*r[i];
     }
 }
+
+
+void Foam::mcParticleCloud::computeCourantNo(mcParticle& p, scalar dt) const
+{
+    p.Co() = 0.;
+    // Due to particle path integration
+    const polyMesh& mesh = pMesh();
+    const cell& c = mesh.cells()[p.cell()];
+    const vector& U = p.Utracking();
+    forAll(c, cellFaceI)
+    {
+        label faceI = c[cellFaceI];
+        vector coeff;
+        if (mesh.isInternalFace(faceI))
+        {
+            coeff = CourantCoeffs_[faceI];
+        }
+        else
+        {
+            label patchI = mesh.boundaryMesh().whichPatch(faceI);
+            if (!CourantCoeffs_.boundaryField()[patchI].size())
+            {
+                // skip empty boundaries
+                continue;
+            }
+            label i = mesh.boundaryMesh()[patchI].whichFace(faceI);
+            coeff = CourantCoeffs_.boundaryField()[patchI][i];
+        }
+        p.Co() = max(p.Co(), fabs(dt*coeff&U));
+    }
+    // Due to models
+    velocityModel_().Co(p);
+    OmegaModel_().Co(p);
+    mixingModel_().Co(p);
+    reactionModel_().Co(p);
+    positionCorrection_().Co(p);
+    localTimeStepping_().Co(p);
+}
+
 
 // ************************************************************************* //

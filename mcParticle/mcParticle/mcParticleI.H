@@ -226,6 +226,12 @@ inline Foam::scalar Foam::mcParticle::Co() const
 }
 
 
+inline Foam::scalar& Foam::mcParticle::Co()
+{
+    return Co_;
+}
+
+
 inline const Foam::vector& Foam::mcParticle::reflectionBoundaryVelocity() const
 {
     return reflectionBoundaryVelocity_;

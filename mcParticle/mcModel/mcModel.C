@@ -80,4 +80,8 @@ void Foam::mcModel::correct()
     }
 }
 
+
+void Foam::mcModel::Co(mcParticle&) const
+{}
+
 // ************************************************************************* //

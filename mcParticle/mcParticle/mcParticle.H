@@ -316,6 +316,9 @@ public:
             //- particle Courant number
             inline scalar Co() const;
 
+            //- particle Courant number
+            inline scalar& Co();
+
             //- Velocity of the "moving boundary" the particle bounced of
             inline const vector& reflectionBoundaryVelocity() const;
 

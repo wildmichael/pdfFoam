@@ -420,6 +420,9 @@ public:
 
         //- The local time-stepping model
         inline mcLocalTimeStepping& localTimeStepping();
+
+        //- Compute the Courant number for given particle
+        void computeCourantNo(mcParticle&, scalar dt) const;
 };
 
 

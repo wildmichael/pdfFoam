@@ -28,46 +28,6 @@ License
 #include "mcParticleCloud.H"
 #include "OStringStream.H"
 
-// * * * * * * * * * * * * * Local Helper Functions  * * * * * * * * * * * * //
-
-namespace // anonymous
-{
-
-Foam::scalar computeCourantNo(const Foam::mcParticle& p, const Foam::scalar dt)
-{
-    using namespace Foam;
-    const mcParticleCloud& cloud = refCast<const mcParticleCloud>(p.cloud());
-    const polyMesh& mesh = cloud.pMesh();
-    const surfaceVectorField& CourantCoeffs = cloud.CourantCoeffs();
-    const cell& c = mesh.cells()[p.cell()];
-    const vector& U = p.Utracking();
-    scalar Co = 0.0;
-    forAll(c, cellFaceI)
-    {
-        label faceI = c[cellFaceI];
-        vector coeff;
-        if (mesh.isInternalFace(faceI))
-        {
-            coeff = CourantCoeffs[faceI];
-        }
-        else
-        {
-            label patchI = mesh.boundaryMesh().whichPatch(faceI);
-            if (!CourantCoeffs.boundaryField()[patchI].size())
-            {
-                // skip empty boundaries
-                continue;
-            }
-            label start = mesh.boundaryMesh()[patchI].start();
-            coeff = CourantCoeffs.boundaryField()[patchI][faceI-start];
-        }
-        Co = max(Co, fabs(dt * coeff & U));
-    }
-    return Co;
-}
-
-} // anonymous namespace
-
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::mcParticle::trackData::trackData(mcParticleCloud& mcpc, scalar trackTime)
@@ -111,7 +71,7 @@ Foam::mcParticle::mcParticle
     const polyMesh& mesh = c.mesh();
     meshTools::constrainDirection(mesh, mesh.geometricD(), Utracking_);
     scalar dt = c.mesh().time().deltaT().value();
-    Co_ = computeCourantNo(*this, dt);
+    c.computeCourantNo(*this, dt);
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
@@ -137,8 +97,6 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
     scalar dtMax = tEnd;
 
     isOnInletBoundary_ = false;
-
-    Co_ = computeCourantNo(*this, td.deltaT());
 
     while (td.keepParticle && !td.switchProcessor && tEnd > SMALL)
     {

@@ -127,6 +127,10 @@ public:
         // if required before calling this function.
         virtual void correct(mcParticle& p) = 0;
 
+        //- Compute the Courant number due to this model for given particle.
+        // Unless overridden does nothing.
+        virtual void Co(mcParticle&) const;
+
         //- The particle cloud
         inline const mcParticleCloud& cloud() const;
 
