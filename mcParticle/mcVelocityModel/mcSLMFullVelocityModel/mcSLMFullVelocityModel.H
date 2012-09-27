@@ -132,6 +132,8 @@ public:
         //- Apply the Velocity model to a single particle
         virtual void correct(mcParticle& p);
 
+        //- Courant condition due to the SLM integration
+        virtual void Co(mcParticle& p) const;
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

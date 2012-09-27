@@ -193,4 +193,10 @@ void Foam::mcSLMFullVelocityModel::correct(mcParticle& p)
         + (p.UParticle() - UFap)*diffk_[c]*deltaT;
 }
 
+
+void Foam::mcSLMFullVelocityModel::Co(mcParticle& p) const
+{
+    p.Co() = cloud().mesh().time().deltaT().value()*p.Omega();
+}
+
 // ************************************************************************* //
