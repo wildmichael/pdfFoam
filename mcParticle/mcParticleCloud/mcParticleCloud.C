@@ -1274,6 +1274,7 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     // Mass and integrated scalars after the evolution done
     scalar totalMass = fvc::domainIntegrate(rhocPdfInst_).value();
     scalar totalParticleMass = fvc::domainIntegrate(pndcPdfInst_).value();
+    scalar UMax = 0, UcorrMax = 0, etaMax = 0, etaMin = HUGE;
     forAllConstIter(mcParticleCloud, *this, pIter)
     {
         const mcParticle& p = pIter();
@@ -1284,7 +1285,15 @@ Foam::scalar Foam::mcParticleCloud::evolve()
         {
             deltaScalarInst[csI+2] += meta*p.Phi()[conservedScalars_[csI]];
         }
+        UMax = max(UMax, mag(p.UParticle()));
+        UcorrMax = max(UcorrMax, mag(p.Ucorrection()));
+        etaMax = max(etaMax, p.eta());
+        etaMin = min(etaMin, p.eta());
     }
+    reduce(UMax, maxOp<scalar>());
+    reduce(UcorrMax, maxOp<scalar>());
+    reduce(etaMin, maxOp<scalar>());
+    reduce(etaMax, maxOp<scalar>());
     reduce(deltaScalarInst,   sumOp<scalarField>());
     reduce(scalarInFluxInst,  sumOp<scalarField>());
     reduce(scalarOutFluxInst, sumOp<scalarField>());
@@ -1330,6 +1339,11 @@ Foam::scalar Foam::mcParticleCloud::evolve()
             << ", outflux = " << scalarOutFluxM[csI+2]
             << ", error/influx = " << scalarError[csI+2] << nl;
     }
+    Info<< "    max(UParticle) = " << UMax
+        << ", max(Ucorrection) = " << UcorrMax
+        << ", min(eta) = " << etaMin
+        << ", max(eta) = " << etaMax
+        << nl;
     return rhoRes;
 }
 
