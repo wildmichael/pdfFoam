@@ -463,6 +463,8 @@ Foam::mcParticleCloud::mcParticleCloud
         0
     )
 {
+    bound(kcPdf_, solutionDict_.kMin());
+
     // HACK work around annoying bug in OpenFOAM < 2.0
     readIfPresent(mMom_);
     readIfPresent(VMom_);
