@@ -88,9 +88,7 @@ class mcSLMFullVelocityModel :
 
         //- Interpolators
         autoPtr<gradInterpolationConstantTet<scalar> > gradPInterp_;
-        autoPtr<interpolation<scalar> >   kcPdfInterp_;
         autoPtr<interpolation<scalar> >   kInterp_;
-        autoPtr<interpolation<scalar> >   rhoInterp_;
         autoPtr<interpolation<vector> >   diffUInterp_;
         autoPtr<interpolation<vector> >   UInterp_;
 

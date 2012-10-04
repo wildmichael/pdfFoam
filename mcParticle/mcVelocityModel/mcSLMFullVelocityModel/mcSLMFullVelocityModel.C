@@ -115,12 +115,6 @@ void Foam::mcSLMFullVelocityModel::updateInternals()
     diffk_ = (sqrt(cloud().kfv()/cloud().kcPdf()) - 1.0)
             /solDict.relaxationTime("k");
 
-    const volScalarField& rho = cloud().rhocPdf();
-    rhoInterp_ = interpolation<scalar>::New
-    (
-        solDict.interpolationScheme(rho.name()),
-        rho
-    );
     const volVectorField& Ufv = cloud().Ufv();
     UInterp_ = interpolation<vector>::New
     (
@@ -145,12 +139,6 @@ void Foam::mcSLMFullVelocityModel::updateInternals()
     (
         solDict.interpolationScheme(diffU_.name()),
         diffU_
-    );
-    const volScalarField& kcPdf = cloud().kcPdf();
-    kcPdfInterp_ = interpolation<scalar>::New
-    (
-        solDict.interpolationScheme(kcPdf.name()),
-        kcPdf
     );
 }
 
