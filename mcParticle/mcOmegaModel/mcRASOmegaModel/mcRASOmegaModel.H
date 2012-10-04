@@ -45,6 +45,7 @@ Author
 #include "mcOmegaModel.H"
 
 #include "autoPtr.H"
+#include "dimensionedScalar.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -68,6 +69,9 @@ class mcRASOmegaModel :
 
         //- Interpolator for Omega
         autoPtr<interpolation<scalar> > OmegaInterp_;
+
+        //- Upper limit for Omega
+        dimensionedScalar Omega0_;
 
     // Private Member Functions
 

@@ -31,6 +31,29 @@ License
 #include "interpolation.H"
 #include "mcParticleCloud.H"
 
+// * * * * * * * * * * * * * Local Helper Functions  * * * * * * * * * * * * //
+
+namespace // anonymous
+{
+
+
+//- Similar to fvc::bound(), but clip to maximum instead of minimum
+void boundMax(Foam::volScalarField& vsf, const Foam::dimensionedScalar vsf0)
+{
+    using namespace Foam;
+    scalar maxVsf = gMax(vsf);
+    if (maxVsf > vsf0.value())
+    {
+        Info<< "bounding " << vsf.name()
+            << ", min = " << gMin(vsf) << ", max = " << maxVsf
+            << ", average = " << gAverage(vsf.internalField()) << nl;
+        vsf = min(vsf, vsf0);
+    }
+}
+
+
+} // anonymous namespace
+
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 namespace Foam
@@ -58,7 +81,8 @@ Foam::mcRASOmegaModel::mcRASOmegaModel
 :
     mcOmegaModel(cloud, db, subDictName),
     Omega_(),
-    OmegaInterp_()
+    OmegaInterp_(),
+    Omega0_("Omega0", dimless/dimTime, HUGE)
 {}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
@@ -71,25 +95,29 @@ void Foam::mcRASOmegaModel::updateInternals()
         // If we have a kOmegaSST (or derived) object, use omega directly
         const compressible::RASModels::kOmegaSST& kOmegaModel =
             refCast<const compressible::RASModels::kOmegaSST>(turbModel);
-        Omega_.reset(new volScalarField(kOmegaModel.omega()));
+        Omega_.reset
+        (
+            new volScalarField("mcRASOmegaModel::Omega", kOmegaModel.omega())
+        );
     }
     else
     {
         // Otherwise compute Omega from epsilon/k
-        const dimensionedScalar& kMin = cloud().solutionDict().kMin();
         Omega_.reset
         (
             new volScalarField
             (
                 "mcRASOmegaModel::Omega",
-                turbModel.epsilon() / max(turbModel.k(), kMin)
+                turbModel.epsilon()/turbModel.k()
             )
         );
     }
+    Omega0_.readIfPresent(solutionDict());
+    boundMax(Omega_(), Omega0_);
     OmegaInterp_ = interpolation<scalar>::New
     (
         cloud().solutionDict().interpolationScheme(Omega_().name()),
-        Omega_
+        Omega_()
     );
 }
 
