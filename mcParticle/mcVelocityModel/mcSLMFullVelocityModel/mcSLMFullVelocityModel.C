@@ -185,7 +185,7 @@ void Foam::mcSLMFullVelocityModel::correct(mcParticle& p)
 
 void Foam::mcSLMFullVelocityModel::Co(mcParticle& p) const
 {
-    p.Co() = cloud().mesh().time().deltaT().value()*p.Omega();
+    p.Co() = max(p.Co(), cloud().mesh().time().deltaT().value()*p.Omega());
 }
 
 // ************************************************************************* //
