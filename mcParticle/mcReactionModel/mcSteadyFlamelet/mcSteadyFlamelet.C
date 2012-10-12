@@ -125,12 +125,7 @@ Foam::mcSteadyFlamelet::mcSteadyFlamelet
     phi_(),
     zIdx_(findIdx("zName", "z")),
     chiIdx_(findIdx("chiName", "chi")),
-    TIdx_(findIdx("TName", "T")),
-    p_
-    (
-        db.lookupObject<volScalarField>
-            (thermoDict().lookupOrDefault<word>("pName", "p"))
-    )
+    TIdx_(findIdx("TName", "T"))
 {
     if (thermoDict().found("scalars"))
     {
@@ -143,7 +138,7 @@ Foam::mcSteadyFlamelet::mcSteadyFlamelet
         }
     }
     phi_.setSize(nNativeFields_ + addedNames_.size());
-    // load temperature data
+    // load density constant data
     phi_.set
     (
         0,
@@ -151,7 +146,7 @@ Foam::mcSteadyFlamelet::mcSteadyFlamelet
         (
             IOobject
             (
-                TName_,
+                "rho",
                 db.time().constant(),
                 "flamelet",
                 db,
@@ -161,7 +156,7 @@ Foam::mcSteadyFlamelet::mcSteadyFlamelet
             )
         )
     );
-    // load specific gas constant data
+    // load temperature data
     phi_.set
     (
         1,
@@ -169,7 +164,7 @@ Foam::mcSteadyFlamelet::mcSteadyFlamelet
         (
             IOobject
             (
-                "Rgas",
+                TName_,
                 db.time().constant(),
                 "flamelet",
                 db,
@@ -340,10 +335,11 @@ void Foam::mcSteadyFlamelet::correct(mcParticle& p)
         ichi2 = ichi1 + 1;
         wchi = (chi - chi_[ichi1])/(chi_[ichi2] - chi_[ichi1]);
     }
-    // interpolate T and R
-    const scalar T = binterp(phi_[0], ichi1, ichi2, wchi, iz1, iz2, wz);
-    const scalar R = binterp(phi_[1], ichi1, ichi2, wchi, iz1, iz2, wz);
+    // interpolate rho and T
+    const scalar rho = binterp(phi_[0], ichi1, ichi2, wchi, iz1, iz2, wz);
+    const scalar T = binterp(phi_[1], ichi1, ichi2, wchi, iz1, iz2, wz);
     p.Phi()[chiIdx_] = chi;
+    p.rho() = rho;
     p.Phi()[TIdx_] = T;
     // interpolate user-data
     forAll(addedIdx_, i)
@@ -352,8 +348,6 @@ void Foam::mcSteadyFlamelet::correct(mcParticle& p)
         p.Phi()[addedIdx_[i]] =
             binterp(v, ichi1, ichi2, wchi, iz1, iz2, wz);
     }
-    // compute particle density
-    p.rho() = p_[c]/(R*T);
 }
 
 // ************************************************************************* //

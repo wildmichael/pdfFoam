@@ -109,11 +109,8 @@ class mcSteadyFlamelet :
         //- Indexes of the additional interpolated fields
         labelList addedIdx_;
 
-        //- Number of native fields (temperature T and gas constant R for now)
+        //- Number of native fields (temperature T and density rho for now)
         static const label nNativeFields_ = 2;
-
-        //- The pressure field
-        const volScalarField& p_;
 
         //- The interpolator for the mixture fraction variance
         autoPtr<interpolation<scalar> > zVarInterp_;
