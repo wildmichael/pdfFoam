@@ -423,11 +423,11 @@ Foam::mcParticleCloud::mcParticleCloud
     lostParticles_(*this),
     lostMass_(mesh_.V().size()),
     hNum_(0),
-    deltaScalar_
+    deltaMass_
     (
         IOobject
         (
-            "deltaScalar",
+            "deltaMass",
             runTime_.timeName(),
             "uniform"/cloud::prefix/name(),
             mesh,
@@ -436,11 +436,11 @@ Foam::mcParticleCloud::mcParticleCloud
         ),
         0
     ),
-    scalarInFlux_
+    massIn_
     (
         IOobject
         (
-            "scalarInFlux",
+            "massIn",
             runTime_.timeName(),
             "uniform"/cloud::prefix/name(),
             mesh,
@@ -449,11 +449,50 @@ Foam::mcParticleCloud::mcParticleCloud
         ),
         0
     ),
-    scalarOutFlux_
+    massOut_
     (
         IOobject
         (
-            "scalarOutFlux",
+            "massOut",
+            runTime_.timeName(),
+            "uniform"/cloud::prefix/name(),
+            mesh,
+            IOobject::READ_IF_PRESENT,
+            IOobject::AUTO_WRITE
+        ),
+        0
+    ),
+    cumDeltaMass_
+    (
+        IOobject
+        (
+            "cumDeltaMass",
+            runTime_.timeName(),
+            "uniform"/cloud::prefix/name(),
+            mesh,
+            IOobject::READ_IF_PRESENT,
+            IOobject::AUTO_WRITE
+        ),
+        0
+    ),
+    cumMassIn_
+    (
+        IOobject
+        (
+            "cumMassIn",
+            runTime_.timeName(),
+            "uniform"/cloud::prefix/name(),
+            mesh,
+            IOobject::READ_IF_PRESENT,
+            IOobject::AUTO_WRITE
+        ),
+        0
+    ),
+    cumMassOut_
+    (
+        IOobject
+        (
+            "cumMassOut",
             runTime_.timeName(),
             "uniform"/cloud::prefix/name(),
             mesh,
@@ -556,9 +595,11 @@ void Foam::mcParticleCloud::checkMoments()
         VMom_.headerOk() &&
         UMom_.headerOk() &&
         UUMom_.headerOk() &&
-        deltaScalar_.headerOk() &&
-        scalarInFlux_.headerOk() &&
-        scalarOutFlux_.headerOk();
+        deltaMass_.headerOk() &&
+        massIn_.headerOk() &&
+        massOut_.headerOk() &&
+        cumMassIn_.headerOk() &&
+        cumMassOut_.headerOk();
     // Create moment fields
     label nPhi = PhicPdf_.size();
     PhiMom_.setSize(nPhi);
@@ -1031,21 +1072,20 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     forAll(boundaryHandlers_, boundaryI)
     {
         mcBoundary& b = boundaryHandlers_[boundaryI];
-        b.scalarInFlux() = 0.;
-        b.scalarOutFlux() = 0.;
+        b.massIn() = 0.;
+        b.massOut() = 0.;
         b.correct(false);
     }
     // Integrate scalars across domain and reset correction velocity
-    scalarField deltaScalarInst(deltaScalar_.size(), 0.);
+    scalarField deltaMassInst(deltaMass_.size(), 0.);
     forAllIter(mcParticleCloud, *this, pIter)
     {
         mcParticle& p = pIter();
-        scalar mpd = p.eta()*massPerDepth(p);
-        deltaScalarInst[0] -= mpd;
-        deltaScalarInst[1] -= mpd*p.rho();
+        scalar mpd = massPerDepth(p);
+        deltaMassInst[0] -= mpd;
         forAll(conservedScalars_, csI)
         {
-            deltaScalarInst[csI+2] -= mpd*p.Phi()[conservedScalars_[csI]];
+            deltaMassInst[csI+1] -= mpd*p.Phi()[conservedScalars_[csI]];
         }
         p.Ucorrection() = vector::zero;
     }
@@ -1194,14 +1234,14 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     Cloud<mcParticle>::move(td2);
 
     // Correct boundary conditions
-    scalarField scalarInFluxInst(scalarInFlux_.size(), 0.);
-    scalarField scalarOutFluxInst(scalarOutFlux_.size(), 0.);
+    scalarField massInInst(massIn_.size(), 0.);
+    scalarField massOutInst(massOut_.size(), 0.);
     forAll(boundaryHandlers_, boundaryI)
     {
         mcBoundary& b = boundaryHandlers_[boundaryI];
         b.correct(true);
-        scalarInFluxInst += b.scalarInFlux();
-        scalarOutFluxInst += b.scalarOutFlux();
+        massInInst += b.massIn();
+        massOutInst += b.massOut();
     }
 
     // Extract statistical averaging to obtain mesh-based quantities
@@ -1286,12 +1326,11 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     forAllConstIter(mcParticleCloud, *this, pIter)
     {
         const mcParticle& p = pIter();
-        scalar mpd = p.eta()*massPerDepth(p);
-        deltaScalarInst[0] += mpd;
-        deltaScalarInst[1] += mpd*p.rho();
+        scalar mpd = massPerDepth(p);
+        deltaMassInst[0] += mpd;
         forAll(conservedScalars_, csI)
         {
-            deltaScalarInst[csI+2] += mpd*p.Phi()[conservedScalars_[csI]];
+            deltaMassInst[csI+1] += mpd*p.Phi()[conservedScalars_[csI]];
         }
         UMax = max(UMax, mag(p.UParticle()));
         UcorrMax = max(UcorrMax, mag(p.Ucorrection()));
@@ -1302,23 +1341,21 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     reduce(UcorrMax, maxOp<scalar>());
     reduce(etaMin, maxOp<scalar>());
     reduce(etaMax, maxOp<scalar>());
-    reduce(deltaScalarInst,   sumOp<scalarField>());
-    reduce(scalarInFluxInst,  sumOp<scalarField>());
-    reduce(scalarOutFluxInst, sumOp<scalarField>());
+    reduce(deltaMassInst,  sumOp<scalarField>());
+    reduce(massInInst,  sumOp<scalarField>());
+    reduce(massOutInst, sumOp<scalarField>());
 
-    scalar newWt = 1 - existWt;
-    deltaScalar_   = existWt*deltaScalar_   + newWt*deltaScalarInst/deltaT;
-    scalarInFlux_  = existWt*scalarInFlux_  + newWt*scalarInFluxInst/deltaT;
-    scalarOutFlux_ = existWt*scalarOutFlux_ + newWt*scalarOutFluxInst/deltaT;
-    // temporaries to divide out the particle mass from the density
-    scalarField deltaScalarM = deltaScalar_;
-    scalarField scalarInFluxM = scalarInFlux_;
-    scalarField scalarOutFluxM = scalarOutFlux_;
-    deltaScalarM[1] /= deltaScalarM[0];
-    scalarInFluxM[1] /= scalarInFluxM[0];
-    scalarOutFluxM[1] /= scalarOutFluxM[0];
-    scalarField scalarError =
-        (deltaScalarM - scalarInFluxM - scalarOutFluxM)/max(scalarInFluxM, VSMALL);
+    deltaMass_  = 0.999*deltaMass_  + 0.001*deltaMassInst;
+    massIn_  = 0.999*massIn_  + 0.001*massInInst;
+    massOut_ = 0.999*massOut_ + 0.001*massOutInst;
+
+    cumDeltaMass_ += deltaMassInst;
+    cumMassIn_ += massInInst;
+    cumMassOut_ += massOutInst;
+
+    scalarList massErr = (deltaMass_ + massIn_ + massOut_)/massIn_;
+    scalarList massErrInst = (deltaMassInst + massInInst + massOutInst)/massInInst;
+    scalarList cumMassErr = (cumDeltaMass_ + cumMassIn_ + cumMassOut_)/cumMassIn_;
 
     Info<< "    instant mass:  density = " << totalMass
         << ", particle = " << totalParticleMass
@@ -1328,25 +1365,21 @@ Foam::scalar Foam::mcParticleCloud::evolve()
         << ", max(rhoCloudPdfInst) = " << gMax(rhocPdfInst_) << nl
         << "    min(pndCloudPdfInst) = " << gMin(pndcPdfInst_)
         << ", max(pndCloudPdfInst) = " << gMax(pndcPdfInst_) << nl;
-    Info<< "    particle mass: "
-        << "change = " << deltaScalarM[0]
-        << ", influx = " << scalarInFluxM[0]
-        << ", outflux = " << scalarOutFluxM[0]
-        << ", error/influx = " << scalarError[0] << nl;
-    Info<< "    mass: "
-        << "change = " << deltaScalarM[1]
-        << ", influx = " << scalarInFluxM[1]
-        << ", outflux = " << scalarOutFluxM[1]
-        << ", error/influx = " << scalarError[1] << nl;
+
+    Info<< "    particle mass flux error: "
+        << "instant = " << massErrInst[0]
+        << ", mean = " << massErr[0]
+        << ", cumulative = " << cumMassErr[0] << nl;
+
     forAll(conservedScalars_, csI)
     {
         label i = conservedScalars_[csI];
-        Info<< "    " << scalarNames_[i] << ": "
-            << "change = " << deltaScalarM[csI+2]
-            << ", influx = " << scalarInFluxM[csI+2]
-            << ", outflux = " << scalarOutFluxM[csI+2]
-            << ", error/influx = " << scalarError[csI+2] << nl;
+        Info<< "    " << scalarNames_[i] << " flux error: "
+            << "instant = " << massErrInst[csI+1]
+            << ", mean = " << massErr[csI+1]
+            << ", cumulative = " << cumMassErr[csI+1] << nl;
     }
+
     Info<< "    max(UParticle) = " << UMax
         << ", max(Ucorrection) = " << UcorrMax
         << ", min(eta) = " << etaMin
@@ -1501,27 +1534,29 @@ void Foam::mcParticleCloud::initMoments()
         (
             thermoDict_.lookupOrDefault<word>("phiName", "phi")
         );
-    deltaScalar_.setSize(conservedScalars_.size()+2, 0.);
-    scalarInFlux_.setSize(deltaScalar_.size(), 0.);
-    scalarOutFlux_.setSize(deltaScalar_.size(), 0.);
+    deltaMass_.setSize(conservedScalars_.size()+1, 0.);
+    massIn_.setSize(deltaMass_.size(), 0.);
+    massOut_.setSize(deltaMass_.size(), 0.);
     forAll(phi.boundaryField(), patchI)
     {
         const scalarField& phiPatch = phi.boundaryField()[patchI];
         forAll(phiPatch, faceI)
         {
-            scalarField& flux =
-                phiPatch[faceI] < 0 ? scalarInFlux_ : scalarOutFlux_;
-            flux[0] += -phiPatch[faceI];
-            flux[1] += -phiPatch[faceI]*mag(phiPatch[faceI]);
+            scalarField& mass =
+                phiPatch[faceI] < 0 ? massIn_ : massOut_;
+            mass[0] += -phiPatch[faceI];
             forAll(conservedScalars_, csI)
             {
                 const scalarField& PhiPatch =
                     PhicPdf_[conservedScalars_[csI]]->boundaryField()[patchI];
-                flux[csI+2] += -PhiPatch[faceI]*phiPatch[faceI];
+                mass[csI+1] += -PhiPatch[faceI]*phiPatch[faceI];
             }
         }
     }
-    deltaScalar_ = scalarInFlux_ + scalarOutFlux_;
+    deltaMass_ = massIn_ + massOut_;
+    cumDeltaMass_.setSize(deltaMass_.size(), 0.);
+    cumMassIn_.setSize(deltaMass_.size(), 0.);
+    cumMassOut_.setSize(deltaMass_.size(), 0.);
 }
 
 

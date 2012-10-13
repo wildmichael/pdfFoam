@@ -71,10 +71,10 @@ class mcBoundary :
         const fvPatch& patch_;
 
         //- The scalar influx through this boundary
-        scalarField scalarInFlux_;
+        scalarField massIn_;
 
         //- The scalar outflux through this boundary
-        scalarField scalarOutFlux_;
+        scalarField massOut_;
 
     // Private Member Functions
 
@@ -163,16 +163,16 @@ public:
         inline const fvPatch& patch() const;
 
         //- The scalar influx through this patch
-        inline const scalarField& scalarInFlux() const;
+        inline const scalarField& massIn() const;
 
         //- The scalar influx through this patch
-        inline scalarField& scalarInFlux();
+        inline scalarField& massIn();
 
         //- The scalar outflux through this patch
-        inline const scalarField& scalarOutFlux() const;
+        inline const scalarField& massOut() const;
 
         //- The scalar outflux through this patch
-        inline scalarField& scalarOutFlux();
+        inline scalarField& massOut();
 
 };
 

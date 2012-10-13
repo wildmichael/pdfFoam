@@ -123,13 +123,12 @@ void Foam::mcOpenBoundary::correct(bool afterMove)
                         scalar xp = n_[faceI]&(Cf[faceI]-p.position());
                         if (xp < p.eta()*x0[faceI])
                         {
-                            scalar mpd = p.eta()*cloud().massPerDepth(p);
-                            scalarOutFlux()[0] -= mpd;
-                            scalarOutFlux()[1] -= mpd*p.rho();
+                            scalar mpd = cloud().massPerDepth(p);
+                            massOut()[0] -= mpd;
                             forAll(conservedScalars, csI)
                             {
                                 label i = conservedScalars[csI];
-                                scalarOutFlux()[csI+2] -= mpd*p.Phi()[i];
+                                massOut()[csI+1] -= mpd*p.Phi()[i];
                             }
                             // FIXME Does deletion invalidate the iteration?
                             // Not sure how IDLListBase implements this...
@@ -171,24 +170,22 @@ void Foam::mcOpenBoundary::hitPatch
     // delete particle.
     //if (Un_[faceI] < 0)
     //{
-    //    scalar mpd = p.eta()*cloud().massPerDepth(p);
-    //    scalarInFlux()[0] -= mpd;
-    //    scalarInFlux()[1] -= mpd*p.rho();
+    //    scalar mpd = cloud().massPerDepth(p);
+    //    massIn()[0] -= mpd;
     //    forAll(conservedScalars, csI)
     //    {
-    //        scalarInFlux()[csI+2] -= mpd*p.Phi()[conservedScalars[csI]];
+    //        massIn()[csI+1] -= mpd*p.Phi()[conservedScalars[csI]];
     //    }
     //    td.keepParticle = false;
     //    return;
     //}
     //if (!reflecting_)
     //{
-    //    scalar mpd = p.eta()*massPerDepth(p);
-    //    scalarOutFlux()[0] -= mpd;
-    //    scalarOutFlux()[1] -= mpd*p.rho();
+    //    scalar mpd = cloud().massPerDepth(p);
+    //    massOut()[0] -= mpd;
     //    forAll(conservedScalars, csI)
     //    {
-    //        scalarOutFlux()[csI+2] -= mpd*p.Phi()[conservedScalars[csI]];
+    //        massOut()[csI+1] -= mpd*p.Phi()[conservedScalars[csI]];
     //    }
     //    td.keepParticle = false;
     //    return;

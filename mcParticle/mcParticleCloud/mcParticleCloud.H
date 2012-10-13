@@ -252,7 +252,10 @@ class mcParticleCloud:
         scalarList hNum_;
 
         //- Averaged change in interior, in- and outflux
-        scalarIOField deltaScalar_, scalarInFlux_, scalarOutFlux_;
+        scalarIOField deltaMass_, massIn_, massOut_;
+
+        //- Cumulative change in interior, in- and outflux
+        scalarIOField cumDeltaMass_, cumMassIn_, cumMassOut_;
 
     // Private Member Functions
 

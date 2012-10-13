@@ -328,13 +328,11 @@ void Foam::mcInletOutletBoundary::correct(bool afterMove)
             forAll(genParticles, i)
             {
                 mcParticle& p = *genParticles[i];
-                scalar mpd = p.eta()*cloud().massPerDepth(p);
-                scalarInFlux()[0] += mpd;
-                scalarInFlux()[1] += mpd*p.rho();
+                scalar mpd = cloud().massPerDepth(p);
+                massIn()[0] += mpd;
                 forAll(conservedScalars, csI)
                 {
-                    scalarInFlux()[csI+2] +=
-                        mpd*p.Phi()[conservedScalars[csI]];
+                    massIn()[csI+1] += mpd*p.Phi()[conservedScalars[csI]];
                 }
             }
         }

@@ -49,27 +49,27 @@ const Foam::fvPatch& Foam::mcBoundary::patch() const
 }
 
 
-const Foam::scalarField& Foam::mcBoundary::scalarInFlux() const
+const Foam::scalarField& Foam::mcBoundary::massIn() const
 {
-    return scalarInFlux_;
+    return massIn_;
 }
 
 
-Foam::scalarField& Foam::mcBoundary::scalarInFlux()
+Foam::scalarField& Foam::mcBoundary::massIn()
 {
-    return scalarInFlux_;
+    return massIn_;
 }
 
 
-const Foam::scalarField& Foam::mcBoundary::scalarOutFlux() const
+const Foam::scalarField& Foam::mcBoundary::massOut() const
 {
-    return scalarOutFlux_;
+    return massOut_;
 }
 
 
-Foam::scalarField& Foam::mcBoundary::scalarOutFlux()
+Foam::scalarField& Foam::mcBoundary::massOut()
 {
-    return scalarOutFlux_;
+    return massOut_;
 }
 
 // ************************************************************************* //
