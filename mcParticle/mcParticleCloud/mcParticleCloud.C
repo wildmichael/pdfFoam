@@ -498,6 +498,14 @@ Foam::mcParticleCloud::mcParticleCloud
                     const wedgePolyPatch& wpp = static_cast<const wedgePolyPatch&>(patch);
                     axis_ = wpp.axis();
                     centrePlaneNormal_ = wpp.centreNormal();
+                    openingAngle_ =
+                        2.*acos(wpp.patchNormal()&centrePlaneNormal_);
+                    area_.reset(new scalarField(wpp.size()));
+                    forAll(wpp, faceI)
+                    {
+                        area_()[wpp.faceCells()[faceI]] =
+                            mag(wpp.faceAreas()[faceI]);
+                    }
                 }
                 ++nAxiSymmetric;
             }
@@ -735,30 +743,30 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
 
         ++PaNIC_[cellI];
 
-        const scalar meta = p.m() * p.eta();
-        mMomInstant[cellI]  += meta;
-        VMomInstant[cellI]  += meta / p.rho();
-        UMomInstant[cellI]  += meta * p.UParticle();
+        const scalar mpd = p.eta()*massPerDepth(p);
+        mMomInstant[cellI] += mpd;
+        VMomInstant[cellI] += mpd/p.rho();
+        UMomInstant[cellI] += mpd*p.UParticle();
         PhiPhiI = 0;
         forAll(PhicPdf_, PhiI)
         {
-            PhiMomInstant[PhiI][cellI] += meta*p.Phi()[PhiI];
+            PhiMomInstant[PhiI][cellI] += mpd*p.Phi()[PhiI];
             for (label PhiJ = PhiI; PhiJ != PhicPdf_.size(); ++PhiJ, ++PhiPhiI)
             {
                 PhiPhiMomInstant[PhiPhiI][cellI] +=
-                    meta*p.Phi()[PhiI]*p.Phi()[PhiJ];
+                    mpd*p.Phi()[PhiI]*p.Phi()[PhiJ];
             }
         }
-        UUMomInstant[cellI] += meta*symm(Up*Up);
+        UUMomInstant[cellI] += mpd*symm(Up*Up);
     }
 
     scalar newWt = 1.0 - existWt;
     // Do time-averaging of moments and compute mean fields
     mMom_  = existWt * mMom_  + newWt * mMomInstant;
     DimensionedField<scalar, volMesh> mMomBounded = max(mMom_, SMALL_MASS);
-    pndcPdfInst_.internalField() = mMomInstant / mesh_.V();
+    pndcPdfInst_.internalField() = mMomInstant/volumeOrArea();
     pndcPdfInst_.correctBoundaryConditions();
-    pndcPdf_.internalField() = mMom_ / mesh_.V();
+    pndcPdf_.internalField() = mMom_/volumeOrArea();
     pndcPdf_.correctBoundaryConditions();
 
     VMom_  = existWt * VMom_  + newWt * VMomInstant;
@@ -1032,12 +1040,12 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     forAllIter(mcParticleCloud, *this, pIter)
     {
         mcParticle& p = pIter();
-        scalar meta = p.eta()*p.m();
-        deltaScalarInst[0] -= meta;
-        deltaScalarInst[1] -= meta*p.rho();
+        scalar mpd = p.eta()*massPerDepth(p);
+        deltaScalarInst[0] -= mpd;
+        deltaScalarInst[1] -= mpd*p.rho();
         forAll(conservedScalars_, csI)
         {
-            deltaScalarInst[csI+2] -= meta*p.Phi()[conservedScalars_[csI]];
+            deltaScalarInst[csI+2] -= mpd*p.Phi()[conservedScalars_[csI]];
         }
         p.Ucorrection() = vector::zero;
     }
@@ -1278,12 +1286,12 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     forAllConstIter(mcParticleCloud, *this, pIter)
     {
         const mcParticle& p = pIter();
-        scalar meta = p.eta()*p.m();
-        deltaScalarInst[0] += meta;
-        deltaScalarInst[1] += meta*p.rho();
+        scalar mpd = p.eta()*massPerDepth(p);
+        deltaScalarInst[0] += mpd;
+        deltaScalarInst[1] += mpd*p.rho();
         forAll(conservedScalars_, csI)
         {
-            deltaScalarInst[csI+2] += meta*p.Phi()[conservedScalars_[csI]];
+            deltaScalarInst[csI+2] += mpd*p.Phi()[conservedScalars_[csI]];
         }
         UMax = max(UMax, mag(p.UParticle()));
         UcorrMax = max(UcorrMax, mag(p.Ucorrection()));

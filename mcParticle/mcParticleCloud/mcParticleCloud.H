@@ -234,6 +234,10 @@ class mcParticleCloud:
         vector axis_;
         //- Normal of the centre plane for axi-symmetric cases
         vector centrePlaneNormal_;
+        //- Opening angle for axi-symmetric cases
+        scalar openingAngle_;
+        //- Areas for axi-symmetric cases
+        autoPtr<scalarField> area_;
 
         //- Unit-length surface-normal vectors multiplied with the deltaCoeffs
         surfaceVectorField CourantCoeffs_;
@@ -366,10 +370,16 @@ public:
         inline const vector& axis() const;
         //- Normal of the centre plane for axi-symmetric cases
         inline const vector& centrePlaneNormal() const;
+        //- Opening angle for axi-symmetric cases
+        inline scalar openingAngle() const;
+        //- Cell volumes for 3D or planar cases, areas for axi-symmetric cases
+        inline const scalarField& volumeOrArea() const;
         //- Coefficients for the particle Courant number
         // (Unit-length surface-normal vectors multiplied with the
         // fvMesh::deltaCoeffs())
         inline const surfaceVectorField& CourantCoeffs() const;
+        //- Mass per depth for axi-symmetric cases, plain mass otherwise
+        inline scalar massPerDepth(const mcParticle&) const;
 
         //- The random number generator
         Random &random() {return random_;}

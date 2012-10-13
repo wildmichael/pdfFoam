@@ -161,9 +161,43 @@ inline const Foam::vector& Foam::mcParticleCloud::centrePlaneNormal() const
 }
 
 
+inline Foam::scalar Foam::mcParticleCloud::openingAngle() const
+{
+    return openingAngle_;
+}
+
+
+inline const Foam::scalarField& Foam::mcParticleCloud::volumeOrArea() const
+{
+    if (isAxiSymmetric_)
+    {
+        return area_();
+    }
+    else
+    {
+        return mesh_.V();
+    }
+}
+
+
 inline const Foam::surfaceVectorField& Foam::mcParticleCloud::CourantCoeffs() const
 {
     return CourantCoeffs_;
+}
+
+
+inline Foam::scalar
+Foam::mcParticleCloud::massPerDepth(const mcParticle& p) const
+{
+    if (isAxiSymmetric_)
+    {
+        scalar r = mag(p.position() - (p.position()&axis_)*axis_);
+        return p.m()/(max(r, SMALL)*openingAngle_);
+    }
+    else
+    {
+        return p.m();
+    }
 }
 
 
