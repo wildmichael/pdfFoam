@@ -204,6 +204,7 @@ Foam::mcParticleCloud::mcParticleCloud
     thermoDict_(dict),
     solutionDict_(mesh),
     runTime_(mesh.time()),
+    deltaT_("particleDeltaT", dimTime, 100*SMALL),
     turbModel_
     (
         turbModel ? *turbModel : *getTurbulenceModel(mesh)
@@ -1096,14 +1097,12 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     // First half-step
     //////////////////
 
-    scalar deltaT = runTime_.deltaT().value();
-
     forAllIter(mcParticleCloud, *this, pIter)
     {
         mcParticle& p = pIter();
         p.nSteps() = 0;
         p.Utracking() = p.UParticle() + p.Ucorrection();
-        constrainParticle(*this, deltaT/2, p);
+        constrainParticle(*this, deltaT_.value()/2, p);
         p.reflected() = false;
         // Store old data
         p.UParticleOld() = p.UParticle();
@@ -1113,19 +1112,20 @@ Foam::scalar Foam::mcParticleCloud::evolve()
         p.procOld() = Pstream::myProcNo();
     }
 
-    mcParticle::trackData td1(*this, deltaT/2.);
+    mcParticle::trackData td1(*this, deltaT_.value()/2.);
     Cloud<mcParticle>::move(td1);
 
     // Evaluate models at deltaT/2
     forAllIter(mcParticleCloud, *this, pIter)
     {
         pIter().nSteps() = 0;
+        computeCourantNo(pIter());
     }
-    localTimeStepping_().correct();
     OmegaModel_().correct();
     mixingModel_().correct();
     reactionModel_().correct();
     velocityModel_().correct();
+    localTimeStepping_().correct();
 
     // Send back to original processor
     if (Pstream::parRun())
@@ -1210,7 +1210,9 @@ Foam::scalar Foam::mcParticleCloud::evolve()
 
         // Add numerical diffusion (random walk)
         const scalar& DNum = solutionDict_.DNum().value();
-        scalar C = DNum*sqrt(hNum_[p.cell()]*deltaT*mag(p.Utracking()))/deltaT;
+        scalar C =
+            DNum*sqrt(hNum_[p.cell()]*deltaT_.value()*mag(p.Utracking()))
+           /deltaT_.value();
         p.Utracking() +=
             vector
             (
@@ -1222,15 +1224,13 @@ Foam::scalar Foam::mcParticleCloud::evolve()
         // Add correction velocity
         p.Utracking() += p.Ucorrection();
 
-        constrainParticle(*this, deltaT, p);
-
-        computeCourantNo(p, deltaT);
+        constrainParticle(*this, deltaT_.value(), p);
     }
 
     // Second half-step
     //////////////////
 
-    mcParticle::trackData td2(*this, deltaT);
+    mcParticle::trackData td2(*this, deltaT_.value());
     Cloud<mcParticle>::move(td2);
 
     // Correct boundary conditions
@@ -1245,8 +1245,8 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     }
 
     // Extract statistical averaging to obtain mesh-based quantities
-    const scalar& avgTime = solutionDict_.averagingTime().value();
-    scalar existWt = 1.0/(1.0 + deltaT/(avgTime - deltaT));
+    const dimensionedScalar& avgTime = solutionDict_.averagingTime();
+    scalar existWt = 1.0/(1.0 + (deltaT_/(avgTime - deltaT_)).value());
     updateCloudPDF(existWt);
 
     particleNumberControl();
@@ -1273,11 +1273,11 @@ Foam::scalar Foam::mcParticleCloud::evolve()
         )/rhocPdf_.internalField();
     scalar rhoRes = gAverage(mag(rhoErr));
     Info<< "Cloud " << name() << nl
+        << "    deltaT = " << deltaT_.value() << nl
         << "    pmd relative error: averageMag = " << rhoRes
         << ", min = " << gMin(rhoErr)
         << ", max = " << gMax(rhoErr)
         << nl;
-    printParticleCo();
 
     label nLostPart = returnReduce(lostParticles_.size(), sumOp<label>());
     Info<< "    number of lost particles: " << nLostPart << nl;
@@ -1320,10 +1320,12 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     }
     Info<< "DEBUG: maximum deltaU = " << gMax(deltaU) << endl;
 #endif
-    // Mass and integrated scalars after the evolution done
+    // Mass and integrated scalars after the evolution done, compute maximum
+    // Courant number
     scalar totalMass = fvc::domainIntegrate(rhocPdfInst_).value();
     scalar totalParticleMass = fvc::domainIntegrate(pndcPdfInst_).value();
     scalar UMax = 0, UcorrMax = 0, etaMax = 0, etaMin = HUGE;
+    scalar CoMax = 0;
     forAllConstIter(mcParticleCloud, *this, pIter)
     {
         const mcParticle& p = pIter();
@@ -1337,6 +1339,7 @@ Foam::scalar Foam::mcParticleCloud::evolve()
         UcorrMax = max(UcorrMax, mag(p.Ucorrection()));
         etaMax = max(etaMax, p.eta());
         etaMin = min(etaMin, p.eta());
+        CoMax = max(CoMax, p.Co());
     }
     reduce(UMax, maxOp<scalar>());
     reduce(UcorrMax, maxOp<scalar>());
@@ -1345,47 +1348,57 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     reduce(deltaMassInst,  sumOp<scalarField>());
     reduce(massInInst,  sumOp<scalarField>());
     reduce(massOutInst, sumOp<scalarField>());
+    reduce(CoMax, maxOp<scalar>());
 
-    deltaMass_  = 0.999*deltaMass_  + 0.001*deltaMassInst;
-    massIn_  = 0.999*massIn_  + 0.001*massInInst;
-    massOut_ = 0.999*massOut_ + 0.001*massOutInst;
-
-    cumDeltaMass_ += deltaMassInst;
-    cumMassIn_ += massInInst;
-    cumMassOut_ += massOutInst;
-
-    scalarList massErr = (deltaMass_ + massIn_ + massOut_)/massIn_;
-    scalarList massErrInst = (deltaMassInst + massInInst + massOutInst)/massInInst;
-    scalarList cumMassErr = (cumDeltaMass_ + cumMassIn_ + cumMassOut_)/cumMassIn_;
-
-    Info<< "    instant mass:  density = " << totalMass
-        << ", particle = " << totalParticleMass
-        << ", error/densityMass = "
-        << (totalParticleMass - totalMass)/totalMass << nl
-        << "    min(rhoCloudPdfInst) = " << gMin(rhocPdfInst_)
-        << ", max(rhoCloudPdfInst) = " << gMax(rhocPdfInst_) << nl
-        << "    min(pndCloudPdfInst) = " << gMin(pndcPdfInst_)
-        << ", max(pndCloudPdfInst) = " << gMax(pndcPdfInst_) << nl;
-
-    Info<< "    particle mass flux error: "
-        << "instant = " << massErrInst[0]
-        << ", mean = " << massErr[0]
-        << ", cumulative = " << cumMassErr[0] << nl;
-
-    forAll(conservedScalars_, csI)
+    static bool firstRun = true;
+    if (!firstRun)
     {
-        label i = conservedScalars_[csI];
-        Info<< "    " << scalarNames_[i] << " flux error: "
-            << "instant = " << massErrInst[csI+1]
-            << ", mean = " << massErr[csI+1]
-            << ", cumulative = " << cumMassErr[csI+1] << nl;
+        deltaMass_  = 0.999*deltaMass_  + 0.001*deltaMassInst;
+        massIn_  = 0.999*massIn_  + 0.001*massInInst;
+        massOut_ = 0.999*massOut_ + 0.001*massOutInst;
+
+        cumDeltaMass_ += deltaMassInst;
+        cumMassIn_ += massInInst;
+        cumMassOut_ += massOutInst;
+
+        scalarList massErr = (deltaMass_ + massIn_ + massOut_)/stabilise(massIn_, SMALL);
+        scalarList massErrInst = (deltaMassInst + massInInst + massOutInst)/stabilise(massInInst, SMALL);
+        scalarList cumMassErr = (cumDeltaMass_ + cumMassIn_ + cumMassOut_)/stabilise(cumMassIn_, SMALL);
+
+        Info<< "    instant mass:  density = " << totalMass
+            << ", particle = " << totalParticleMass
+            << ", error/densityMass = "
+            << (totalParticleMass - totalMass)/totalMass << nl
+            << "    min(rhoCloudPdfInst) = " << gMin(rhocPdfInst_)
+            << ", max(rhoCloudPdfInst) = " << gMax(rhocPdfInst_) << nl
+            << "    min(pndCloudPdfInst) = " << gMin(pndcPdfInst_)
+            << ", max(pndCloudPdfInst) = " << gMax(pndcPdfInst_) << nl;
+
+        Info<< "    particle mass flux error: "
+            << "instant = " << massErrInst[0]
+            << ", mean = " << massErr[0]
+            << ", cumulative = " << cumMassErr[0] << nl;
+
+        forAll(conservedScalars_, csI)
+        {
+            label i = conservedScalars_[csI];
+            Info<< "    " << scalarNames_[i] << " flux error: "
+                << "instant = " << massErrInst[csI+1]
+                << ", mean = " << massErr[csI+1]
+                << ", cumulative = " << cumMassErr[csI+1] << nl;
+        }
     }
+    firstRun = false;
 
     Info<< "    max(UParticle) = " << UMax
         << ", max(Ucorrection) = " << UcorrMax
         << ", min(eta) = " << etaMin
         << ", max(eta) = " << etaMax
         << nl;
+
+    // Finally, update deltaT for next time step
+    deltaT_.value() = solutionDict_.CFL()/CoMax;
+
     return rhoRes;
 }
 
@@ -1885,30 +1898,6 @@ void Foam::mcParticleCloud::assertPopulationHealth() const
 }
 
 
-void Foam::mcParticleCloud::printParticleCo()
-{
-    scalar meanPartCoNum = 0.0;
-    scalar maxPartCoNum = 0.0;
-
-    if (mesh_.nInternalFaces() && size())
-    {
-        forAllConstIter(mcParticleCloud, *this, pIter)
-        {
-            meanPartCoNum += pIter().Co();
-            maxPartCoNum = max(maxPartCoNum, pIter().Co());
-        }
-        label nPart = returnReduce(size(), sumOp<label>());
-        reduce(meanPartCoNum, sumOp<scalar>());
-        meanPartCoNum /= nPart;
-        reduce(maxPartCoNum, maxOp<scalar>());
-    }
-
-    Info<< "    particle Courant Number"
-        << " mean: " << meanPartCoNum
-        << " max: " << maxPartCoNum << nl;
-}
-
-
 Foam::vectorList
 Foam::mcParticleCloud::randomPointsInCell(label n, label celli)
 {
@@ -1989,7 +1978,7 @@ void Foam::mcParticleCloud::adjustAxiSymmetricMass
 }
 
 
-void Foam::mcParticleCloud::computeCourantNo(mcParticle& p, scalar dt) const
+void Foam::mcParticleCloud::computeCourantNo(mcParticle& p) const
 {
     p.Co() = 0.;
     // Due to particle path integration
@@ -2015,15 +2004,8 @@ void Foam::mcParticleCloud::computeCourantNo(mcParticle& p, scalar dt) const
             label i = mesh.boundaryMesh()[patchI].whichFace(faceI);
             coeff = CourantCoeffs_.boundaryField()[patchI][i];
         }
-        p.Co() = max(p.Co(), fabs(dt*coeff&U));
+        p.Co() = max(p.Co(), mag(coeff&U));
     }
-    // Due to models
-    velocityModel_().Co(p);
-    OmegaModel_().Co(p);
-    mixingModel_().Co(p);
-    reactionModel_().Co(p);
-    positionCorrection_().Co(p);
-    localTimeStepping_().Co(p);
 }
 
 

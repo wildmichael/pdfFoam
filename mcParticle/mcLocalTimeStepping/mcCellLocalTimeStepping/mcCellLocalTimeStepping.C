@@ -79,13 +79,12 @@ Foam::mcCellLocalTimeStepping::mcCellLocalTimeStepping
 void Foam::mcCellLocalTimeStepping::updateInternals()
 {
     // Courant number
-    scalar CourantU =
-        max(solutionDict().lookupOrDefault<scalar>("CourantU", 0.3), 1e-6);
+    scalar CourantU = cloud().solutionDict().CFL();
     // Maximum local to global time step ratio
     scalar etaMax =
         max(solutionDict().lookupOrDefault<scalar>("etaMax", 10), 1);
     const fvMesh& mesh = eta_.mesh();
-    scalar deltaT = mesh.time().deltaT().value();
+    scalar deltaT = cloud().deltaT().value();
     const volVectorField& U = cloud().Ufv();
     const compressible::turbulenceModel& tm = cloud().turbulenceModel();
     tmp<volSymmTensorField> tR = tm.R();

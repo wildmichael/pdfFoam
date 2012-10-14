@@ -87,7 +87,7 @@ void Foam::mcOpenBoundary::correct(bool afterMove)
         handledReflectedParticles = false;
         const label patchI = patchID();
         const vectorField& Cf     = mesh.Cf().boundaryField()[patchI];
-        const scalar dt           = mesh.time().deltaT().value();
+        const scalar dt           = cloud().deltaT().value();
         const labelList& conservedScalars = cloud().conservedScalars();
         Un_ =
             (

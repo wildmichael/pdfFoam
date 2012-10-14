@@ -104,7 +104,7 @@ void Foam::mcLimitedSimplePositionCorrection::updateInternals()
     static const dimensionedScalar one("one", dimLength*dimVelocity, 1.);
 
     const fvMesh& mesh = cloud().mesh();
-    scalar dt = mesh.time().deltaT().value();
+    scalar dt = cloud().deltaT().value();
     volScalarField phi
     (
         IOobject

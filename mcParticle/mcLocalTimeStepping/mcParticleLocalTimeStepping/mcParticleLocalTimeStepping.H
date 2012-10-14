@@ -28,7 +28,7 @@ Description
     Particle-based local time-stepping
 
     Every particle gets an individual local timestep based on its Courant
-    number and a global CFL condition: eta = CFL / Co
+    number and a global CFL condition: eta = CFL / (deltaT*Co)
 
 SourceFiles
     mcParticleLocalTimeStepping.C
@@ -58,11 +58,6 @@ class mcParticleLocalTimeStepping :
     public mcLocalTimeStepping
 {
     // Private Data
-
-        //- The Courant number used for local time stepping
-        scalar CourantU_;
-
-    // Private Member Functions
 
         //- The upper cut-off for the local time-stepping parameter
         scalar upperBound_;

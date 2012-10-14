@@ -41,6 +41,7 @@ Foam::mcSolution::mcSolution(const objectRegistry& obr)
             IOobject::NO_WRITE
         )
     ),
+    CFL_(),
     averagingTime_("averagingTime", 0.01*obr.time().endTime()),
     defaultRelaxationTime_("relaxationTime", dimTime, GREAT),
     relaxationTimes_(ITstream("relaxationTimes", tokenList())()),
@@ -64,6 +65,8 @@ bool Foam::mcSolution::read()
     if (regIOobject::read())
     {
         const dictionary& dict = solutionDict();
+
+        CFL_ = readScalar(dict.lookup("CFL"));
 
         if (dict.found("averagingTime"))
         {

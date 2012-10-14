@@ -98,7 +98,7 @@ mcIntegratedPositionCorrection
 void Foam::mcIntegratedPositionCorrection::updateInternals()
 {
     const scalar C = solutionDict().lookupOrDefault<scalar>("C", 1e-5);
-    const dimensionedScalar& deltaT = cloud().mesh().time().deltaT();
+    const dimensionedScalar& deltaT = cloud().deltaT();
     const volScalarField& rho = cloud().rhocPdf();
     const volScalarField& pnd = cloud().pndcPdfInst();
 

@@ -53,6 +53,8 @@ class mcSolution:
 {
     // Private data
 
+        //- The maximumum Courant number
+        scalar CFL_;
         //- The averaging time scale
         dimensionedScalar averagingTime_;
         //- Whether a default relaxation time is set
@@ -103,6 +105,10 @@ public:
             //- Return the selected sub-dictionary if the "select" keyword is
             //  given, otherwise return the complete dictionary
             const dictionary& solutionDict() const;
+
+            //- Return the maximum allowed Courant number
+            const scalar& CFL() const
+            {return CFL_;}
 
             //- Return the averaging time scale
             const dimensionedScalar& averagingTime() const

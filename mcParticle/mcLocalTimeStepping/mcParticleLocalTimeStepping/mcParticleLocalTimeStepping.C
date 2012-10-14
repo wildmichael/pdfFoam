@@ -56,7 +56,6 @@ Foam::mcParticleLocalTimeStepping::mcParticleLocalTimeStepping
 )
 :
     mcLocalTimeStepping(cloud, db, subDictName),
-    CourantU_(0.),
     upperBound_(0.)
 {}
 
@@ -64,8 +63,6 @@ Foam::mcParticleLocalTimeStepping::mcParticleLocalTimeStepping
 
 void Foam::mcParticleLocalTimeStepping::updateInternals()
 {
-    CourantU_ =
-        max(solutionDict().lookupOrDefault<scalar>("CourantU", 0.3), 1e-6);
     upperBound_ =
         solutionDict().lookupOrDefault<scalar>("upperBound", 10);
 }
@@ -73,7 +70,13 @@ void Foam::mcParticleLocalTimeStepping::updateInternals()
 
 void Foam::mcParticleLocalTimeStepping::correct(mcParticle& p)
 {
-    p.eta() = min(CourantU_ / stabilise(p.Co(), VSMALL), upperBound_);
+    const scalar& deltaT = cloud().deltaT().value();
+    p.eta() =
+        min
+        (
+            cloud().solutionDict().CFL()/stabilise(deltaT*p.Co(), VSMALL),
+            upperBound_
+        );
 }
 
 // ************************************************************************* //

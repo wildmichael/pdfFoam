@@ -145,7 +145,7 @@ void Foam::mcSLMFullVelocityModel::updateInternals()
 
 void Foam::mcSLMFullVelocityModel::correct(mcParticle& p)
 {
-    const scalar& deltaTg = cloud().mesh().time().deltaT().value();
+    const scalar& deltaTg = cloud().deltaT().value();
     scalar deltaT = p.eta()*deltaTg;
 
     const point& pos = p.position();
@@ -180,12 +180,7 @@ void Foam::mcSLMFullVelocityModel::correct(mcParticle& p)
         // Scale to ensure consistency on TKE (using interpolated
         // kFap/kPdfap gives very bad results)
         + (p.UParticle() - UFap)*diffk_[c]*deltaTg;
-}
-
-
-void Foam::mcSLMFullVelocityModel::Co(mcParticle& p) const
-{
-    p.Co() = max(p.Co(), cloud().mesh().time().deltaT().value()*p.Omega());
+    p.Co() = max(p.Co(), p.Omega());
 }
 
 // ************************************************************************* //

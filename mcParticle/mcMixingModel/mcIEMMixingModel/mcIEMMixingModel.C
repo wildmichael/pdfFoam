@@ -68,7 +68,7 @@ void Foam::mcIEMMixingModel::updateInternals()
 void Foam::mcIEMMixingModel::correct(mcParticle& p)
 {
     const labelList& mixedScalars = cloud().mixedScalars();
-    const scalar& dt =  cloud().mesh().time().deltaT().value();
+    const scalar& dt =  cloud().deltaT().value();
     const scalar& Omega = p.Omega();
     const scalar& eta = p.eta();
     label cellI = p.cell();

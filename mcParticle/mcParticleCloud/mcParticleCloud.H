@@ -146,6 +146,8 @@ class mcParticleCloud:
         mcSolution solutionDict_;
         //- The time object
         const Time& runTime_;
+        //- The global particle time step
+        dimensionedScalar deltaT_;
         //- The RAS model object
         const compressible::turbulenceModel& turbModel_;
 
@@ -286,9 +288,6 @@ class mcParticleCloud:
         //- Compute scaling factors for numerical diffusion
         void initHNum();
 
-        //- Compute and print the mean and maximum particle Courant number
-        void printParticleCo();
-
         //- Generate a @a n random points in cell @a celli
         vectorList randomPointsInCell(label n, label celli);
 
@@ -322,6 +321,9 @@ public:
 
         //- Access the mesh
         inline const fvMesh& mesh() const;
+
+        //- The global particle time step
+        inline const dimensionedScalar& deltaT() const;
 
         //- Return the thermophysicalProperties dictionary
         inline const dictionary& thermoDict() const;
@@ -434,8 +436,8 @@ public:
         //- The local time-stepping model
         inline mcLocalTimeStepping& localTimeStepping();
 
-        //- Compute the Courant number for given particle
-        void computeCourantNo(mcParticle&, scalar dt) const;
+        //- Compute the Courant number for given particle and deltaT = 1
+        void computeCourantNo(mcParticle&) const;
 };
 
 

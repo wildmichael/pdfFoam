@@ -35,7 +35,7 @@ Foam::mcParticle::trackData::trackData(mcParticleCloud& mcpc, scalar trackTime)
     Particle<mcParticle>::trackData(mcpc),
     cloud_(mcpc),
     trackTime_(trackTime),
-    deltaT_(mcpc.mesh().time().deltaT().value())
+    deltaT_(mcpc.deltaT().value())
 {}
 
 
@@ -70,8 +70,7 @@ Foam::mcParticle::mcParticle
 {
     const polyMesh& mesh = c.mesh();
     meshTools::constrainDirection(mesh, mesh.geometricD(), Utracking_);
-    scalar dt = c.mesh().time().deltaT().value();
-    c.computeCourantNo(*this, dt);
+    c.computeCourantNo(*this);
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //

@@ -31,6 +31,12 @@ inline const Foam::fvMesh& Foam::mcParticleCloud::mesh() const
 }
 
 
+inline const Foam::dimensionedScalar& Foam::mcParticleCloud::deltaT() const
+{
+    return deltaT_;
+}
+
+
 inline const Foam::dictionary& Foam::mcParticleCloud::thermoDict() const
 {
     return thermoDict_;
