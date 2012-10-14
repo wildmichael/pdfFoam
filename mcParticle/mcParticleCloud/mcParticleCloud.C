@@ -1245,7 +1245,8 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     }
 
     // Extract statistical averaging to obtain mesh-based quantities
-    scalar existWt = 1.0/(1.0 + deltaT/solutionDict_.averagingTime().value());
+    const scalar& avgTime = solutionDict_.averagingTime().value();
+    scalar existWt = 1.0/(1.0 + deltaT/(avgTime - deltaT));
     updateCloudPDF(existWt);
 
     particleNumberControl();
