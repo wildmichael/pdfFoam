@@ -33,6 +33,7 @@ License
 #include "compressible/LES/LESModel/LESModel.H"
 #include "mcProcessorBoundary.H"
 #include "gradInterpolationConstantTet.H"
+#include "uniqueOrder_FIX.H"
 
 // * * * * * * * * * * * * * Local Helper Functions  * * * * * * * * * * * * //
 
@@ -95,33 +96,6 @@ void constrainParticle
     }
 }
 
-
-//- @todo This is a hack to fix the implementation in OpenFOAM < 2.0.x
-template<class T>
-void uniqueOrder_FIX
-(
-    const Foam::UList<T>& lst,
-    Foam::labelList& order
-)
-{
-    using namespace Foam;
-    sortedOrder(lst, order);
-
-    if (order.size() > 1)
-    {
-        label n = 0;
-        for (label i = 0; i < order.size() - 1; ++i)
-        {
-            if (lst[order[i]] != lst[order[i+1]])
-            {
-                order[n++] = order[i];
-            }
-        }
-        // DONT FORGET THE LAST ELEMENT!
-        order[n++] = order[order.size()-1];
-        order.setSize(n);
-    }
-}
 
 //- @todo This is a hack to work around annoying bug in OpenFOAM < 2.0
 template<class DF>
