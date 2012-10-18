@@ -173,7 +173,8 @@ inline Foam::scalar Foam::mcParticleCloud::openingAngle() const
 }
 
 
-inline const Foam::scalarField& Foam::mcParticleCloud::volumeOrArea() const
+inline const Foam::DimensionedField<Foam::scalar, Foam::volMesh>&
+Foam::mcParticleCloud::volumeOrArea() const
 {
     if (isAxiSymmetric_)
     {

@@ -337,6 +337,7 @@ Foam::mcParticleCloud::mcParticleCloud
         ),
         mesh_,
         dimDensity,
+        // Note: for axi-symmetric cases to *V/volumeOrArea later
         mMom_/mesh_.V(),
         rhocPdf_.boundaryField()
     ),
@@ -353,6 +354,7 @@ Foam::mcParticleCloud::mcParticleCloud
         ),
         mesh_,
         dimDensity,
+        // Note: for axi-symmetric cases to *V/volumeOrArea later
         mMom_/mesh_.V(),
         rhocPdf_.boundaryField()
     ),
@@ -540,7 +542,19 @@ Foam::mcParticleCloud::mcParticleCloud
                     centrePlaneNormal_ = wpp.centreNormal();
                     openingAngle_ =
                         2.*acos(wpp.patchNormal()&centrePlaneNormal_);
-                    area_.reset(new scalarField(wpp.size()));
+                    area_.reset(new DimensionedField<scalar, volMesh>
+                        (
+                            IOobject
+                            (
+                                "mcParticleCloud::area_",
+                                runTime_.constant(),
+                                mesh_,
+                                IOobject::NO_READ,
+                                IOobject::NO_WRITE
+                            ),
+                            mesh_,
+                            dimensionedScalar("A", dimVolume, 0)
+                        ));
                     forAll(wpp, faceI)
                     {
                         area_()[wpp.faceCells()[faceI]] =
@@ -658,6 +672,11 @@ void Foam::mcParticleCloud::checkMoments()
     if (returnReduce(readOk, andOp<bool>()))
     {
         Info<< "Moments read correctly." << endl;
+        if (isAxiSymmetric_)
+        {
+            pndcPdf_.internalField() *= mesh_.V()/volumeOrArea();
+            pndcPdfInst_.internalField() *= mesh_.V()/volumeOrArea();
+        }
     }
     else
     {
@@ -1505,7 +1524,7 @@ void Foam::mcParticleCloud::particleGenInCell
 // Initialize statistical moments from FV data
 void Foam::mcParticleCloud::initMoments()
 {
-    mMom_  = mesh_.V() * rhocPdf_;
+    mMom_  = rhocPdf_*volumeOrArea();
     rhocPdfInst_.internalField() = rhocPdf_.internalField();
     pndcPdf_.internalField() = rhocPdf_.internalField();
     pndcPdfInst_.internalField() = rhocPdf_.internalField();

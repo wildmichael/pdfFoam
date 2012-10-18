@@ -239,7 +239,7 @@ class mcParticleCloud:
         //- Opening angle for axi-symmetric cases
         scalar openingAngle_;
         //- Areas for axi-symmetric cases
-        autoPtr<scalarField> area_;
+        autoPtr<DimensionedField<scalar, volMesh> > area_;
 
         //- Unit-length surface-normal vectors multiplied with the deltaCoeffs
         surfaceVectorField CourantCoeffs_;
@@ -378,7 +378,7 @@ public:
         //- Opening angle for axi-symmetric cases
         inline scalar openingAngle() const;
         //- Cell volumes for 3D or planar cases, areas for axi-symmetric cases
-        inline const scalarField& volumeOrArea() const;
+        inline const DimensionedField<scalar, volMesh>& volumeOrArea() const;
         //- Coefficients for the particle Courant number
         // (Unit-length surface-normal vectors multiplied with the
         // fvMesh::deltaCoeffs())
