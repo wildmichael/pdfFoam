@@ -56,7 +56,7 @@ class mcSolution:
         //- The maximumum Courant number
         scalar CFL_;
         //- The averaging time scale
-        dimensionedScalar averagingTime_;
+        scalar averagingCoeff_;
         //- Whether a default relaxation time is set
         bool haveDefaultRelaxationTime_;
         //- Default relaxation time scale
@@ -110,9 +110,9 @@ public:
             const scalar& CFL() const
             {return CFL_;}
 
-            //- Return the averaging time scale
-            const dimensionedScalar& averagingTime() const
-            {return averagingTime_;}
+            //- Return the averaging coefficient
+            const scalar& averagingCoeff() const
+            {return averagingCoeff_;}
 
             //- Return the relaxation time for the given field
             dimensionedScalar relaxationTime(const word& name) const;

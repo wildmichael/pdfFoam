@@ -42,7 +42,7 @@ Foam::mcSolution::mcSolution(const objectRegistry& obr)
         )
     ),
     CFL_(),
-    averagingTime_("averagingTime", 0.01*obr.time().endTime()),
+    averagingCoeff_(1000),
     defaultRelaxationTime_("relaxationTime", dimTime, GREAT),
     relaxationTimes_(ITstream("relaxationTimes", tokenList())()),
     defaultInterpolationScheme_("cell"),
@@ -68,9 +68,9 @@ bool Foam::mcSolution::read()
 
         CFL_ = readScalar(dict.lookup("CFL"));
 
-        if (dict.found("averagingTime"))
+        if (dict.found("averagingCoeff"))
         {
-            averagingTime_.value() = readScalar(dict.lookup("averagingTime"));
+            averagingCoeff_ = readScalar(dict.lookup("averagingCoeff"));
         }
 
         if (dict.found("relaxationTimes"))

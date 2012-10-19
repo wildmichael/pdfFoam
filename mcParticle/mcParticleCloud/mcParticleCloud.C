@@ -1238,8 +1238,8 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     }
 
     // Extract statistical averaging to obtain mesh-based quantities
-    const dimensionedScalar& avgTime = solutionDict_.averagingTime();
-    scalar existWt = 1.0/(1.0 + (deltaT_/(avgTime - deltaT_)).value());
+    const scalar& avgCoeff = solutionDict_.averagingCoeff();
+    scalar existWt = (avgCoeff-1.)/avgCoeff;
     updateCloudPDF(existWt);
 
     particleNumberControl();
