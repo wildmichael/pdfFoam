@@ -27,14 +27,13 @@ Class
 Description
     Steady flamelet reaction model
 
-    Reads constant/flamelet/{z,chi,Rgas,T} (mixture fraction, scalar
-    dissipation rate, specific gas constant and temperature) and additional
-    fields specified in the "scalars" list. z must be uniformly spaced (up to
-    0.1% of the first spacing) and monothonically increasing. chi must be
-    monothonically increasing. If Nz is the number of entries in z and Nchi
-    the number of entries in chi, then Rgas, T and all the fields specified
-    in "scalars" must be lists of lists, the outer list of size Nchi, the inner
-    of size Nz.
+    Reads constant/flamelet/{z,chi,rho} (mixture fraction, scalar dissipation
+    rate and density) and additional fields specified in the "scalars" list. z
+    must be uniformly spaced (up to 0.1% of the first spacing) and
+    monothonically increasing. chi must be monothonically increasing. If Nz is
+    the number of entries in z and Nchi the number of entries in chi, then rho
+    and all the fields specified in "scalars" must be lists of lists, the outer
+    list of size Nchi, the inner of size Nz.
 
     The scalar dissipation rate chi is modelled using the model proposed by
     Poinsot and Veynante [1]
@@ -81,8 +80,8 @@ class mcSteadyFlamelet :
 
     // Private Data
 
-        //- Names of the mixture-fraction and temperature fields
-        const word zName_, TName_;
+        //- Name of the mixture-fraction field
+        const word zName_;
 
         //- Scalar dissipation-rate model constant
         const scalar Cchi_;
@@ -102,15 +101,15 @@ class mcSteadyFlamelet :
         //- Interpolation tables
         PtrList<scalarListIOList> phi_;
 
-        //- Indexes of the mixture fraction, scalar dissipation rate and
-        // temperature properties
-        const label zIdx_, chiIdx_, TIdx_;
+        //- Indexes of the mixture fraction and scalar dissipation rate
+        // properties
+        const label zIdx_, chiIdx_;
 
         //- Indexes of the additional interpolated fields
         labelList addedIdx_;
 
-        //- Number of native fields (temperature T and density rho for now)
-        static const label nNativeFields_ = 2;
+        //- Number of native fields (density rho for now)
+        static const label nNativeFields_ = 1;
 
         //- The interpolator for the mixture fraction variance
         autoPtr<interpolation<scalar> > zVarInterp_;

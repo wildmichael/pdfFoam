@@ -91,7 +91,6 @@ Foam::mcSteadyFlamelet::mcSteadyFlamelet
 :
     mcReactionModel(cloud, db, subDictName),
     zName_  (thermoDict().lookupOrDefault<word>("zName", "z")),
-    TName_(thermoDict().lookupOrDefault<word>("TName", "T")),
     Cchi_(thermoDict().lookupOrDefault<scalar>("Cchi", 6.0)),
     z_
     (
@@ -124,8 +123,7 @@ Foam::mcSteadyFlamelet::mcSteadyFlamelet
     addedNames_(),
     phi_(),
     zIdx_(findIdx("zName", "z")),
-    chiIdx_(findIdx("chiName", "chi")),
-    TIdx_(findIdx("TName", "T"))
+    chiIdx_(findIdx("chiName", "chi"))
 {
     if (thermoDict().found("scalars"))
     {
@@ -147,24 +145,6 @@ Foam::mcSteadyFlamelet::mcSteadyFlamelet
             IOobject
             (
                 "rho",
-                db.time().constant(),
-                "flamelet",
-                db,
-                IOobject::MUST_READ,
-                IOobject::NO_WRITE,
-                false
-            )
-        )
-    );
-    // load temperature data
-    phi_.set
-    (
-        1,
-        new scalarListIOList
-        (
-            IOobject
-            (
-                TName_,
                 db.time().constant(),
                 "flamelet",
                 db,
@@ -335,12 +315,10 @@ void Foam::mcSteadyFlamelet::correct(mcParticle& p)
         ichi2 = ichi1 + 1;
         wchi = (chi - chi_[ichi1])/(chi_[ichi2] - chi_[ichi1]);
     }
-    // interpolate rho and T
+    // interpolate rho
     const scalar rho = binterp(phi_[0], ichi1, ichi2, wchi, iz1, iz2, wz);
-    const scalar T = binterp(phi_[1], ichi1, ichi2, wchi, iz1, iz2, wz);
     p.Phi()[chiIdx_] = chi;
     p.rho() = rho;
-    p.Phi()[TIdx_] = T;
     // interpolate user-data
     forAll(addedIdx_, i)
     {
