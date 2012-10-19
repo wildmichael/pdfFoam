@@ -29,6 +29,7 @@ License
 #include "mcParticleCloud.H"
 #include "interpolation.H"
 #include "Pair.H"
+#include "uniqueOrder_FIX.H"
 
 #include <algorithm>
 
@@ -128,6 +129,20 @@ Foam::mcSteadyFlamelet::mcSteadyFlamelet
     if (thermoDict().found("scalars"))
     {
         thermoDict().lookup("scalars") >> addedNames_;
+        labelList order;
+        uniqueOrder_FIX(addedNames_, order);
+        if (addedNames_.size() != order.size())
+        {
+            FatalErrorIn
+            (
+                "mcSteadyFlamelet::mcSteadyFlamelet(mcParticleCloud&,"
+                "const objectRegistry&, const word&)"
+            )
+                << "The list "
+                << thermoDict().lookupEntry("scalars", false, false).name()
+                << " contains duplicate entries.\n"
+                << exit(FatalError);
+        }
         addedIdx_.setSize(addedNames_.size());
         forAll(addedNames_, i)
         {
