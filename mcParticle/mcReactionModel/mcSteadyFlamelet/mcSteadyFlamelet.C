@@ -76,19 +76,17 @@ template<class V>
 inline scalar binterp
 (
     const V& v, //!< data field (list-of-list, row-major)
-    label ix1,  //!< first row index
-    label ix2,  //!< second row index
+    label ix,   //!< row index
     scalar wx,  //!< row weight
-    label iy1,  //!< first column index
-    label iy2,  //!< second column index
+    label iy,   //!< first column index
     scalar wy   //!< column weight
 )
 {
     const scalar
-        v00 = v[ix1][iy1],
-        v10 = v[ix1][iy2],
-        v01 = v[ix2][iy1],
-        v11 = v[ix2][iy2];
+        v00 = v[ix  ][iy  ],
+        v10 = v[ix  ][iy+1],
+        v01 = v[ix+1][iy  ],
+        v11 = v[ix+1][iy+1];
     const scalar wxm  = 1. - wx;
     const scalar wym  = 1. - wy;
     return v00*wxm*wym + v10*wx*wym + v01*wxm*wy + v11*wx*wy;
@@ -320,13 +318,13 @@ void Foam::mcSteadyFlamelet::correct(mcParticle& p)
     findCoeffs(chi_, chi, ichi, wchi);
     p.Phi()[chiIdx_] = chi;
     // interpolate rho
-    p.rho() = binterp(phi_[0], ichi1, ichi2, wchi, iz1, iz2, wz);
+    p.rho() = binterp(phi_[0], ichi, wchi, iz, wz);
     // interpolate user-data
     forAll(addedIdx_, i)
     {
         const scalarListIOList& v = phi_[nNativeFields_+i];
         p.Phi()[addedIdx_[i]] =
-            binterp(v, ichi1, ichi2, wchi, iz1, iz2, wz);
+            binterp(v, ichi, wchi, iz, wz);
     }
 }
 
