@@ -40,6 +40,37 @@ namespace // anonymous
 
 using namespace Foam;
 
+//- Interpolation index and weight
+template<class L>
+inline void findCoeffs(const L& lst, scalar v, int& i, scalar& w)
+{
+    typename L::const_iterator iter =
+        std::lower_bound(lst.cbegin(), lst.cend(), v);
+    if (iter == lst.cbegin())
+    {
+        i = 0;
+        w = 0.;
+    }
+    else if (iter == lst.cend())
+    {
+        i = lst.size() - 2;
+        w = 1.;
+    }
+    else
+    {
+        typename L::const_iterator prev = iter;
+        std::advance(prev, -1);
+        i = std::distance(lst.cbegin(), prev);
+        w = (v - *prev)/(*iter - *prev);
+    }
+    if (w < -VSMALL || w > (1.+VSMALL))
+    {
+        FatalErrorIn("::<anonymous>::findCoeffs<L>(...)")
+            << "Weight w = " << w << " not within [0, 1]\n"
+            << abort(FatalError);
+    }
+}
+
 //- bilinear interpolation
 template<class V>
 inline scalar binterp
@@ -205,35 +236,20 @@ Foam::mcSteadyFlamelet::mcSteadyFlamelet
             << chi_.objectPath() << " must have at least 1 element.\n"
             << exit(FatalError);
     }
-    // sanity checks: deltaZ ~ constant, z_ strictly monothonically increasing,
-    // at the same time compute mean deltaZ
-    scalar dz = z_[1] - z_[0];
-    bool incr = dz > 0;
-    deltaZ_ = dz;
-    for(label i = 2; i != Nz_ && incr; ++i)
+    // sanity check: z_ strictly monothonically increasing
+    for(label i = 1; i != Nz_; ++i)
     {
-        scalar dzn = z_[i] - z_[i-1];
-        if (abs(dzn-dz)/dz > 1e-3)
+        if (!(z_[i]-z_[i-1] > 0))
         {
             FatalErrorIn("mcSteadyFlamelet::mcSteadyFlamelet("
                 "mcParticleCloud&, const objectRegistry&, const word&)")
-                << z_.objectPath() << " not uniformly spaced (up to 0.1%).\n"
+                << z_.objectPath()
+                << " not strictly monothonically increasing.\n"
                 << exit(FatalError);
         }
-        dz = dzn;
-        deltaZ_ += dz;
-        incr &= dz > 0;
-    }
-    deltaZ_ /= Nz_;
-    if (!incr)
-    {
-        FatalErrorIn("mcSteadyFlamelet::mcSteadyFlamelet("
-            "mcParticleCloud&, const objectRegistry&, const word&)")
-            << z_.objectPath() << " not strictly monothonically increasing.\n"
-            << exit(FatalError);
     }
     // sanity check: chi strictly monothonically increasing
-    for(label i = 1; i != Nchi_ && incr; ++i)
+    for(label i = 1; i != Nchi_; ++i)
     {
         if (!(chi_[i]-chi_[i-1] > 0))
         {
@@ -295,45 +311,16 @@ void Foam::mcSteadyFlamelet::correct(mcParticle& p)
     const scalar chi = max(Cchi_*p.Omega()*zVar, SMALL);
 
     // compute index into z_ and interpolation weight
-    label iz1 = floor(z/deltaZ_);
-    label iz2;
-    scalar wz = 0;
-    if (iz1 < 0)
-    {
-        iz1 = iz2 = 0;
-    }
-    else if (iz1 > Nz_ - 2)
-    {
-        iz1 = iz2 = Nz_ - 1;
-    }
-    else
-    {
-        iz2 = iz1 + 1;
-        wz = (z - z_[iz1])/(z_[iz2] - z_[iz1]);
-    }
+    label iz;
+    scalar wz;
+    findCoeffs(z_, z, iz, wz);
     // find index into chi_ and compute interpolation weight
-    const scalarList::const_iterator chiIter =
-        std::lower_bound(chi_.cbegin(), chi_.cend(), chi);
-    label ichi1, ichi2;
-    scalar wchi = 0;
-    if (chiIter == chi_.cbegin())
-    {
-        ichi1 = ichi2 = 0;
-    }
-    else if (chiIter > chi_.cend() - 2)
-    {
-        ichi1 = ichi2 = Nchi_ - 1;
-    }
-    else
-    {
-        ichi1 = std::distance(chi_.cbegin(), chiIter);
-        ichi2 = ichi1 + 1;
-        wchi = (chi - chi_[ichi1])/(chi_[ichi2] - chi_[ichi1]);
-    }
-    // interpolate rho
-    const scalar rho = binterp(phi_[0], ichi1, ichi2, wchi, iz1, iz2, wz);
+    label ichi;
+    scalar wchi;
+    findCoeffs(chi_, chi, ichi, wchi);
     p.Phi()[chiIdx_] = chi;
-    p.rho() = rho;
+    // interpolate rho
+    p.rho() = binterp(phi_[0], ichi1, ichi2, wchi, iz1, iz2, wz);
     // interpolate user-data
     forAll(addedIdx_, i)
     {

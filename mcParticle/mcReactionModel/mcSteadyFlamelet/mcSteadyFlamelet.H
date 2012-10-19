@@ -29,11 +29,10 @@ Description
 
     Reads constant/flamelet/{z,chi,rho} (mixture fraction, scalar dissipation
     rate and density) and additional fields specified in the "scalars" list. z
-    must be uniformly spaced (up to 0.1% of the first spacing) and
-    monothonically increasing. chi must be monothonically increasing. If Nz is
-    the number of entries in z and Nchi the number of entries in chi, then rho
-    and all the fields specified in "scalars" must be lists of lists, the outer
-    list of size Nchi, the inner of size Nz.
+    and chi must be must be monothonically increasing. If Nz is the number of
+    entries in z and Nchi the number of entries in chi, then rho and all the
+    fields specified in "scalars" must be lists of lists, the outer list of
+    size Nchi, the inner of size Nz.
 
     The scalar dissipation rate chi is modelled using the model proposed by
     Poinsot and Veynante [1]
