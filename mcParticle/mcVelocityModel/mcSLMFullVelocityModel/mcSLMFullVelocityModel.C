@@ -155,7 +155,8 @@ void Foam::mcSLMFullVelocityModel::correct(mcParticle& p)
     // fluid quantities @ particle position
     vector UFap = UInterp_().interpolate(pos, c, f);
     vector gradPFap = gradPInterp_().interpolate(pos, c, f);
-    scalar kFap = kInterp_().interpolate(pos, c, f);
+    const scalar& kMin = cloud().solutionDict().kMin().value();
+    scalar kFap = max(kInterp_().interpolate(pos, c, f), kMin);
     vector diffUap = diffUInterp_().interpolate(pos, c, f);
 
     // Note: it would be the best if UInterp was interpolating velocities based
