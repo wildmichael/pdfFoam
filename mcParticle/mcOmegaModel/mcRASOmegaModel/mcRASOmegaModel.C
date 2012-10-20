@@ -138,7 +138,12 @@ void Foam::mcRASOmegaModel::correct(Foam::mcParticle& p)
             << "Interpolator not initialized"
             << exit(FatalError);
     }
-    p.Omega() = OmegaInterp_().interpolate(p.position(), p.cell(), p.face());
+    p.Omega() =
+        max
+        (
+            OmegaInterp_().interpolate(p.position(), p.cell(), p.face()),
+            SMALL
+        );
 }
 
 // ************************************************************************* //
