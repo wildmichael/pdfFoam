@@ -72,7 +72,9 @@ Foam::mcCellLocalTimeStepping::mcCellLocalTimeStepping
         dimless,
         zeroGradientFvPatchScalarField::typeName
     )
-{}
+{
+    updateInternals();
+}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
