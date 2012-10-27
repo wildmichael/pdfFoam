@@ -286,7 +286,6 @@ void Foam::mcInletOutletBoundary::correct(bool afterMove)
         DynamicList<mcParticle*> genParticles;
         genParticles.reserve(mIn/mp);
         scalar mGen = 0;
-        cloud().localTimeStepping().updateInternals();
         while (mGen < mIn)
         {
             vector Up = randomVelocity(faceI);
