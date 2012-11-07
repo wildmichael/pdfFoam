@@ -97,7 +97,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td)
 
     isOnInletBoundary_ = false;
 
-    while (td.keepParticle && !td.switchProcessor && tEnd > SMALL)
+    while (td.keepParticle && !td.switchProcessor && tEnd > 0)
     {
         if (debug)
         {
