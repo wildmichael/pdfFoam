@@ -1,3 +1,4 @@
 pdfSimpleFoam.C
+sigStopAtWriteNowBackport.C
 
 EXE = $(FOAM_USER_APPBIN)/pdfSimpleFoam

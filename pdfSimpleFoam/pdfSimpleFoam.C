@@ -33,6 +33,7 @@ Description
 #include "fvCFD.H"
 #include "mcThermo.H"
 #include "RASModel.H"
+#include "sigStopAtWriteNowBackport.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -43,6 +44,9 @@ int main(int argc, char *argv[])
     #include "createMesh.H"
     #include "createFields.H"
     #include "initContinuityErrs.H"
+    #if FOAM_HEX_VERSION < 0x200
+    sigStopAtWriteNow sigStopAtWriteNow_(true, runTime);
+    #endif
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

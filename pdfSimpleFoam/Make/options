@@ -1,4 +1,10 @@
+/* Set up hex integer version */
+ifndef FOAM_HEX_VERSION
+FOAM_HEX_VERSION:=0x$(subst -ext,,$(subst .,,$(WM_PROJECT_VERSION:.x=.0)))
+endif
+
 EXE_INC = \
+    -DFOAM_HEX_VERSION=$(FOAM_HEX_VERSION) \
     -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
     -I$(LIB_SRC)/turbulenceModels \
     -I$(LIB_SRC)/turbulenceModels/compressible/RAS/RASModel \
@@ -17,3 +23,13 @@ EXE_LIBS = \
     -lmeshTools \
     -llagrangian \
     -lmcParticle
+
+/* Detect git version */
+ifneq (,$(findstring .x,$(WM_PROJECT_VERSION)))
+EXE_INC += -DFOAM_GIT_VERSION
+endif
+
+/* Detect ext version */
+ifdef FOAM_DEV
+EXE_INC += -DFOAM_EXT_VERSION
+endif
