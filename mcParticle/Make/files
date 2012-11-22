@@ -13,6 +13,7 @@ mcReactionModel/mcColdReactionModel/mcColdReactionModel.C
 mcReactionModel/mcNaiveFlameletModel/mcNaiveFlameletModel.C
 mcReactionModel/mcBurkeSchumannReactionModel/mcBurkeSchumannReactionModel.C
 mcReactionModel/mcSteadyFlamelet/mcSteadyFlamelet.C
+mcReactionModel/mcKulkarniAutoIgnitionReactionModel/mcKulkarniAutoIgnition.C
 mcBoundary/mcBoundary/mcBoundary.C
 mcBoundary/mcSlipBoundary/mcSlipBoundary.C
 mcBoundary/mcEmptyBoundary/mcEmptyBoundary.C
