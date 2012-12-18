@@ -6,3 +6,7 @@ set -e
 wmake libso mcParticle
 wmake pdfSimpleFoam
 
+if [ "$1" = doc ]
+then
+    doc/Allwmake
+fi

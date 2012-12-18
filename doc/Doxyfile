@@ -1,0 +1,42 @@
+@INCLUDE = "$(WM_PROJECT_DIR)/doc/Doxygen/Doxyfile"
+
+# The PROJECT_NAME tag is a single word (or sequence of words) that should
+# identify the project. Note that if you do not use Doxywizard you need
+# to put quotes around the project name if it contains spaces.
+
+PROJECT_NAME           = pdfFoam
+
+# If the FULL_PATH_NAMES tag is set to YES then the STRIP_FROM_PATH tag
+# can be used to strip a user-defined part of the path. Stripping is
+# only done if one of the specified strings matches the left-hand part of
+# the path. The tag can be used to show relative paths in the file list.
+# If left blank the directory from which doxygen is run is used as the
+# path to strip. Note that you specify absolute paths here, but also
+# relative paths, which will be relative from the directory where doxygen is
+# started.
+
+STRIP_FROM_PATH        = ..
+
+# The INPUT tag can be used to specify the files and/or directories that contain
+# documented source files. You may enter file names like "myfile.cpp" or
+# directories like "/usr/src/myproject". Separate the files or directories
+# with spaces.
+
+INPUT                  = ../mcParticle \
+                         ../pdfSimpleFoam \
+                         .
+
+# If the value of the INPUT tag contains directories, you can use the
+# FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp
+# and *.h) to filter out the source-files in the directories. If left
+# blank the following patterns are tested:
+# *.c *.cc *.cxx *.cpp *.c++ *.d *.java *.ii *.ixx *.ipp *.i++ *.inl *.h *.hh
+# *.hxx *.hpp *.h++ *.idl *.odl *.cs *.php *.php3 *.inc *.m *.mm *.dox *.py
+# *.f90 *.f *.for *.vhd *.vhdl
+
+FILE_PATTERNS         += *.dox
+
+# The EXTRA_PACKAGES tag can be to specify one or more names of LaTeX
+# packages that should be included in the LaTeX output.
+
+EXTRA_PACKAGES        += amsmath
