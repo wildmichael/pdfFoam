@@ -63,6 +63,8 @@ class mcSolution:
         dimensionedScalar defaultRelaxationTime_;
         //- The relaxation time scales
         dictionary relaxationTimes_;
+        //- The minimum allowable relaxation time as a fraction of deltaT
+        scalar minRelaxationFactor_;
         //- Whether a default interpolation scheme is set
         bool haveDefaultInterpolationScheme_;
         //- Default interpolation scheme
@@ -116,6 +118,10 @@ public:
 
             //- Return the relaxation time for the given field
             dimensionedScalar relaxationTime(const word& name) const;
+
+            //- The minimum allowable relaxation time as a fraction of deltaT
+            const scalar& minRelaxationFactor() const
+            {return minRelaxationFactor_;}
 
             //- Return the name of the interpolator for the given field
             word interpolationScheme(const word& name) const;

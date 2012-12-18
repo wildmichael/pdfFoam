@@ -43,8 +43,9 @@ Foam::mcSolution::mcSolution(const objectRegistry& obr)
     ),
     CFL_(),
     averagingCoeff_(1000),
-    defaultRelaxationTime_("relaxationTime", dimTime, GREAT),
+    defaultRelaxationTime_("defaultRelaxationTime", dimTime, GREAT),
     relaxationTimes_(ITstream("relaxationTimes", tokenList())()),
+    minRelaxationFactor_(10),
     defaultInterpolationScheme_("cell"),
     interpolationSchemes_(ITstream("interpolationSchemes", tokenList())()),
     particlesPerCell_(0),
@@ -111,6 +112,12 @@ bool Foam::mcSolution::read()
                     << " must either be a scalar or none\n"
                     << exit(FatalIOError);
             }
+        }
+
+        if (dict.found("minRelaxationFactor"))
+        {
+            minRelaxationFactor_ =
+                readScalar(dict.lookup("minRelaxationFactor"));
         }
 
         if (dict.found("interpolationSchemes"))
@@ -199,16 +206,20 @@ const Foam::dictionary& Foam::mcSolution::solutionDict() const
 Foam::dimensionedScalar
 Foam::mcSolution::relaxationTime(const word& name) const
 {
+    dimensionedScalar result = defaultRelaxationTime_;
     if (relaxationTimes_.found(name) || !haveDefaultRelaxationTime_)
     {
-        return dimensionedScalar
+        result =
+            dimensionedScalar
             (
                 name+"RelaxTime",
                 dimTime,
                 relaxationTimes_.lookup(name)
             );
     }
-    return defaultRelaxationTime_;
+    result.value() =
+        max(result.value(), time().deltaT().value()*minRelaxationFactor_);
+    return result;
 }
 
 
