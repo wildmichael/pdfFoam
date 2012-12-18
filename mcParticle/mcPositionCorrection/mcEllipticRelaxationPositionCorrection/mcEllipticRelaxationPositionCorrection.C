@@ -97,7 +97,7 @@ mcEllipticRelaxationPositionCorrection
             IOobject::NO_WRITE
         ),
         cloud.mesh(),
-        dimless,
+        dimless/dimLength,
         zeroGradientFvPatchScalarField::typeName
     ),
 
@@ -112,7 +112,7 @@ mcEllipticRelaxationPositionCorrection
             IOobject::NO_WRITE
         ),
         cloud.mesh(),
-        dimless,
+        dimless/dimLength,
         zeroGradientFvPatchScalarField::typeName
     ),
 

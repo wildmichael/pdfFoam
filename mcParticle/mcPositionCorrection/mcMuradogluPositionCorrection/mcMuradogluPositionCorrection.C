@@ -81,7 +81,7 @@ Foam::mcMuradogluPositionCorrection::mcMuradogluPositionCorrection
             IOobject::NO_WRITE
         ),
         cloud.mesh(),
-        dimless,
+        dimVelocity,
         zeroGradientFvPatchScalarField::typeName
     )
 {}
