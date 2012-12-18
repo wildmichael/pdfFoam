@@ -107,8 +107,15 @@ bool Foam::mcSolution::read()
             }
             if (bad)
             {
+                const fileName& entryName =
+                    relaxationTimes_.lookupEntry
+                    (
+                        "default",
+                        false,
+                        false
+                    ).name();
                 FatalIOErrorIn("mcSolution::read()", relaxationTimes_)
-                    << relaxationTimes_.lookupEntry("default", false, false).name()
+                    << entryName
                     << " must either be a scalar or none\n"
                     << exit(FatalIOError);
             }
