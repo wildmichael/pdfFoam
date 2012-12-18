@@ -98,6 +98,13 @@ void Foam::mcMuradogluPositionCorrection::updateInternals()
     volScalarField omega = c_*U0_/L();
     QInst_ = (cloud().pndcPdfInst() - cloud().rhocPdfInst())/cloud().rhocPdf();
 
+    // need to set deltaT to that of the particles
+    Time& runTime = const_cast<Time&>(db().time());
+    runTime.subCycle
+    (
+        ceil(runTime.deltaT().value()/max(cloud().deltaT().value(), 1e-6))
+    );
+
     // solve for mean normalized density difference
     solve
     (
@@ -137,6 +144,8 @@ void Foam::mcMuradogluPositionCorrection::updateInternals()
         cloud().solutionDict().interpolationScheme(zeta_.name()),
         zeta_
     );
+    // reset deltaT
+    runTime.endSubCycle();
 }
 
 
