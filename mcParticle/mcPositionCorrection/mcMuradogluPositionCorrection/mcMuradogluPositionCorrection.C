@@ -92,8 +92,14 @@ Foam::mcMuradogluPositionCorrection::mcMuradogluPositionCorrection
 void Foam::mcMuradogluPositionCorrection::updateInternals()
 {
     readCoeffs();
-    U0_ = max(mag(cloud().Ufv()));
-    reduce(U0_.value(), maxOp<scalar>());
+    U0_.value() = gMax(mag(cloud().Ufv().internalField()));
+    if (U0_.value() < VSMALL)
+    {
+        WarningIn("mcMuradogluPositionCorrection::updateInternals()")
+            << "max(mag(" << cloud().Ufv().name() << ")) is very small. "
+            << "The position correction will have (almost) no effect."
+            << nl;
+    }
     // frequency helper variable
     volScalarField omega = c_*U0_/L();
     QInst_ = (cloud().pndcPdfInst() - cloud().rhocPdfInst())/cloud().rhocPdf();
