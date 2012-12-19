@@ -1,0 +1,30 @@
+#!/bin/sh
+# Source tutorial run functions
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+
+# Get application name
+application="pdfSimpleFoam"
+
+setPositionCorrection() {
+   c=$1
+   sed -i'' "s/\(^[ \t]*positionCorrection[ \t]*[ \t]\).*/\1$c;/" \
+      $c/constant/thermophysicalProperties
+}
+
+compileApplication initPositionCorrectionTest
+
+for c in simple limitedSimple Muradoglu ellipticRelaxation integrated
+do
+   if [ $c = simple ]
+   then
+      (
+         cd $c
+         runApplication blockMesh
+         runApplication ./initPositionCorrectionTest/Make/$WM_OPTIONS/initPositionCorrectionTest
+      )
+   else
+      cloneCase simple $c
+      setPositionCorrection $c
+   fi
+   (cd $c; runApplication $application)
+done

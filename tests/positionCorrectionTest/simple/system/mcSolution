@@ -1,0 +1,65 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  1.7.1                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system/lagrangian/mcThermoCloud";
+    object      mcSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+CFL                     0.2;
+averagingCoeff          1e2;
+particlesPerCell        30;
+particleNumberControl   off;
+cloneAt                 0.8;
+eliminateAt             1.2;
+kMin                    1e-8;
+DNum                    0.0;
+
+limitedSimplePositionCorrectionCoeffs
+{
+    C               1e-1;
+}
+IEMMixingModelCoeffs
+{
+    Cmix            2.0;
+}
+
+relaxationTimes
+{
+    default         1e-5;
+}
+
+RASOmegaModelCoeffs
+{
+    Omega0          1e5;
+}
+
+interpolationSchemes
+{
+    default                      none;
+    mcRASOmegaModel::Omega       cellPointFace;
+    rho                          cellPointFace;
+    U                            cellPointFace;
+    k                            cellPointFace;
+    SLMFullVelocityModel::diffU  cellPointFace;
+    kCloudPDF                    cellPointFace;
+    UPosCorr                     cellPointFace;
+    zzCov                        cellPointFace;
+    mcCellLocaltimeStepping::eta cellPointFace;
+    mcPositionCorrecton::L       cellPointFace;
+    mcMuradogluPositionCorrection::grad(phi) cellPointFace;
+    mcEllipticRelaxationPositionCorrection::grad(QInst) cellPointFace;
+    mcEllipticRelaxationPositionCorrection::grad(Q) cellPointFace;
+    mcEllipticRelaxationPositionCorrection::zeta cellPointFace;
+}
+
+// ************************************************************************* //

@@ -1,0 +1,56 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  1.7.1                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      thermophysicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+cloudProperties
+{
+    velocityModel      SLMFull;
+    localTimeStepping  off;
+    positionCorrection limitedSimple;
+    OmegaModel RAS;
+    mixingModel IEM;
+    reactionModel      cold;
+    scalarFields       ( );
+    mixedScalars       ( );
+    conservedScalars   ( );
+
+    boundaryHandlers
+    {
+        walls
+        {
+            type            slip;
+        }
+        open
+        {
+            type            inletOutlet;
+            randomGenerator
+            {
+                type        inversion;
+            }
+        }
+        frontAndBack
+        {
+            type            empty;
+        }
+    }
+}
+
+// needed for the init
+thermoType      hRhoThermo<pureMixture<constTransport<specieThermo<hConstThermo<perfectGas>>>>>;
+mixture         air 1 28.9 1000 0 1.8e-05 0.7;
+pRef            100000;
+
+// ************************************************************************* //
