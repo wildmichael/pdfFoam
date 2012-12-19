@@ -1,5 +1,5 @@
 EXE_INC = \
-    -I../../mcParticle/lnInclude
+    -I../../../mcParticle/lnInclude
 
 EXE_LIBS = \
     -L$(FOAM_USER_LIBBIN) \

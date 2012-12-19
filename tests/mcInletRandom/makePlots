@@ -1,8 +1,18 @@
 #!/usr/bin/env python
 
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.special import erf
+import sys
+try:
+  import numpy as np
+  from scipy.special import erf
+  import matplotlib.pyplot as plt
+except:
+  sys.stderr.write(
+'''This program requires numpy, scipy and matplotlib.
+Either install them using your package-management tool, or install them with
+
+  $ easy_install numpy scipy matplotlib
+''')
+  sys.exit(1)
 
 Umean = 2.0
 urms = 4.0
@@ -44,4 +54,5 @@ ax.hist(UInSampleGen, bins=nbins, normed=True)
 ax.plot(Vin, pin, 'g')
 ax.set_title('Sampling method in Python')
 
+plt.savefig('histograms.pdf')
 plt.show()

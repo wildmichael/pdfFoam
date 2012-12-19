@@ -1,0 +1,3 @@
+mcInletRandomTest.C
+
+EXE = ./$(OBJECTS_DIR)/mcInletRandomTest
