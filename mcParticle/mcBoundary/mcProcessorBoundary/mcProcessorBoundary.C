@@ -46,7 +46,7 @@ Foam::mcProcessorBoundary::mcProcessorBoundary
 :
     mcBoundary(cloud, patchID, dictionary())
 {
-    add("type", typeName_);
+    add("type", typeName_());
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
