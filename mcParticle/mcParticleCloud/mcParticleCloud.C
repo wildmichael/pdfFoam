@@ -33,6 +33,7 @@ License
 #include "compressible/LES/LESModel/LESModel.H"
 #include "mcProcessorBoundary.H"
 #include "gradInterpolationConstantTet.H"
+#include "timeVaryingMappedFixedValueFvPatchField.H"
 #include "uniqueOrder_FIX.H"
 
 // * * * * * * * * * * * * * Local Helper Functions  * * * * * * * * * * * * //
@@ -486,6 +487,28 @@ Foam::mcParticleCloud::mcParticleCloud
     readIfPresent(VMom_);
     readIfPresent(UMom_);
     readIfPresent(UUMom_);
+
+    // Fix TaucPdf_ to not inherit timeVaryingFixedValue from R
+    if (!TaucPdf_.headerOk())
+    {
+        typedef timeVaryingMappedFixedValueFvPatchField<symmTensor> tvmpf;
+        forAll(TaucPdf_.boundaryField(), i)
+        {
+            const fvPatchField<symmTensor>& patch =
+                TaucPdf_.boundaryField()[i];
+            if (isA<tvmpf>(patch))
+            {
+                TaucPdf_.boundaryField().set
+                (
+                    i,
+                    new fixedValueFvPatchField<symmTensor>
+                    (
+                        refCast<const tvmpf>(patch)
+                    )
+                );
+            }
+        }
+    }
 
     CourantCoeffs_.boundaryField() /= 2.;
 
