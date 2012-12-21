@@ -510,6 +510,7 @@ Foam::mcParticleCloud::mcParticleCloud
         }
     }
 
+    // Correct the Courant coefficients in the boundary field
     CourantCoeffs_.boundaryField() /= 2.;
 
     initScalarFields();
@@ -534,7 +535,8 @@ Foam::mcParticleCloud::mcParticleCloud
                 if (!isAxiSymmetric_)
                 {
                     isAxiSymmetric_ = true;
-                    const wedgePolyPatch& wpp = static_cast<const wedgePolyPatch&>(patch);
+                    const wedgePolyPatch& wpp =
+                        static_cast<const wedgePolyPatch&>(patch);
                     axis_ = wpp.axis();
                     centrePlaneNormal_ = wpp.centreNormal();
                     openingAngle_ =
@@ -1377,9 +1379,14 @@ Foam::scalar Foam::mcParticleCloud::evolve()
         cumMassIn_ += massInInst;
         cumMassOut_ += massOutInst;
 
-        scalarList massErr = (deltaMass_ + massIn_ + massOut_)/stabilise(massIn_, SMALL);
-        scalarList massErrInst = (deltaMassInst + massInInst + massOutInst)/stabilise(massInInst, SMALL);
-        scalarList cumMassErr = (cumDeltaMass_ + cumMassIn_ + cumMassOut_)/stabilise(cumMassIn_, SMALL);
+        scalarList massErr =
+            (deltaMass_ + massIn_ + massOut_)/stabilise(massIn_, SMALL);
+        scalarList massErrInst =
+            (deltaMassInst + massInInst + massOutInst)
+           /stabilise(massInInst, SMALL);
+        scalarList cumMassErr =
+            (cumDeltaMass_ + cumMassIn_ + cumMassOut_)
+           /stabilise(cumMassIn_, SMALL);
 
         Info<< "    instant mass:  density = " << totalMass
             << ", particle = " << totalParticleMass
@@ -1647,7 +1654,12 @@ void Foam::mcParticleCloud::initScalarFields()
             PhicPdf_[fieldI] = &ownedScalarFields_.first();
         }
         // scalar covariance fields
-        for (label fieldJ = fieldI; fieldJ != nScalarFields; ++fieldJ, ++PhiPhiI)
+        for
+        (
+            label fieldJ = fieldI;
+            fieldJ != nScalarFields;
+            ++fieldJ, ++PhiPhiI
+        )
         {
             word name = scalarNames_[fieldI]+scalarNames_[fieldJ] + "Cov";
             if (mesh_.foundObject<volScalarField>(name))
@@ -1723,7 +1735,8 @@ void Foam::mcParticleCloud::initScalarFields()
             (
                 "mcParticleCloud::initScalarFields()"
             )
-                << "No such scalar field: " << mixedScalarNames[mixedScalarI] << "\n"
+                << "No such scalar field: " << mixedScalarNames[mixedScalarI]
+                << "\n"
                 << "Available field names are:\n" << scalarNames_ << "\n"
                 << exit(FatalError);
         }
@@ -1743,7 +1756,12 @@ void Foam::mcParticleCloud::initScalarFields()
                 "mcParticleCloud::initScalarFields()"
             )
                 << "The list "
-                << thermoDict_.lookupEntry("conservedScalars", false, false).name()
+                << thermoDict_.lookupEntry
+                (
+                    "conservedScalars",
+                    false,
+                    false
+                ).name()
                 << " contains duplicate entries.\n"
                 << exit(FatalError);
         }
@@ -1768,7 +1786,8 @@ void Foam::mcParticleCloud::initScalarFields()
             (
                 "mcParticleCloud::initScalarFields()"
             )
-                << "No such scalar field: " << conservedScalarNames[conservedScalarI] << "\n"
+                << "No such scalar field: "
+                << conservedScalarNames[conservedScalarI] << "\n"
                 << "Available field names are:\n" << scalarNames_ << "\n"
                 << exit(FatalError);
         }
