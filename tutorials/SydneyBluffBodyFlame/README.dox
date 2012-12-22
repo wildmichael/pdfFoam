@@ -1,0 +1,33 @@
+/**
+ @page TutorialHotBB Sydney Bluff Body Stabilised Flame
+ @ingroup Tutorials
+
+ @section TutorialHotBBExpData Experimental Data
+ The experimental data is available from the university of Sydney:
+ http://sydney.edu.au/engineering/aeromech/thermofluids/bluff.htm
+
+ The flame labelled HM1E has been simulated. The data files for the various
+ available measurement sets are:
+
+ - <a href="../../tutorials/SydneyBluffBodyFlame/expdata/b4f3-b-s1.dat">b4f3-b-s1.dat</a>
+   (velocity data, set 1)
+ - <a href="../../tutorials/SydneyBluffBodyFlame/expdata/b4f3-b-s1.dat">b4f3-b-s2.dat</a>
+   (velocity data, set 2)
+ - <a href="../../tutorials/SydneyBluffBodyFlame/expdata/b4f3b_Fav.dat">b4f3b_Fav.dat</a>
+   (scalar data)
+
+ @section TutorialHotBBCase Case Description
+ The inflow profiles have been computed from the file @c icbbody.dat. The TKE
+ was computed as
+ @f[
+   k = \frac{3}{2} {u'}^2
+ @f]
+ and the turbulent dissipation was computed making a turbulence in equilibrium
+ assumption, resulting in
+ @f[
+   \varepsilon = \sqrt{C_\mu} k
+                 \left\|\frac{\partial \tilde{U}}{\partial x}\right\| \quad .
+ @f]
+ */
+
+// *********************** vim: set ft=cpp et sw=4 : *********************** //

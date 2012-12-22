@@ -1,0 +1,20 @@
+/**
+ @page TutorialAutoIgnBurner Auto-Ignition Burner
+ @ingroup Tutorials
+
+ @section TutorialAutoIgnBurnerCase Case Description
+ This is a pure demonstration show-case. The combustion model is very simple,
+ refer to @cite kulkarni:2012 for more information. The tabulated data can be
+ generated with the scripts
+ <a href="../../tutorials/AutoIgnitionBurner/tools/genAutoIgnitionTable">tools/genAutoIgnitionTable</a>
+ and
+ <a href="../../tutorials/AutoIgnitionBurner/tools/convertAutoIgnitionTable">tools/convertAutoIgnitionTable</a>.
+ The geometry has been created with Catia and the mesh was generated with Icem
+ CFD. First, it was converted to Fluent 6 format, and then the utility @c
+ fluent3DMeshToFoam was used to convert the mesh to OpenFOAM format. Finally,
+ the mesh was rotated such that the stream-wise direction aligns with the
+ x-coordinate direction. The last two steps are performed by the
+ <a href="../../tutorials/AutoIgnitionBurner/makeMesh">makeMesh</a> script.
+ */
+
+// *********************** vim: set ft=cpp et sw=4 : *********************** //

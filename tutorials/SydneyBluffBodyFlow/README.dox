@@ -1,0 +1,59 @@
+/**
+ @page TutorialColdBB Sydney Bluff Body Flow
+ @ingroup Tutorials
+
+ @section TutorialColdBBExptData Experimental Data
+ The experimental data is available from the university of Sydney:
+ http://sydney.edu.au/engineering/aeromech/thermofluids/bluff.htm
+
+ The flow field has been measured at @em 61m/s bulk jet velocity. The data
+ files for the three available measurement sets are:
+
+ - <a href="../../tutorials/SydneyBluffBodyFlow/expdata/b4c1-s1.dat">b4c1-s1.dat</a>
+ - <a href="../../tutorials/SydneyBluffBodyFlow/expdata/b4c1-s2.dat">b4c1-s2.dat</a>
+ - <a href="../../tutorials/SydneyBluffBodyFlow/expdata/b4c1-s2.dat">b4c1-s2.dat</a>
+
+
+ The scalar data is labelled @c B4C1, where three data sets are available:
+
+   - <a href="../../tutorials/SydneyBluffBodyFlow/expdata/b4c1a-01x.txt">b4c1a-01x.txt</a>:
+     @em 50m/s bulk jet velocity
+   - <a href="../../tutorials/SydneyBluffBodyFlow/expdata/b4c1b-01x.txt">b4c1b-01x.txt</a>:
+     @em 63m/s bulk jet velocity
+   - <a href="../../tutorials/SydneyBluffBodyFlow/expdata/b4c1c-01x.txt">b4c1c-01x.txt</a>:
+     @em 80m/s bulk jet velocity
+
+ @section TutorialColdBBCases Case Description
+ Since the flow field and the scalar fields have been measured at different jet
+ bulk velocities, two different simulation cases are supplied.
+
+ @subsection TutorialColdBBCasesFlow Flow Field
+ The case @c flow runs the standard @c simpleFoam solver to obtain a flow
+ field solution. No particles are involved here. The inflow profiles have been
+ computed from the file @c icbbody.dat for the jet, for the co-flow a
+ rectangular velocity profile is assumed as the boundary layer is very small
+ there. The RMS velocity fluctuations have been assumed to be roughly
+ @em 3.144% in the co-flow. A jet bulk velocity of @em 61m/s was found to
+ underpredict the jet velocity rather grossly, and it appears that @em 63m/s
+ are more appropriate. The TKE was computed as
+ @f[
+   k = \frac{3}{2} {u'}^2 \quad .
+ @f]
+ In the jet, the turbulent dissipation was computed making a turbulence in
+ equilibrium assumption, resulting in
+ @f[
+   \varepsilon = \sqrt{C_\mu} k
+                 \left\|\frac{\partial \tilde{U}}{\partial x}\right\| \quad .
+ @f]
+ In the co-flow, the turbulent dissipation was chosen rather arbitrarily as
+ @em &epsilon;=137m<sup>2</sup>/s<sup>3</sup>.
+
+ @subsection TutorialColdBBCasesScalars Scalar Fields
+ The case @c scalarsInit computes, similarly to the @c flow case described in
+ the previous section, the flow field using @c simpleFoam. The profiles in the
+ jet have been scaled for the bulk velocity of @em 50m/s. This flow field is
+ then used in the case named @c scalars where the Monte-Carlo simulation is
+ performed with a frozen FV field, i.e. using one-way coupling.
+ */
+
+// *********************** vim: set ft=cpp et sw=4 : *********************** //

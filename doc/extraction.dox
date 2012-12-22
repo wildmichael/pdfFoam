@@ -1,0 +1,27 @@
+/**
+ @page extraction Particle Property Extraction
+
+ The vector of the extracted, time-averaged quantities is given by
+ @f{align*}
+   \vec{E}^{n+1} &= \alpha \vec{E}^n + (1-\alpha)
+                    \sum\hat g(\vec{x}^*)m^*\vec{e}^* \\
+                 &= (M, V, \vec{I}, K, Z)^T \quad \text{where} \\
+         \vec{e} &= (1, 1/\rho^*, \vec{U}^*, \frac{U_i^* U_i^*}{2}, z^*)^T
+         \quad .
+ @f}
+ Here, @f$\hat g(\vec{x}^*)@f$ is a kernel function (such as a top-hat function
+ coinciding with the cell volume) and @f$\alpha@f$ is the time-averaging
+ parameter which should be close to 1. The particle density @f$\rho^*@f$ is
+ given by the equation of state (e.g. perfect gas law).
+
+ The extracted, time-averaged variables can then be computed as follows:
+ @f{align*}
+   \bar\rho        &= \frac{M}{V} \\
+   \tilde{\vec{U}} &= \frac{\vec{I}}{M} \\
+   \tilde k        &= \frac{K}{M}-\frac{1}{2}\tilde U_i\tilde U_i \\
+   \tilde z        &= \frac{Z}{M}
+ @f}
+
+ */
+
+// *********************** vim: set ft=cpp et sw=4 : *********************** //

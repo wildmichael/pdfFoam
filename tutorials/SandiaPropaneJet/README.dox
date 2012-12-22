@@ -1,0 +1,30 @@
+/**
+ @page TutorialPropaneJet Sandia Propane Jet
+ @ingroup Tutorials
+
+ @section TutorialPropaneJetExpData Experimental Data
+ The experimental data is available from the website of the TNF workshop:
+ http://www.sandia.gov/TNF/DataArch/ProJet.html
+
+ @section TutorialPropaneJetCase Case Description
+ The inflow profiles of the co-flow have been computed from the experimental
+ data. For the jet, however, no such data is available, and hence the profiles
+ from the Sandia Flame D have been scaled. The TKE in the co-flow was computed
+ as
+ @f[
+   k = \frac{3}{2} {u'}^2 \quad ,
+ @f]
+ in the jet it was assumed to be
+ @f[
+   k = \frac{1}{2} \left({u'}^2 + 2{v'}^2\right) \quad .
+ @f]
+
+ The turbulent dissipation was computed making a turbulence in equilibrium
+ assumption, resulting in
+ @f[
+   \varepsilon = \sqrt{C_\mu} k
+                 \left\|\frac{\partial \tilde{U}}{\partial x}\right\| \quad .
+ @f]
+ */
+
+// *********************** vim: set ft=cpp et sw=4 : *********************** //

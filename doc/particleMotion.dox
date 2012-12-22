@@ -1,0 +1,63 @@
+/**
+ @page particleMotion Particle Motion
+
+ The particle motion is modelled after @cite Jenny2001. The algorithm goes
+ like follows:
+
+ -# Interpolate mean velocity to particle location:
+   @f$\tilde{\vec{U}}\left(\vec{X}^{*^n}\right)@f$.
+ -# Perform a half-step
+   @f[
+     \vec{X}^{*^{n+\frac{1}{2}}} = \vec{X}^{*^n} + \frac{\Delta t}{2}
+     \left(\tilde{\vec{U}}\left(\vec{X}^{*^n}\right) + \vec{u}^{*^n}\right)
+   @f]
+ -# Interpolate mean velocity
+   @f$\tilde{\vec{U}}\left(\vec{X}^{*^{n+\frac{1}{2}}}\right)@f$, evaluate
+   Langevin equation at new time level @f$n+1@f$ to estimate
+   @f$\vec{u}^{*^{n+1}}@f$ and perform mixing.
+ -# Perform full time step
+   @f[
+     \vec{X}^{*^{n+1}} = \vec{X}^{*^n} + \Delta t
+     \left(
+       \tilde{\vec{U}}\left(\vec{X}^{*^{n+\frac{1}{2}}}\right)
+       + \frac{\vec{u}^{*^n}+\vec{u}^{*^{n+1}}}{2}
+     \right)
+   @f]
+
+ To implement this algorithm efficiently im OpenFOAM, in particular to avoid
+ serious implementation issues at processor boundaries, the following modified
+ version of above algorithm is used:
+
+ -# Interpolate mean velocity to particle location:
+   @f$\tilde{\vec{U}}\left(\vec{X}^{*^n}\right)@f$.
+ -# Perform a half-step
+   @f[\vec{X}^{*^{n+\frac{1}{2}}} = \vec{X}^{*^n} + \frac{\Delta t}{2}
+   \left(
+   \tilde{\vec{U}}\left(\vec{X}^{*^n}\right)
+   + \vec{u}^{*^n}
+   \right)@f]
+ -# Interpolate mean velocity
+   @f$\tilde{\vec{U}}\left(\vec{X}^{*^{n+\frac{1}{2}}}\right)@f$, evaluate
+   Langevin equation at new time level @f$n+1@f$ to estimate
+   @f$\vec{u}^{*^{n+1}}@f$ and perform mixing.
+ -# Compute the location of the particle at time level @f$n+1@f$
+   according to the full time step
+   @f[\vec{X}^{*^{n+1}} = \vec{X}^{*^n} + \Delta t
+   \left(
+   \tilde{\vec{U}}\left(\vec{X}^{*^{n+\frac{1}{2}}}\right)
+   + \frac{\vec{u}^{*^n}+\vec{u}^{*^{n+1}}}{2}
+   \right)@f]
+ -# Calculate a &ldquo;tracking&rdquo; velocity moving the particle
+   from @f$\vec{X}^{*^{n+\frac{1}{2}}}@f$ to @f$\vec{X}^{*^{n+1}}@f$:
+   @f[
+   \vec{U}^*_\text{track} =
+   \frac{\vec{X}^{*^{n+1}}-\vec{X}^{*^{n+\frac{1}{2}}}}{\Delta t/2}
+   @f]
+ -# Perform the second half-step according to
+   @f[\vec{X}^{*^{n+1}} = \vec{X}^{*^{n+\frac{1}{2}}}
+   + \frac{\Delta t}{2} \vec{U}^*_\text{track}@f]
+
+ The only issue I can currently think of is with strongly curved boundaries.
+ */
+
+// *********************** vim: set ft=cpp et sw=4 : *********************** //

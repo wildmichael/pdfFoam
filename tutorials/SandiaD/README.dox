@@ -1,0 +1,32 @@
+/**
+ @page TutorialSandiaD Sandia Flame D
+ @ingroup Tutorials
+
+ @section TutorialSandiaDExpData Experimental Data
+ The experimental data for the scalars is available from the website of the TNF
+ workshop: http://www.sandia.gov/TNF/DataArch/FlameD.html
+ The flow measurements are available upon request from Prof. Andreas Dreizler
+ from TU Darmstad: dreizler@ekt.tu-darmstadt.de
+
+ The data files for the available measurement sets are:
+
+ - <a href="../../tutorials/SandiaD/expdata/Dfav.dat">Dfav.dat</a>
+   (scalar data)
+ - <a href="../../tutorials/SandiaD/expdata/Dvel.dat">Dvel.dat</a>
+   (velocity data)
+
+ @section TutorialSandiaDCase Case Description
+ The inflow profiles have been computed from the file @c icbbody.dat. The TKE
+ was computed as
+ @f[
+   k = \frac{3}{2} {u'}^2
+ @f]
+ and the turbulent dissipation was computed making a turbulence in equilibrium
+ assumption, resulting in
+ @f[
+   \varepsilon = \sqrt{C_\mu} k
+                 \left\|\frac{\partial \tilde{U}}{\partial x}\right\| \quad .
+ @f]
+ */
+
+// *********************** vim: set ft=cpp et sw=4 : *********************** //

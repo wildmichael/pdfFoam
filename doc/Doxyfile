@@ -9,8 +9,15 @@ STRIP_FROM_PATH        = ..
 
 INPUT                  = ../mcParticle \
                          ../pdfSimpleFoam \
+                         ../tutorials \
                          .
 
 FILE_PATTERNS         += *.dox
 
-EXTRA_PACKAGES        += amsmath
+EXTRA_PACKAGES        += amsmath cmbright
+
+CITE_BIB_FILES         = references.bib
+
+USE_MATHJAX            = yes
+
+MATHJAX_EXTENSIONS     = TeX/AMSmath TeX/AMSsymbols
