@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+
+"""Convert auto-ignition table to OpenFOAM format"""
+
+import sys, os.path, re
+import numpy as np
+
+mode = '// *********************** vim: set ft=cpp et sw=4 : *********************** //'
+
+args = sys.argv[1:]
+if len(args) != 1:
+  sys.stderr.write("Error: one input file required\n")
+  sys.exit(1)
+
+fname = args[0]
+if not os.path.isfile(fname):
+  sys.stderr.write("Error: No such file or directory '%s'\n"%fname)
+  sys.exit(1)
+
+data = np.loadtxt(fname)
+
+files = {}
+for n, t in (('z', 'List'), ('cEq', 'List'), ('pv', 'List'),
+             ('cdot', 'ListList'), ('rho', 'ListList'), ('T', 'ListList')):
+  f = open(n, 'wt')
+  files[n] = f
+  f.write(r'''FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       scalar%s;
+    object      %s;
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+'''%(t, n))
+
+iz = np.hstack((0, np.where(data[1:,0]>data[:-1,0])[0]+1))
+z = data[iz,0]
+cEq = data[iz,1]
+nz = len(iz)
+npv = data.shape[0]/nz
+pv = data[0:npv,2]
+for n, v in (('z', z), ('cEq', cEq), ('pv', pv)):
+  f = files[n]
+  f.write('%d\n(\n'%len(v))
+  v.tofile(f, '\n', '    %.7g')
+  f.write('\n)\n\n'+mode+'\n')
+  f.close()
+
+for n, c in (('cdot', 4), ('T', 10), ('rho', 11)):
+  f = files[n]
+  f.write('%d\n(\n'%nz)
+  for iz in range(nz):
+    f.write('    %d ('%npv)
+    data[(iz*npv):((iz+1)*npv), c].tofile(f, ' ', '%.7g')
+    f.write(')\n')
+  f.write(')\n\n'+mode+'\n')
+  f.close()

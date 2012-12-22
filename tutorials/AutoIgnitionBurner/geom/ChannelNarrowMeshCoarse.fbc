@@ -1,0 +1,15 @@
+# family_boco file written by ICEM CFD by mwild on Wed Nov 21 12:50:55 PM W. Europe Standard Time 2012
+## solver Fluent_V6
+"FAM1"
+"GEOM"
+"GEOM" "color" 16663866
+"WALLS"
+"WALLS" "color" 3384789
+"INFLOW"
+"INFLOW" "color" 3384789
+"OUTFLOW"
+"FUEL"
+"WALLS.1"
+"WALLS.1" "color" 15283079
+"CREATED_MATERIAL_13"
+

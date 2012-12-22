@@ -1,0 +1,122 @@
+############
+# Numerics #
+############
+
+#### Newton solver ####
+
+#TimeDepFlag = TRUE
+DeltaTStart = 1.0e-6
+
+DampFlag = TRUE
+LambdaMin = 1.0e-2
+
+UseNumericalJac is TRUE
+#UseSecOrdJac is TRUE
+UseModifiedNewton = TRUE
+
+MaxIter = 25
+TolRes = 1.0e-12
+TolDy = 1.0e-10
+
+#### grid ####
+
+DeltaNewGrid = 15
+OneSoluOneGrid is TRUE
+initialgridpoints = 100
+maxgridpoints = 200
+q = -0.25
+R = 60
+
+
+########################
+# Sensitivity Analysis #
+########################
+
+ReactionFluxAnal is FALSE
+
+#######
+# I/O #
+#######
+
+OutputPath is ./output
+
+WriteRes is TRUE
+#WriteFullRes is TRUE
+WriteEverySolution is FALSE
+
+StartProfilesFile is ./output/CH4_p01_0chi00002tf0294to0294
+
+#############
+# Chemistry #
+#############
+
+MechanismFile is ../../GRI211/gri.211.pre
+globalReaction is CH4 + 2H2 + 3O2 == CO2 + 4H2O;
+
+fuel is CH4
+oxidizer is O2
+
+#########
+# Flame #
+#########
+
+#Flame is CounterFlowDiffusion
+#StrainRate = 100
+
+#ArclengthCont = TRUE
+ConstLewisNumber is TRUE
+LewisNumberFile is LewisNumberOne
+
+Flame is Counterflow Diffusion in Mixture Fraction Space
+
+Scalar DissipationRate = 1
+Scalar DissipationRate = 0.7
+Scalar DissipationRate = 0.5
+Scalar DissipationRate = 0.3
+Scalar DissipationRate = 0.2
+Scalar DissipationRate = 0.15
+Scalar DissipationRate = 0.1
+Scalar DissipationRate = 0.07
+Scalar DissipationRate = 0.05
+Scalar DissipationRate = 0.03
+Scalar DissipationRate = 0.02
+Scalar DissipationRate = 0.015
+Scalar DissipationRate = 0.01
+Scalar DissipationRate = 0.007
+Scalar DissipationRate = 0.005
+Scalar DissipationRate = 0.003
+Scalar DissipationRate = 0.002
+Scalar DissipationRate = 0.0015
+Scalar DissipationRate = 0.001
+
+ComputeWithRadiation is FALSE
+
+pressure = 1.013e5
+
+#######################
+# Boundary conditions #
+#######################
+
+#ToSpecies N2
+#FromSpecies CH4
+#ContInc = 0.05
+#ContSide is left
+#ContType is Temperature
+#ContBound = 1.0
+
+Fuel Side {
+  dirichlet {
+    t = 294
+      x->CH4 = 0.5
+      x->H2  = 0.5
+  }
+}
+
+Oxidizer Side {
+  dirichlet {
+    t = 294
+      x->o2 = 0.21
+      x->n2 = 0.78
+      x->ar = 0.01
+  }
+}

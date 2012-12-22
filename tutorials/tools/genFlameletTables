@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+
+"""Generate flamelet tables for mcSteadyFlamelet from FlameMaster output"""
+
+import sys, os.path, re
+import numpy as np
+import FlameMasterParser
+
+RU = 8.31447215*1e3
+mode = '// *********************** vim: set ft=cpp et sw=4 : *********************** //'
+
+args = sys.argv[1:]
+if len(args) < 1:
+  sys.stderr.write("Error: at least one input file required\n")
+  sys.exit(1)
+
+zi = np.linspace(0, 1, 300)
+chi = []
+
+for n in args:
+  if not os.path.isfile(n):
+    sys.stderr.write("Error: No such file or directory '%s'\n"%n)
+    sys.exit(1)
+  chi.append(float(re.search(r'chi([0-9.]+)tf', n).group(1)))
+
+# sort chi (and with it args) in ascending order
+perm = np.argsort(chi)
+chi = np.array(chi).take(perm)
+args = np.array(args).take(perm)
+
+files = {}
+for n, t in (('z', 'List'), ('chi', 'List'),
+             ('rho', 'ListList'), ('T', 'ListList')):
+  f = open(n, 'wt')
+  files[n] = f
+  f.write(r'''FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       scalar%s;
+    object      %s;
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+'''%(t, n))
+
+for n, v in (('z', zi), ('chi', chi)):
+  f = files[n]
+  f.write('%d\n(\n'%len(v))
+  v.tofile(f, '\n', '    %.7e')
+  f.write('\n)\n\n'+mode+'\n')
+  f.close()
+
+for n in ('T', 'rho'):
+  f = files[n]
+  f.write('%d\n(\n'%len(chi))
+
+for n in args:
+  header, footer, names, defs, vals = FlameMasterParser.parse(open(n, 'rt'))
+  z = vals['ZBilger']
+  rhoi = np.interp(zi, z, vals['density'])
+  Ti = np.interp(zi, z, vals['temperature'])
+  for vn, v in (('rho', rhoi), ('T', Ti)):
+    f = files[vn]
+    f.write('    %d ('%len(v))
+    v.tofile(f, ' ', '%.7e')
+    f.write(')\n')
+
+for n in ('T', 'rho'):
+  f = files[n]
+  f.write(')\n\n'+mode+'\n')
+  f.close()

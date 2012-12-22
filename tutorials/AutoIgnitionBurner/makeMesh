@@ -1,0 +1,13 @@
+#!/bin/sh
+
+# run from script directory
+cd ${0%/*}
+
+fluent3DMeshToFoam geom/ChannelNarrowCoarse.msh
+transformPoints -yawPitchRoll '(-90 0 0)'
+sed -i'' \
+   -e 's|INFLOW|inlet|' \
+   -e 's|OUTFLOW|outlet|' \
+   -e 's|FUEL|fuel|' \
+   -e 's|WALLS.1|walls|' \
+   constant/polyMesh/boundary

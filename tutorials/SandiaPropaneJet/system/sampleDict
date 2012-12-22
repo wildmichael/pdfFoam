@@ -1,0 +1,89 @@
+FoamFile
+{
+    version         2.0;
+    format          ascii;
+    class           dictionary;
+    location        system;
+    object          sampleDict;
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+setFormat raw;
+surfaceFormat raw;
+interpolationScheme cell;
+
+fields
+(
+    Ux
+    Uy
+    UCloudPDFx
+    UCloudPDFy
+    Rxx
+    Ryy
+    Rxy
+    TauCloudPDFxx
+    TauCloudPDFyy
+    TauCloudPDFxy
+    k
+    kCloudPDF
+    rho
+    pndCloudPDF
+    z
+    zzCov
+);
+
+ystart 0.0;
+yend   0.0416;
+
+x04 0.0208;
+x15 0.078;
+x30 0.156;
+x50 0.26;
+
+n 100;
+
+type midPoint;
+
+sets
+(
+    pos04
+    {
+        type        $type;
+        axis        y;
+        start       ($x04 $ystart 0.0);
+        end         ($x04 $yend   0.0);
+        nPoints     $n;
+    }
+    pos15
+    {
+        type        $type;
+        axis        y;
+        start       ($x15 $ystart 0.0);
+        end         ($x15 $yend   0.0);
+        nPoints     $n;
+    }
+    pos30
+    {
+        type        $type;
+        axis        y;
+        start       ($x30 $ystart 0.0);
+        end         ($x30 $yend   0.0);
+        nPoints     $n;
+    }
+    pos50
+    {
+        type        $type;
+        axis        y;
+        start       ($x50 $ystart 0.0);
+        end         ($x50 $yend   0.0);
+        nPoints     $n;
+    }
+);
+
+surfaces
+(
+);
+
+
+// *********************** vim: set ft=cpp et sw=4 : *********************** //

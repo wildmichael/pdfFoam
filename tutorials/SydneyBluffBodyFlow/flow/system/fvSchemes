@@ -1,0 +1,63 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      fvSchemes;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+ddtSchemes
+{
+    default         steadyState;
+}
+
+gradSchemes
+{
+    default         Gauss linear;
+    grad(p)         Gauss linear;
+    grad(U)         Gauss linear;
+}
+
+divSchemes
+{
+    default         none;
+    div(phi,U)      Gauss linear;
+    div(phi,k)      Gauss linear;
+    div(phi,epsilon) Gauss linear;
+    div(phi,R)      Gauss linear;
+    div(R)          Gauss linear;
+    div(phi,nuTilda) Gauss linear;
+    div((nuEff*dev(grad(U).T()))) Gauss linear;
+}
+
+laplacianSchemes
+{
+    default         none;
+    laplacian(nuEff,U) Gauss linear corrected;
+    laplacian((1|A(U)),p) Gauss linear corrected;
+    laplacian(DkEff,k) Gauss linear corrected;
+    laplacian(DepsilonEff,epsilon) Gauss linear corrected;
+    laplacian(DREff,R) Gauss linear corrected;
+    laplacian(DnuTildaEff,nuTilda) Gauss linear corrected;
+}
+
+interpolationSchemes
+{
+    default         linear;
+    interpolate(U)  linear;
+}
+
+snGradSchemes
+{
+    default         corrected;
+}
+
+fluxRequired
+{
+    default         no;
+    p               ;
+}
+
+// *********************** vim: set ft=cpp et sw=4 : *********************** //

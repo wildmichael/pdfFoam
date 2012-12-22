@@ -1,0 +1,215 @@
+FoamFile
+{
+    version         2.0;
+    format          ascii;
+    class           dictionary;
+    location        system;
+    object          sampleDict;
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+setFormat raw;
+surfaceFormat raw;
+interpolationScheme cell;
+
+fields
+(
+    Ux
+    Uy
+    UCloudPDFx
+    UCloudPDFy
+    Rxx
+    Ryy
+    Rxy
+    TauCloudPDFxx
+    TauCloudPDFyy
+    TauCloudPDFxy
+    k
+    kCloudPDF
+    rho
+    pndCloudPDF
+    z
+    zzCov
+    T
+    TTCov
+);
+
+ystart 0.0;
+yend   0.0375;
+
+x000  0.0;
+x006  0.003;
+x010  0.005;
+x020  0.010;
+x026  0.013;
+x040  0.020;
+x060  0.030;
+x080  0.040;
+x090  0.045;
+x100  0.05;
+x120  0.06;
+x130  0.065;
+x140  0.07;
+x180  0.090;
+x240  0.120;
+x340  0.170;
+x440  0.220;
+
+n 100;
+
+type midPoint;
+
+sets
+(
+    pos000
+    {
+        type        $type;
+        axis        y;
+        start       ($x000 $ystart 0.0);
+        end         ($x000 $yend   0.0);
+        nPoints     $n;
+    }
+    pos006
+    {
+        type        $type;
+        axis        y;
+        start       ($x006 $ystart 0.0);
+        end         ($x006 $yend   0.0);
+        nPoints     $n;
+    }
+    pos010
+    {
+        type        $type;
+        axis        y;
+        start       ($x010 $ystart 0.0);
+        end         ($x010 $yend   0.0);
+        nPoints     $n;
+    }
+    pos020
+    {
+        type        $type;
+        axis        y;
+        start       ($x020 $ystart 0.0);
+        end         ($x020 $yend   0.0);
+        nPoints     $n;
+    }
+    pos026
+    {
+        type        $type;
+        axis        y;
+        start       ($x026 $ystart 0.0);
+        end         ($x026 $yend   0.0);
+        nPoints     $n;
+    }
+    pos040
+    {
+        type        $type;
+        axis        y;
+        start       ($x040 $ystart 0.0);
+        end         ($x040 $yend   0.0);
+        nPoints     $n;
+    }
+    pos060
+    {
+        type        $type;
+        axis        y;
+        start       ($x060 $ystart 0.0);
+        end         ($x060 $yend   0.0);
+        nPoints     $n;
+    }
+    pos080
+    {
+        type        $type;
+        axis        y;
+        start       ($x080 $ystart 0.0);
+        end         ($x080 $yend   0.0);
+        nPoints     $n;
+    }
+    pos090
+    {
+        type        $type;
+        axis        y;
+        start       ($x090 $ystart 0.0);
+        end         ($x090 $yend   0.0);
+        nPoints     $n;
+    }
+    pos100
+    {
+        type        $type;
+        axis        y;
+        start       ($x100 $ystart 0.0);
+        end         ($x100 $yend   0.0);
+        nPoints     $n;
+    }
+    pos120
+    {
+        type        $type;
+        axis        y;
+        start       ($x120 $ystart 0.0);
+        end         ($x120 $yend   0.0);
+        nPoints     $n;
+    }
+    pos130
+    {
+        type        $type;
+        axis        y;
+        start       ($x130 $ystart 0.0);
+        end         ($x130 $yend   0.0);
+        nPoints     $n;
+    }
+    pos130
+    {
+        type        $type;
+        axis        y;
+        start       ($x130 $ystart 0.0);
+        end         ($x130 $yend   0.0);
+        nPoints     $n;
+    }
+    pos140
+    {
+        type        $type;
+        axis        y;
+        start       ($x140 $ystart 0.0);
+        end         ($x140 $yend   0.0);
+        nPoints     $n;
+    }
+    pos180
+    {
+        type        $type;
+        axis        y;
+        start       ($x180 $ystart 0.0);
+        end         ($x180 $yend   0.0);
+        nPoints     $n;
+    }
+    pos240
+    {
+        type        $type;
+        axis        y;
+        start       ($x240 $ystart 0.0);
+        end         ($x240 $yend   0.0);
+        nPoints     $n;
+    }
+    pos340
+    {
+        type        $type;
+        axis        y;
+        start       ($x340 $ystart 0.0);
+        end         ($x340 $yend   0.0);
+        nPoints     $n;
+    }
+    pos440
+    {
+        type        $type;
+        axis        y;
+        start       ($x440 $ystart 0.0);
+        end         ($x440 $yend   0.0);
+        nPoints     $n;
+    }
+);
+
+surfaces
+(
+);
+
+// *********************** vim: set ft=cpp et sw=4 : *********************** //

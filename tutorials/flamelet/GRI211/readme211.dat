@@ -1,0 +1,368 @@
+The information in this document can also be accessed on the World Wide Web at
+
+                   http://www.gri.org
+point to the 'Basic Research' button, and then to 'GRI-Mech'
+
+At this Web location you can also view results of validation tests, directly 
+load the GRI_Mech files, and check on any late-breaking news available.
+
+Files in this directory:
+
+README211.DAT   This file.
+
+GRIMECH211.DAT  A reaction mechanism and rate coefficient file, in Chemkin
+                format, describing 276 reactions of 49 species. It includes
+                reactions of nitrogen-containing species relevant to the NOx
+                chemistry of natural gas combustion and reburning.
+                A corrected version of the mechanism was posted 11/4/95.
+
+THERMO211.DAT   A thermochemical data file to be used with GRIMECH21.DAT,
+                as sets of "NASA polynomial" coefficients.
+
+TRANSPORT.DAT   A file containing the parameters needed for calculating 
+                transport coefficients to be used in the Sandia flame code.
+
+BUGFIX.DAT      A file containing information on bugs found in using GRI-Mech
+                in various computer codes.
+
+
+Dr. Vladimir Zamansky of Energy and Environmental Research has brought 
+to our attention the following error in the initial release of GRI-Mech 
+2.1. The 'E' terms in the rate constant expressions for reactions (277) 
+NH3 + H = NH2 + H2 and (278) NH3 + OH = NH2 + H2O should be positive 
+rather than negative as originally given.  The mechanism file has been 
+corrected as of November 4, 1995, and the corrected version is referred 
+to as GRI-Mech 2.11.  This change does not affect our results 
+because the mechanism was not designed for ammonia or deNOx kinetics, 
+and none of the targets chosen for the 2.1 version or validation 
+experiments tested afterwards show measurable sensitivity to these 
+reactions.  Recalculation of all targets and validation experiments has 
+been done with GRI-Mech 2.11 (completed November 21, 1995).  No
+significant changes from the results obtained using GRI-Mech 2.1 were found.
+The files in this directory are products of computational and experimental
+research sponsored by the Gas Research Institute. Previous mechanism and
+readme files are available. In particular, you can consult the README12.DAT
+file for a description of the hydrocarbon oxidation mechanism, GRI-Mech 1.2,
+and its performance in validation tests. The hydrocarbon part of
+GRI-Mech 1.2, with the single exception mentioned below, has been retained
+intact in GRI-Mech 2.11.
+
+The research was carried out at The Pennsylvania State University, Stanford
+University, The University of California, Berkeley, The University of Texas
+at Austin, and SRI International.
+
+GRI-Mech is an optimized (see below) detailed chemical reaction mechanism
+capable of the best representation of natural gas flames, ignition, and NOx
+formation and reburning in natural gas combustion that we are able to
+provide as of the date at the head of this file.
+
+In order to use the input files directly you need the Sandia National
+Laboratory "Chemkin-II" programs. (See discussion below.) Ignition and flow
+reactor profiles and well-stirred reactor outputs calculated with this mechanism
+and thermochemical data should be independent of the program used to compute
+them; noticeable small differences in flame profiles should be expected if you
+use a flame code other than Premix, however, because the transport calculation,
+the numerical method of solving the partial differential equations, and so on,
+differ from program to program.
+
+Before telling you more we are obliged to say:
+
+       *******************    GRI  DISCLAIMER   ********************
+
+       LEGAL NOTICE   These files, both the ones intended for use
+
+       as computer input as well as those comprising documentation,
+
+       were prepared by The Pennsylvania State University, Stanford
+
+       University, SRI International, The University of California,
+
+       Berkeley, and The University of Texas at Austin as a result of
+
+       research sponsored by the Gas Research Institute (GRI).
+
+
+       Neither GRI, members of GRI, nor any person acting on behalf of
+
+       either:
+
+
+
+       a. Makes any warranty or representation, express or implied,
+
+       with respect to the accuracy, completeness, or usefulness
+
+       of the information contained in these files, or that the use
+
+       of any data, method, or process disclosed in these files
+
+       may not infringe privately owned rights; or
+
+
+
+       b. Assumes any liability with respect to the use of, or for
+
+       damages resulting from the use of, any information,
+
+       data, method or process disclosed in these files.
+
+       ************************************************************ 
+
+Now that you have read our disclaimer, here is what you can find in
+this README file:
+
+1. A description of the version 2.11 GRI-Mech release files.
+
+2. A summary of what we can tell you about its performance.
+
+3. A request for feedback on your experience with it.
+
+4. How to get in touch with us.
+
+5. Some cautionary notes.
+
+
+
+1. WHAT IS GRI-Mech 2.11?
+
+What follows is a brief overview of the GRI-Mech 2.11 enhancement to the
+version 1.2 release. Consult the README file for GRI-Mech 1.2 for general
+information about GRI-Mech.
+
+GRI-Mech 2.11 is a compilation of 276 elementary chemical reactions and
+associated rate coefficient expressions and thermochemical parameters for
+the 49 species involved in them.
+
+It differs from the version 1.2 release in that it includes nitrogen chemistry
+relevant to natural gas chemistry and reburning. The version 2.11 data files
+serve the same purposes as those of the version 1.2 release and they serve them
+in exactly the same way. If you have the Chemkin programs, all you need to do
+is substitute the GRI-Mech 2.11 input files for whatever files you have working
+with Chemkin before and you will be ready to go.
+
+2. VERSION 2.11 PERFORMANCE THAT WE KNOW ABOUT
+
+We test the performance of GRI-Mech extensively. The performance of version 1.2,
+containing the C-H-O parts of natural gas ignition and flame chemistry, is
+described in the README12.DAT file. Version 2.11 contains the identical chemistry
+as in version 1.2 plus 99 reactions of 17 additional nitrogen-containing species.
+The parameters of the 177 reactions in version 1.2 were not varied in the course
+of the Version 2.11 optimization process except for the rate coefficient of the
+CH + H2O --> H + CH2O reaction, which was found to play an important role in
+prompt NO formation but to have no effect on the course of the carbon-hydrogen-
+oxygen chemistry of methane combustion. Version 2.11 is therefore identical to
+version 1.2 with respect to the carbon-hydrogen-oxygen chemistry of natural gas
+ignition and flames. Version 2.11 was not optimized for modeling pure nitrogen-
+hydrogen-oxygen chemistry or any form of NOx removal process except for
+reburning.
+
+In the course of developing GRI-Mech 2.11 we learned quite early that optimizing
+the nitrogen chemistry relevant to natural gas flames and reburning is
+qualitatively a very different challenge than optimizing the carbon-
+hydrogen-oxygen chemistry. In the first place, we were able to locate only a
+much smaller data base of experimental information from which to draw
+optimization targets. Then, once the modeling process had proceeded far
+enough that we could examine matches between computed and observed
+behavior, we found a far higher degree of discord among the matches to
+targets and other data than we had seen in working with our earlier
+optimizations of carbon-hydrogen-oxygen chemistry. We therefore have to
+caution users of GRI-Mech 2.11 to regard it only a preliminary starting point
+that can not be applied with anything like the degree of confidence that can
+be attached to the version 1.2 carbon-hydrogen-oxygen chemistry. We do
+believe that GRI-Mech 2.11 is a signficant improvement over previous attempts to
+describe NOx formation and reburning for example the 1989 Miller and Bowman
+mechanism, and are therefore releasing it at this time in the spirit of
+"beta testing" our first optimized result and stimulating further experimental
+study of NOx formation and removal in natural gas flames.
+
+Here is a list of the validation checks of Version 2.11 that we have made.
+Examining the comparisons between prediction and observation, provided in
+graphical form on our World Wide Web site, will show you pretty quickly how
+well GRI-Mech 2.11 performs.
+
+A. Flow Reactors
+
+Glarborg, P. and Miller, J.A., "Mechanism and Modeling of Hydrogen Cyanide
+Oxidation in a Flow Reactor," Combustion and Flame 99, 475 (1994).
+
+HCN, NO, and N2O mole fractions at the exit of a laminar isothermal flow reactor
+for temperatures between 900 and 1400 K.
+
+B. Low-Pressure Flames
+
+Miller, J.A., Branch, M.C., McLean, W.J., Chandler, D.W., Smooke, M.D. and
+Kee, R.J., "The Conversion of HCN to NO and N2 in H2-O2-HCN-Ar Flames at
+Low Pressure," Twentieth Symposium (International) on Combustion, The
+Combustion Institute, pp. 673-684, 1984.
+
+HCN, NO, N2 and relative CN profiles in rich and lean flames at 25 Torr.
+
+Heard, D.E., Jeffries, J.B., Smith, G.P. and Crosley, D.R., "LIF
+Measurements in Methane/Air Flames of Radicals Important in Prompt-NO
+Formation," Combustion and Flame 88, 137 (1992).
+
+NO and relative CH profiles in a slightly rich CH4-air flame at 30 Torr.
+
+Williams, B.A. and Fleming, J.W., "Comparative Species Concentrations in
+CH4/O2/Ar Flames Doped with N2O, NO and NO2," Combustion and Flame 98, 93
+(1994).
+
+Relative CH and CN concentration profiles in 10 Torr stoichiometric CH4-O2-Ar
+flames doped with NO and N2O.
+
+Etzkorn, T., Muris, S., Wolfrum, J., Dembny, C., Bockhorn, H., Nelson, P.F.,
+Attia-Shahin, A. and Warnatz, J., "Destruction and Formation of NO in Low
+Pressure Stoichiometric CH4/O2 Flames," Twenty-fourth Symposium
+(International) on Combustion, The Combustion Institute, pp. 925-932, 1992.
+
+NO concentration profile in a stoichiometric 10 Torr CH4-O2 flame with added
+NO.
+
+Zabielski, M.F. and Seery, D.J. "Mechanisms and Reaction Dynamics
+Related to Methane Combustion," GRI Report 84/0126, 1984.
+
+CH, CN and NO mole fraction profiles in a 35 Torr slightly rich CH4-O2-Ar
+flame with added NO.
+
+C. Stirred Reactors
+
+Bartok, W., Engleman, V. S., Goldstein, and del Valle, E.G., "Basic Kinetic
+Studies and Modeling of Nitrogen Oxide Formation in Combustion Processes," AIChE
+Symposium Series No. 126, Vol. 68, pp. 30-38, 1972.
+
+NO mole fraction in reactor products for CH4-Air and CH4-Air-NO for fuel-air
+equivalence ratios from 0.6 to 1.6.
+
+Steele, R.C., Malte, P.C., Nichol, D.G. and Kramlich, J.C., "NOx and N2O in
+Lean-Premixed Jet-Stirred Flames," Combustion and Flame 100, 440 (1995).
+
+NO and N2O mole fractions in reactor products for CH4-Air.
+
+
+
+3. PLEASE  TELL  US  WHAT  YOU  LEARN,  AND  ABOUT  YOUR PROBLEMS
+
+While the authors are continuing to expand their understanding of how
+GRI-Mech works, it is only natural that others will see things that should be
+done with quite different perspectives.  We would very much like to hear
+from you.
+
+We want to hear about your experiences with GRI-Mech, both successes and
+failures.  It will help us more in our development work, and consequently all
+users of our later releases, to hear about failures.  We welcome suggestions of
+any kind. Please be as specific as you can in telling us about your results
+and your problems.  We will be happy to include the results of your "validation
+runs", with appropriate citation to you, in our printed materials.
+
+We are especially interested in maintaining a list of users, so that we can
+quickly communicate changes, problems, and updates.
+
+Since our ftp daemon does not record actual usernames, we request that those
+who are considering use of the mechanism send us their e-mail addresses.
+Please address them to SMITH@MPLVAX.SRI.COM.
+
+
+
+4. HOW TO CONTACT THE AUTHORS
+
+We can be reached at any of the addresses given below.
+
+Bob Serauskas at GRI is the Program Manager of this project. If you have an
+official question, he is the person to contact. Bob's phone number is
+312-399-8208, his mailing address is c/o Gas Research Institute, 8600 West Bryn
+Mawr Avenue, Chicago, Illinois 60631-3562, his Internet address is
+rserausk@gri.org, and his fax number is 312-399-8170.
+
+For scientific questions please contact Greg Smith or one of the other authors
+listed below:
+
+University of California, Berkeley:
+
+Michael Frenklach   (myf@euler.berkeley.edu)
+
+Mikhail Goldenberg   (mgold@euler.berkeley.edu)
+
+Stanford University:
+
+Tom Bowman   (bowman@navier.stanford.edu)
+
+SRI International:
+
+Greg Smith   (smith@mplvax.sri.com)
+
+University of Texas at Austin:
+
+Bill Gardiner     (bill@lioness.cm.utexas.edu)
+
+Vitaly Lissianski   (vitaly@lioness.cm.utexas.edu)
+
+To cite GRI-Mech, please refer to our World Wide Web location or to our
+1994 Combustion Symposium Poster, "An Optimized Kinetics Model for Natural
+Gas Combustion", by M. Frenklach, H. Wang, C.T. Bowman, R.K. Hanson, G.P. 
+Smith, D.M. Golden, W.C. Gardiner and V. Lissianski, 25th International
+Symposium on Combustion, Irvine, California, Work-In-Progress Poster Session 3,
+Number 26. The poster does not describe the nitrogen chemistry in Version 2.11;
+the World Wide Web location does.
+
+
+
+5. SOME CAUTIONARY NOTES
+
+First we want to warn you about several general aspects of GRI-Mech.
+
+a. PLEASE DO NOT MAKE ANY SUBSTITUTIONS!
+
+Or if you MUST so, be very careful. GRI-Mech has been optimized as a whole,
+and should be used just as you receive it if you want to duplicate its ability
+to model natural gas combustion and NO formation and removal.
+
+You likely will not surpass the performance we obtained for natural gas
+combustion and NO formation and removal by the independent adjustment of any
+"sensitive" reaction rate parameters.
+
+Any substitution of "better" rate coefficient expressions or removal of
+species or reactions may lead to your getting significantly deteriorated
+performance of the mechanism when tested against the whole spectrum of natural
+gas combustion and NO data.
+
+We recognize that GRI-Mech users are human and will adjust rate coefficients or
+make major changes for specific purposes, such as doing sensitivity analyses.
+When doing this please keep in mind that we do not claim that GRI-Mech is
+suitable as a starting point for mechanism development by patchwork means.
+We cannot predict what the consequences may be.
+
+b. NUMBERS OF SPECIES AND REACTIONS.
+
+The list of reactions and species in GRI-Mech 2.11 contains entries that are
+"unimportant" for natural gas combustion and NO formation and removal
+for the conditions investigated to date.
+
+There are several reasons why we have them there. One is that there are special
+purposes (like models of flame radiation or pollutant emissions) where
+elementary reactions that are otherwise negligible become important, and we
+want to have these reactions on hand for such occasions. A second reason is
+that the combustion of some other fuels (methanol, acetylene, ...) can be
+modeled using GRI-Mech as a subset, with the knowledge that the part of the
+mechanism relevant to natural gas has been optimized in the manner described
+in the documentation for GRI-Mech 1.2. [We have not looked into the performance
+of the GRI-Mech for any fuels except methane, ethane, hydrogen and carbon
+monoxide.]
+
+There are techniques for reducing reaction and species lists that you may want
+to use yourself on GRI-Mech 2.11; please see the relevant comments in the
+version 1.2 documentation.
+
+c. Back reactions.  We consider all reactions to be reversible, even though
+it is clear on thermochemical grounds that negligible reverse flux will
+occur in many reactions. If your modeling program requires explicit
+inclusion of reverse reactions, GRI-Mech 2.11, as presented in this directory,
+will require additional calculations to find out which of them are really 
+needed.
+
+d. Computer time. The numerous species and reactions in GRI-Mech, some of which
+really do not need to be included for modeling natural gas combustion and NO
+formation and removal, increase the demand on computer resources for doing the
+chemical part of the model by a large factor.  We accept this in order to avoid
+coping with the numerous problems that arise in streamlining such
+computations.  Computer time has not been a problem for us even when using
+GRI-Mech on small workstations and fast PCs.

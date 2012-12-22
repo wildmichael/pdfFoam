@@ -1,0 +1,332 @@
+#!/usr/bin/env python
+
+import numpy as np
+import sys, glob, subprocess, shutil, os, re
+import os.path as op
+
+from utils import *
+
+def parseLineOpts(opts):
+  """Parse a line style option"""
+  lineopts = {}
+  for ov in opts.split(','):
+    o, v = map(str.strip, ov.split('='))
+    try:
+      v = int(v)
+    except ValueError:
+      try:
+        v = float(v)
+      except ValueError:
+        pass
+    lineopts[o] = v
+  return lineopts
+
+def rdup(a):
+  "Reverse-duplicate iterable"
+  aa = np.asarray(a)
+  return np.hstack((aa[::-1], aa))
+
+
+def mrdup(a, n=None):
+  "Negative-reverse-duplicate iterable"
+  aa = np.asarray(a)
+  res = np.hstack((-aa[::-1], aa))
+  return res
+
+# inject rdup and mrdup into numpy
+np.rdup = rdup
+np.mrdup = mrdup
+
+def norm_xr(data, sname, cfg):
+  """Normalize `x` and `r` elements in `data` using the factor given in the
+  entries `<sname>.xnorm` and `<sname>.rnorm` of the `cfg` config object if
+  provided.
+  """
+  for v in 'x r'.split():
+    if cfg.has_option(sname, v+'norm'):
+      data[v] /= cfg.getfloat(sname, v+'norm')
+  return data
+
+def loadExperiment(setName, cfg, cname):
+  "Load experimental data. Expects column data."
+  fname = cfg.get(cname, 'file')
+  skip = 0
+  opts = {}
+  if cfg.has_option(cname, 'skip'):
+    opts['skiprows'] = cfg.getint(cname, 'skip')
+  if cfg.has_option(cname, 'comment'):
+    opts['comments'] = cfg.get(cname, 'comment')
+  if cfg.has_option(cname, 'usecols'):
+    opts['usecols'] = map(int, cfg.get(cname, 'usecols').split())
+  d = np.loadtxt(fname, **opts)
+  cols = cfg.get(cname, 'columns').split()
+  ix = cols.index('x')
+  idx = np.hstack((-1, np.nonzero(np.diff(d[:,ix]))[0], d.shape[0]))
+  idx = zip(idx[:-1]+1, idx[1:])
+  data = {}
+  for ic, c in enumerate(cols):
+    if '=' in c: continue
+    data[c] = np.array([d[i:ii,ic] for i, ii in idx])
+  for ic, c in enumerate(cols):
+    if '=' not in c: continue
+    expr, cc = map(lambda x: x[-1::-1], c[-1::-1].split('=', 1))
+    print '    - Calculating field', cc, 'for set', setName
+    val = []
+    for i in range(len(idx)):
+      ldata = {k: v[i] for k, v in data.iteritems()}
+      val.append(np.asfarray(eval(expr, np.__dict__, dict(ldata))))
+    data[cc] = np.array(val)
+  if 'x' not in cols or 'r' not in data:
+    sys.stderr.write(
+        'Data set "%s" does not contain definitions for x and r\n'%setName)
+    sys.exit(1)
+  data = norm_xr(data, cname, cfg)
+  return {
+    'name' : cfg.get(cname, 'name'),
+    'style': cfg.get(cname, 'style'),
+    'sections': map(lambda x: '%.3f'%x[0], data['x']),
+    'data': data
+    }
+
+def loadOpenFOAM(setName, cfg, cname, tdir):
+  "Load OpenFOAM data"
+  sectNames = cfg.get(cname, 'sectionNames').split()
+  sectNames.sort(key=int)
+  scols = cfg.get(cname, 'columns').split()
+  rnorm = 1.
+  xnorm = 1.
+  if cfg.has_option(cname, 'rnorm'):
+    rnorm = cfg.getfloat(cname, 'rnorm')
+  if cfg.has_option(cname, 'xnorm'):
+    xnorm = cfg.getfloat(cname, 'xnorm')
+  opts = {}
+  if cfg.has_option(cname, 'skip'):
+    opts['skiprows'] = cfg.getint(cname, 'skip')
+  if cfg.has_option(cname, 'comment'):
+    opts['comments'] = cfg.get(cname, 'comment')
+  if cfg.has_option(cname, 'usecols'):
+    opts['usecols'] = map(int, cfg.get(cname, 'usecols').split())
+  data = {}
+  for s in sectNames:
+    fname = cfg.get(cname, 'fpattern', vars={'section': s})
+    d = np.loadtxt(op.join(caseDir, 'sets', tdir, fname), **opts)
+    for ic, c in enumerate(scols):
+      if '=' in c: continue
+      if c not in data:
+        data[c] = []
+      data[c].append(d[:,ic])
+
+  for ic, c in enumerate(scols):
+    if '=' not in c: continue
+    expr, cc = map(lambda x: x[-1::-1], c[-1::-1].split('=', 1))
+    print '    - Calculating field', cc, 'for set', setName
+    val = []
+    for i in range(len(sectNames)):
+      ldata = {k: v[i] for k, v in data.iteritems()}
+      val.append(np.asfarray(eval(expr, np.__dict__, dict(ldata))))
+    data[cc] = val
+
+  data['r'] = map(lambda r: r/rnorm, data['r'])
+  return {
+    'sections': map(lambda x: '%.3f'%(float(x)/xnorm), sectNames),
+    'data': data
+    }
+
+# argument parsing
+toolsDir = op.dirname(sys.argv[0])
+expDir = op.normpath(op.join(toolsDir, '..', 'data'))
+caseDir = '.'
+args = sys.argv[1:]
+while len(args):
+  a = args[0]
+  if a in ('-h', '--help'):
+    sys.stderr.write("Usage: %s <caseDir>\n"%sys.argv[0])
+    sys.exit(0)
+    del args[0]
+  elif re.match(r'-', a):
+    sys.stderr.write("Error: Unknown option '%s'\n"%args[0])
+    sys.exit(1)
+  else:
+    caseDir = a
+    del args[0]
+caseDir = op.abspath(caseDir)
+
+if len(args):
+  sys.stderr.write("Error: Too many arguments")
+
+if not op.isfile(op.join(caseDir, 'system', 'controlDict')):
+  sys.stderr.write("Error: '%s is not a case directory'\n"%caseDir)
+  sys.exit(1)
+
+# load configuration
+cfg = getConfig(caseDir)
+
+# load plotting tools
+import matplotlib as mp
+from matplotlib.texmanager import TexManager
+
+withPgf = cfg.getboolean('plot', 'with_pgf')
+if withPgf:
+  mp.use('pgf')
+  mp.rc('pgf', texsystem='xelatex',
+      preamble=[r'\usepackage{cmbright}', r'\usepackage{units}'])
+else:
+  mp.rc('text', usetex=True)
+  mp.rcParams['font.sans-serif'] = 'computer modern bright'
+  mp.rcParams['text.latex.preamble'] = [
+      '\\usepackage{cmbright}', '\\usepackage{units}']
+  TexManager.font_info['computern modern bright'] = (
+      ('cmbr', r'\usepackage{cmbright}'))
+mp.rc('font', family='sans-serif', size=10)
+mp.rc('axes', titlesize='small', labelsize='x-small')
+mp.rc('legend', fontsize='x-small')
+mp.rc('xtick', labelsize='x-small')
+mp.rc('ytick', labelsize='x-small')
+
+import matplotlib.mlab as ml
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+
+# read configuration
+subplot_shape = np.fromstring(cfg.get('plot', 'subplots'), dtype='int', sep=' ')
+with_title = cfg.getboolean('plot', 'with_title')
+with_legend = cfg.getboolean('plot', 'with_legend')
+paper_size = np.fromstring(
+    cfg.get('plot', 'paper_size'), dtype='float', sep=' ')
+margins = parseMargins(cfg.get('plot', 'margins'))
+
+fmt = cfg.get('plot', 'format')
+outDir = cfg.get('plot', 'out_dir')
+
+if not op.isabs(outDir):
+  outDir = op.join(caseDir, outDir)
+if not op.isdir(outDir):
+  os.makedirs(outDir)
+
+# determine latest time
+sys.stdout.write('- Finding latest time : ')
+pattern = 'sets/[0-9]*'
+timeMap = {float(d): d for d in filter(lambda d: re.match(r'\d+(\.\d+)?$', d),
+  map(op.basename, glob.iglob(op.join(caseDir, pattern))))}
+tdir = timeMap[max(timeMap.keys())]
+sys.stdout.write(tdir+'\n')
+
+# load  data
+print '- Loading data for radial profiles'
+graphs = cfg.get('plot', 'graphs').split()
+dataSets = {}
+for g in graphs:
+  for s in cfg.get('graph '+g, 'sets').split():
+    if s not in dataSets:
+      dataSets[s] = {}
+for ds in dataSets.iterkeys():
+  cname = 'set '+ds
+  lineopts = None
+  if cfg.has_option(cname, 'lineopts'):
+    lineopts = parseLineOpts(cfg.get(cname, 'lineopts'))
+  dataSets[ds].update({
+    'name'    : cfg.get(cname, 'name'),
+    'style'   : cfg.get(cname, 'style'),
+    'lineopts': lineopts,
+    })
+  dataType = cfg.get(cname, 'type').lower()
+  if dataType == 'experiment':
+    dataSets[ds].update(loadExperiment(ds, cfg, cname))
+  elif dataType == 'openfoam':
+    dataSets[ds].update(loadOpenFOAM(ds, cfg, cname, tdir))
+  else:
+    sys.stderr.write('%s.type must be "experiment" or "OpenFOAM"'%cname)
+    sys.exit(1)
+
+# plot the radial profiles
+print '- Creating plots of radial profiles'
+fig = plt.gcf()
+fig.set_size_inches(*paper_size)
+jam_options = cfg.get('plot', 'pdfjam_options').split()
+for g in cfg.get('plot', 'graphs').split():
+  print '    - graphing', g
+  fileList = []
+  fig.clear()
+  gname = 'graph '+g
+  v = cfg.get(gname, 'field')
+  lab = cfg.get(gname, 'label')
+  lim = np.fromstring(cfg.get(gname, 'limits'), dtype='float', sep=' ')
+  if cfg.has_option(gname, 'paper_size'):
+    gpaper_size = np.fromstring(
+        cfg.get(gname, 'paper_size'), dtype='float', sep=' ')
+  else:
+    gpaper_size = paper_size
+  fig.set_size_inches(*gpaper_size)
+  if cfg.has_option(gname, 'margins'):
+    gmargins = parseMargins(cfg.get(gname, 'margins'), margins)
+  else:
+    gmargins = margins
+  maxNx = None
+  maxNy = None
+  powerLimits = None
+  if cfg.has_option(gname, 'maxNx'):
+    maxNx = cfg.getint(gname, 'maxNx')
+  if cfg.has_option(gname, 'maxNy'):
+    maxNy = cfg.getint(gname, 'maxNy')
+  if cfg.has_option(gname, 'powerLimits'):
+    powerLimits = map(int, cfg.get(gname, 'powerLimits').split())
+  fig.subplots_adjust(**gmargins)
+  if with_title:
+    fig.suptitle(op.basename(caseDir).replace('_', r'\_'))
+  sub = 1
+  ifig = 1
+  sections = np.fromstring(cfg.get(gname, 'sections'), dtype='float', sep=' ')
+  for i, s in enumerate(map(lambda x: '%.3f'%x, sections)):
+    ax = fig.add_subplot(subplot_shape[0], subplot_shape[1], sub)
+    if maxNx:
+      ax.locator_params(axis='x', nbins=maxNx)
+    if maxNy:
+      ax.locator_params(axis='y', nbins=maxNy)
+    if powerLimits:
+      ax.yaxis.get_major_formatter().set_powerlimits(powerLimits)
+    sets = cfg.get(gname, 'sets').split()
+    data = {k: dataSets[k] for k in sets}
+    datalim = [np.inf, -np.inf]
+    for setname in sets:
+      d = data[setname]
+      if v not in d['data']: continue
+      try:
+        ix = d['sections'].index(s)
+      except ValueError:
+        continue
+      datalim[0] = min(datalim[0], np.min(d['data'][v][ix]))
+      datalim[1] = max(datalim[1], np.max(d['data'][v][ix]))
+      name = d['name']
+      #if not len(name):
+      #  name = None
+      line = ax.plot(
+          d['data']['r'][ix], d['data'][v][ix], d['style'], label=name)[0]
+      if d['lineopts']:
+        line.set(**d['lineopts'])
+    if (datalim[0] < lim[0]):
+      print 'WARNING: overriding lower limit for graph %s@%s to %g'%(g, s, datalim[0])
+    if (datalim[1] > lim[1]):
+      print 'WARNING: overriding upper limit for graph %s@%s to %g'%(g, s, datalim[1])
+    ax.set_ylim((min(lim[0], datalim[0]), max(lim[1], datalim[1])))
+    ax.set_title(r'$\nicefrac{x}{D_b} = %s$'%sections[i])
+    ax.set_xlabel(r'$\nicefrac{r}{R_b}$')
+    ax.set_ylabel(lab)
+    if with_legend:
+      if cfg.has_option(gname, 'legend_pos'):
+        lpos = cfg.get(gname, 'legend_pos')
+      else:
+        lpos = 'best'
+      ax.legend(loc=lpos)
+    sub += 1
+    if sub > subplot_shape.prod():
+      fileList.append(op.join(outDir, '%s_%02d%s'%(v, ifig, fmt)))
+      fig.savefig(fileList[-1])
+      fig.clear()
+      if with_title:
+        fig.suptitle(op.basename(caseDir).replace('_', r'\_'))
+      fig.subplots_adjust(**gmargins)
+      sub = 1
+      ifig += 1
+  if len(fileList) and fmt=='.pdf':
+    outfile = op.join(outDir, v+fmt)
+    subprocess.check_call(['pdfnup', '-q', '-o', outfile]+jam_options+fileList)

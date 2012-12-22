@@ -1,0 +1,8 @@
+ChannelNarrowCoarse.msh      text eol=crlf
+ChannelNarrowMeshCoarse.atr  text eol=crlf
+ChannelNarrowMeshCoarse.fbc  text eol=crlf
+ChannelNarrowMeshCoarse.par  text eol=crlf
+ChannelNarrowMeshCoarse.prj  text eol=crlf
+ChannelNarrowMeshCoarse.tin  text eol=crlf
+ChannelNarrowMeshCoarse.uns  binary
+ChannelNarrow.stl            text eol=crlf

@@ -1,0 +1,81 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solvers
+{
+    p
+    {
+        solver          PCG;
+        preconditioner  DIC;
+        tolerance       1e-09;
+        relTol          0.0;
+    }
+
+    U
+    {
+        solver          PBiCG;
+        preconditioner  DILU;
+        tolerance       1e-09;
+        relTol          0.0;
+    }
+
+    k
+    {
+        solver          PBiCG;
+        preconditioner  DILU;
+        tolerance       1e-09;
+        relTol          0.0;
+    }
+
+    epsilon
+    {
+        solver          PBiCG;
+        preconditioner  DILU;
+        tolerance       1e-09;
+        relTol          0.0;
+    }
+
+    R
+    {
+        solver          PBiCG;
+        preconditioner  DILU;
+        tolerance       1e-09;
+        relTol          0.0;
+    }
+
+    nuTilda
+    {
+        solver          PBiCG;
+        preconditioner  DILU;
+        tolerance       1e-09;
+        relTol          0.0;
+    }
+}
+
+SIMPLE
+{
+    nOuterCorrectors 50;
+    nCorrectors     1;
+    nNonOrthogonalCorrectors 0;
+    momentumPredictor yes;
+    convergence 1e-8;
+}
+
+relaxationFactors
+{
+    p               0.3;
+    U               0.7;
+    k               0.7;
+    epsilon         0.7;
+    R               0.7;
+    nuTilda         0.7;
+}
+
+// *********************** vim: set ft=cpp et sw=4 : *********************** //

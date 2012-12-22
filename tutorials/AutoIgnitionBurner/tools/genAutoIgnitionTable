@@ -1,0 +1,197 @@
+#!/usr/bin/env python
+"""
+
+  Constant-pressure, adiabatic kinetics simulation.
+
+  Fuel is H2, oxidiser is air.
+
+  Mixture fraction is:
+  z = ((ZH-ZHox)/(2*WH) - (ZO-ZOox)/WO)/((ZHf-ZHox)/(2*WH) - (ZOf-ZOox)/WO)
+  z0 = ((YH2-YH2ox)/(4*WH) - (YO2-YO2ox)/(2*WO))/((YH2f-YH2ox)/(4*WH) - (YO2f-YO2ox)/(2*WO))
+
+  YH2 = z*(YH2f - YH2ox) + YH2ox
+  YO2 = z*(YO2f - YO2ox) + YO2ox
+  YN2 = z*(YN2f - YN2ox) + YN2ox
+  YAR = z*(YARf - YARox) + YARox
+
+"""
+
+import sys
+
+from Cantera import *
+from Cantera.Reactor import *
+from Cantera.Func import *
+import numpy as np
+
+air = Air()
+
+#Tox = 950
+Tox = 980
+Tf = 750
+p = OneAtm
+nz = 101
+nc = 300
+zmin = 0
+zmax = 1-zmin
+nMaxTime = 1000000
+deltaTmax = 1e-5
+#deltaHref = 2591334.23596
+
+mech = "mech/oconair.cti"
+#mech = "gri30.cti"
+gas = Solution(mech)
+
+iH = gas.speciesIndex("H")
+iH2 = gas.speciesIndex("H2")
+iO2 = gas.speciesIndex("O2")
+iN2 = gas.speciesIndex("N2")
+iAR = gas.speciesIndex("AR")
+
+Yox = zeros(gas.nSpecies(), 'd')
+Yox[iH2] = 0.
+Yox[iO2] = air.massFraction("O2")
+Yox[iN2] = air.massFraction("N2")
+Yox[iAR] = air.massFraction("AR")
+
+Yf = zeros(gas.nSpecies(), 'd')
+# Add a little pure H to get the reactions started
+Yf[iH] = 0
+Yf[iH2] = 0.13 - Yf[iH]
+Yf[iN2] = 0.87
+
+R = constants.GasConstant
+
+f = open("tmp.dat", 'wt')
+f.write("# z Yceq PV Yc Ycdot time YHO2 YH2O YHO2dot YH2Odot T rho\n")
+
+#names = tuple('z Yceq Tmix Teq (Teq-Tmix)/Tmix Hmix Heq (Heq-Hmix)/deltaHref'.split())
+#print ('DEBUG:'+len(names)*'% 17s')%names
+#deltaHmax = 0
+
+for iz, z in enumerate(np.linspace(zmin, zmax, nz)):
+  gas = Solution(mech)
+  Y = z*Yf + (1-z)*Yox
+  gas.setMassFractions(Y)
+  gas.set(T=298.15, P=1e5)
+  hf0 = R*gas.temperature()*gas.enthalpies_RT()/gas.molecularWeights()
+  Cp = gas.cp_R()/gas.molecularWeights()*R
+  mixT = (z*Tf*np.dot(Yf,Cp)+(1-z)*Tox*np.dot(Yox,Cp))/(z*np.dot(Yf,Cp)+(1-z)*np.dot(Yox,Cp))
+  gas.set(T=mixT, P=p)
+  mixH = gas.enthalpy_mass() - np.dot(hf0, gas.massFractions())
+
+  state = gas.saveState()
+  gas.equilibrate("HP")
+  YH2Oeq = gas.massFraction('H2O')
+  Yceq = gas.massFraction('HO2') + YH2Oeq
+  rhoeq = gas.density()
+  Teq = gas.temperature()
+  Heq = gas.enthalpy_mass() - np.dot(hf0, gas.massFractions())
+  gas.restoreState(state)
+  #deltaHmax = max(deltaHmax, Heq-mixH)
+
+  r = Reactor(gas)
+  air =Air()
+  air.set(P=p)
+  env = Reservoir(air)
+
+  # Define a wall between the reactor and the environment, and
+  # make it flexible, so that the pressure in the reactor is held
+  # at the environment pressure.
+  w = Wall(r,env)
+  w.set(K = 1.0e6)   # set expansion parameter. dV/dt = KA(P_1 - P_2)
+  w.set(A = 1.0)
+
+  sim = ReactorNet([r])
+  time = 0.0
+
+  # Note that Solution.sourceTerms() returns Ydot
+  tmp = [
+      (
+        z,                                            #  0 : z
+        0,                                            #  1 : Yceq
+        0,                                            #  2 : PV
+        0,                                            #  3 : Yc
+        0,                                            #  4 : Ycdot
+        time,                                         #  5 : time
+        r.massFraction('HO2'),                        #  6 : YHO2
+        r.massFraction('H2O'),                        #  7 : YH2O
+        gas.sourceTerms()[gas.speciesIndex('HO2')],   #  8 : YHO2dot
+        gas.sourceTerms()[gas.speciesIndex('H2O')],   #  9 : YH2Odot
+        r.temperature(),                              # 10 : T
+        r.density(),                                  # 11 : rho
+        )
+      ]
+
+  diverged = False
+  nstep = 0
+  #vals = (z, Yceq, mixT, Teq, (Teq-mixT)/mixT, mixH, Heq, (Heq-mixH)/deltaHref)
+  #print ('DEBUG:'+len(vals)*'% 17.4g')%vals
+  #continue
+  if Yceq > 1e-2:
+    for n in range(0,nMaxTime):
+      Yc = tmp[-1][6] + tmp[-1][7]
+      Ycdot = abs(tmp[-1][8] + tmp[-1][9])
+      time += max(min(Yceq/(2*nc*Ycdot+1e-12), deltaTmax), 1e-12)
+      nstep += 1
+      try:
+        sim.advance(time)
+        tmp.append((
+          z,                                          #  0 : z
+          0,                                          #  1 : Yceq
+          0,                                          #  2 : PV
+          0,                                          #  3 : Yc
+          0,                                          #  4 : Ycdot
+          time,                                       #  5 : time
+          r.massFraction('HO2'),                      #  6 : YHO2
+          r.massFraction('H2O'),                      #  7 : YH2O
+          gas.sourceTerms()[gas.speciesIndex('HO2')], #  8 : YHO2dot
+          gas.sourceTerms()[gas.speciesIndex('H2O')], #  9 : YH2Odot
+          r.temperature(),                            # 10 : T
+          r.density(),                                # 11 : rho
+          ))
+        Yc = tmp[-1][6]+tmp[-1][7]
+        if Yc/Yceq > 0.99 and tmp[-1][10]/Teq > 0.99:
+          break
+      except KeyboardInterrupt:
+        raise
+      except:
+        print 'DIVERGED: z = ', z
+        diverged = True
+        break
+    if diverged:
+      continue
+    data = np.array(tmp, 'd')
+    data[:,3] = data[:,6]+data[:,7]
+    data[:,1] = data[-1,3]
+    data[:,2] = data[:,3]/data[-1,3]
+    data[:,4] = data[:,8]+data[:,9]
+    # ensure zero source term at end
+    data[-1,2] = 1
+    data[-1,4] = 0
+    data[-1,8] = 0
+    data[-1,9] = 0
+    data[-1,10] = Teq
+    data[-1,11] = rhoeq
+  else:
+    print 'No progress for z = ', z
+    data = zeros((2,12), 'd')
+    data[:,0] = z
+    data[:,1] = 1
+    data[:,2] = [0, 1]
+    data[:,10] = mixT
+    data[:,11] = r.density()
+  idata = zeros([nc, data.shape[1]], 'd')
+  iYc = np.linspace(0, 1, nc) * (Yceq if Yceq > 0 else 1)
+  for j in range(4, data.shape[1]):
+    idata[:,j] = np.interp(iYc, data[:,3], data[:, j])
+  idata[:,0] = z
+  idata[:,1] = Yceq
+  idata[:,2] = iYc / (Yceq if Yceq > 0 else 1)
+  idata[:,3] = iYc
+  print ('z = %5.4f T0 = %5.3f T_eq = %7.3f T_end = %7.3f Yc_eq = %5.4g ' +
+      'Yc_end = %5.4g p = %5.3g n = %d') % (z,
+          mixT, Teq, r.temperature(), Yceq, data[-1,3],
+          r.pressure(), nstep)
+  np.savetxt(f, idata)
+  f.write("\n")
+#print 'DEBUG: deltaHmax =', deltaHmax

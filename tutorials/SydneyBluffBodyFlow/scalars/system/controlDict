@@ -1,0 +1,75 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+application     pdfSimpleFoam;
+
+startFrom       startTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         2e6;
+
+deltaT          1;
+
+writeInterval   500;
+
+purgeWrite      2;
+
+writeControl    timeStep;
+
+writeFormat     binary;
+
+writePrecision  6;
+
+writeCompression compressed;
+
+timeFormat      general;
+
+timePrecision   6;
+
+runTimeModifiable yes;
+
+nFVSubCycles    0;
+
+nPDFSubCycles   1;
+
+functions
+{
+    probes
+    {
+        // Where to load it from
+        functionObjectLibs ( "libsampling.so" );
+
+        type        probes;
+
+        // Name of the directory for probe data
+        name        probes;
+        probeLocations
+        (
+            (25.0e-3  1.8e-3 0)   // Db/2, Rj
+            (50.0e-3  1.8e-3 0)   // Db,   Rj
+            (25.0e-3 13.4e-3 0)   // Db/2, mid-bb
+            (50.0e-3 13.4e-3 0)   // Db,   mid-bb
+            (25.0e-3 25.0e-3 0)   // Db/2, Db/2
+            (50.0e-3 25.0e-3 0)   // Db,   Db/2
+        );
+
+        // Fields to be probed
+        fields ( z zzCov );
+
+        // Write at same frequency as fields
+        outputControl   timeStep;
+        outputInterval  10;
+    }
+}
+
+// *********************** vim: set ft=cpp et sw=4 : *********************** //

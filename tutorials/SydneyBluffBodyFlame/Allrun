@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# run from script directory
+cd ${0%/*}
+
+# Source tutorial run functions
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+. ../tools/RunFunctions
+
+application=`getApplication`
+
+compileApplication ../tools/Rtime
+
+rm -rf 0
+cp -r 0.org 0
+
+runApplication blockMesh
+runApplication decomposePar
+runParallelFIX $application 6
+runApplication reconstructPar
+runApplication Rtime -latestTime
+foamCalc components U -latestTime > log.foamCalc.1 2>&1
+foamCalc components UCloudPDF -latestTime > log.foamCalc.2 2>&1
+foamCalc components R -latestTime > log.foamCalc.3 2>&1
+foamCalc components TauCloudPDF -latestTime > log.foamCalc.4 2>&1
+runApplication sample -latestTime
+runApplication ../tools/createPlots
+runApplication ../tools/plotConvergence

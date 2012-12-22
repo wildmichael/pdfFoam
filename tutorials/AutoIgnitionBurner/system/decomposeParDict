@@ -1,0 +1,42 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      decomposeParDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+numberOfSubdomains 50;
+
+method          metis;
+
+simpleCoeffs
+{
+    n               ( 2 2 1 );
+    delta           0.001;
+}
+
+hierarchicalCoeffs
+{
+    n               ( 1 1 1 );
+    delta           0.001;
+    order           xyz;
+}
+
+metisCoeffs
+{
+    processorWeights 50{1};
+}
+
+manualCoeffs
+{
+    dataFile        "";
+}
+
+distributed     no;
+
+roots           ( );
+
+// *********************** vim: set ft=cpp et sw=4 : *********************** //

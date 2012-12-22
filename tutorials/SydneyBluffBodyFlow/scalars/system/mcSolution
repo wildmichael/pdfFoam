@@ -1,0 +1,57 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system/lagrangian/mcThermoCloud";
+    object      mcSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+CFL                     0.1;
+averagingCoeff          1e3;
+particlesPerCell        40;
+particleNumberControl   on;
+cloneAt                 0.8;
+eliminateAt             1.2;
+kMin                    1e-8;
+DNum                    0.05;
+
+cellLocalTimeSteppingCoeffs
+{
+    upperBound          20;
+}
+limitedSimplePositionCorrectionCoeffs
+{
+    C               2e-1;
+}
+IEMMixingModelCoeffs
+{
+    Cmix            2.0;
+}
+
+relaxationTimes
+{
+    default         1e-5;
+}
+
+RASOmegaModelCoeffs
+{
+    Omega0          1e5;
+}
+
+interpolationSchemes
+{
+    default                      none;
+    mcRASOmegaModel::Omega       cellPointFace;
+    rho                          cellPointFace;
+    U                            cellPointFace;
+    k                            cellPointFace;
+    SLMFullVelocityModel::diffU  cellPointFace;
+    kCloudPDF                    cellPointFace;
+    UPosCorr                     cellPointFace;
+    zzCov                        cellPointFace;
+    mcCellLocaltimeStepping::eta cellPointFace;
+}
+
+// *********************** vim: set ft=cpp et sw=4 : *********************** //

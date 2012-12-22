@@ -1,0 +1,177 @@
+#!/usr/bin/env python
+
+import numpy as np
+import sys, glob, subprocess, shutil, os, re, collections
+import os.path as op
+
+from utils import *
+
+# argument parsing
+toolsDir = op.dirname(sys.argv[0])
+caseDir = '.'
+args = sys.argv[1:]
+while len(args):
+  a = args[0]
+  if a in ('-h', '--help'):
+    sys.stderr.write("Usage: %s <caseDir>\n"%sys.argv[0])
+    sys.exit(0)
+    del args[0]
+  else:
+    caseDir = a
+    del args[0]
+caseDir = op.abspath(caseDir)
+
+if len(args):
+  sys.stderr.write("Error: Too many arguments")
+
+if not op.isfile(op.join(caseDir, 'system', 'controlDict')):
+  sys.stderr.write("Error: '%s is not a case directory'\n"%caseDir)
+  sys.exit(1)
+
+# load configuration
+cfg = getConfig(caseDir)
+
+# load plotting tools
+import matplotlib as mp
+from matplotlib.texmanager import TexManager
+withPgf = cfg.getboolean('plot', 'with_pgf')
+if withPgf:
+  mp.use('pgf')
+  mp.rc('pgf', texsystem='xelatex',
+      preamble=[r'\usepackage{cmbright}', r'\usepackage{units}'])
+else:
+  mp.rc('text', usetex=True)
+  mp.rcParams['font.sans-serif'] = 'computer modern bright'
+  mp.rcParams['text.latex.preamble'] = [
+      '\\usepackage{cmbright}', '\\usepackage{units}']
+  TexManager.font_info['computern modern bright'] = (
+      ('cmbr', r'\usepackage{cmbright}'))
+mp.rc('font', family='sans-serif', size=10)
+mp.rc('axes', titlesize='x-small', labelsize='xx-small')
+mp.rc('legend', fontsize='x-small')
+mp.rc('xtick', labelsize='xx-small')
+mp.rc('ytick', labelsize='xx-small')
+mp.rcParams['axes.formatter.use_mathtext'] = True
+import matplotlib.mlab as ml
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+
+with_title = cfg.getboolean('convergence', 'with_title')
+with_legend = cfg.getboolean('convergence', 'with_legend')
+paper_size = np.fromstring(
+    cfg.get('convergence', 'paper_size'), dtype='float', sep=' ')
+margins = parseMargins(cfg.get('convergence', 'margins'))
+
+fmt = cfg.get('plot', 'format')
+outDir = cfg.get('plot', 'out_dir')
+
+if not op.isabs(outDir):
+  outDir = op.join(caseDir, outDir)
+if not op.isdir(outDir):
+  os.makedirs(outDir)
+
+# load  data
+print '- Loading data for convergence plots'
+varnames = cfg.get('convergence', 'variables').split()
+dataSets = {}
+for v in varnames:
+  dataSets[v] = {}
+  tmp = {}
+  vname = 'convergence '+v
+  if cfg.has_option(vname, 'filename'):
+    fname = cfg.get(vname, 'filename')
+  else:
+    fname = v
+  for f in glob.iglob(op.join(caseDir, 'probes', '[0-9.]*', fname)):
+    t = float(op.basename(op.dirname(f)))
+    cname = 'convergence '+v
+    nprobes = cfg.getint('convergence', 'nprobes')
+    opts = {}
+    if cfg.has_option(cname, 'usecols'):
+      cols = map(int, cfg.get(cname, 'usecols').split())
+      opts['usecols'] = cols
+      assert(len(opts['usecols'])==nprobes+1)
+    else:
+      cols = [i for i in range(nprobes+1)]
+    opts['converters'] = {i: lambda s: float(re.sub(r'[()]', '', s))
+      for i in cols}
+    tmp[t] = np.genfromtxt(f, **opts)
+  if not len(tmp):
+    sys.stderr.write("Failed to find convergence data for %s\n"%v)
+    sys.exit(1)
+  startTimes = tmp.keys()
+  startTimes.sort()
+  times = []
+  probes = []
+  for t in startTimes:
+    tt = tmp[t][:,0]
+    if len(times):
+      it = np.nonzero(times[-1]>=tt[0])
+      times[-1] = np.delete(times[-1], it, 0)
+      probes[-1] = np.delete(probes[-1], it, 0)
+    times.append(tt)
+    probes.append(tmp[t][:,1:])
+  data = np.vstack(probes)
+  if cfg.has_option(vname, 'sqrt') and cfg.getboolean(vname, 'sqrt'):
+    np.sqrt(np.clip(data, 0, np.inf), data)
+  vmin = data.min()
+  vmax = data.max()
+  dataSets[v] = {
+      't': np.hstack(times),
+      'probes': data,
+      }
+
+# plot the convergence histories
+print '- Creating plots of convergence histories'
+fig = plt.gcf()
+fig.set_size_inches(*paper_size)
+jam_options = cfg.get('convergence', 'pdfjam_options').split()
+styles = cfg.get('convergence', 'styles').split()
+fileList = []
+for v in varnames:
+  print '    - graphing convergence of', v
+  fig.clear()
+  d = dataSets[v]
+  vname = 'convergence '+v
+  lab = cfg.get(vname, 'label')
+  if cfg.has_option(vname, 'margins'):
+    vmargins = parseMargins(cfg.get(vname, 'margins'), margins)
+  else:
+    vmargins = margins
+  maxNx = None
+  maxNy = None
+  powerLimits = None
+  if cfg.has_option(vname, 'maxNx'):
+    maxNy = cfg.getint(vname, 'maxNy')
+  if cfg.has_option(vname, 'maxNy'):
+    maxNy = cfg.getint(vname, 'maxNy')
+  if cfg.has_option(vname, 'powerLimits'):
+    powerLimits = map(int, cfg.get(vname, 'powerLimits').split())
+  fig.subplots_adjust(**vmargins)
+  if with_title:
+    fig.suptitle(op.basename(caseDir).replace('_', r'\_'))
+  ax = fig.gca()
+  if maxNx:
+    ax.locator_params(axis='x', nbins=maxNx)
+  if maxNy:
+    ax.locator_params(axis='y', nbins=maxNy)
+  if powerLimits:
+    ax.yaxis.get_major_formatter().set_powerlimits(powerLimits)
+  ax.xaxis.get_major_formatter().set_powerlimits((-7, 4))
+  for i in range(d['probes'].shape[1]):
+    line = ax.plot(
+        d['t'], d['probes'][:,i], styles[i%len(styles)],
+        label='probe %d'%(i+1))[0]
+  ax.set_xlabel(r'Number of iterations')
+  ax.set_ylabel(lab)
+  if with_legend:
+    ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+  fileList.append(op.join(outDir, 'convergence_%s%s'%(v, fmt)))
+  fig.savefig(fileList[-1])
+  fig.clear()
+  if with_title:
+    fig.suptitle(op.basename(caseDir).replace('_', r'\_'))
+  fig.subplots_adjust(**vmargins)
+if len(fileList) and fmt=='.pdf':
+  outfile = op.join(outDir, 'convergence'+fmt)
+  subprocess.check_call(['pdfnup', '-q', '-o', outfile]+jam_options+fileList)

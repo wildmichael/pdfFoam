@@ -1,0 +1,118 @@
+FoamFile
+{
+    version         2.0;
+    format          ascii;
+    class           dictionary;
+    location        system;
+    object          sampleDict;
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+setFormat raw;
+surfaceFormat raw;
+interpolationScheme cell;
+
+fields
+(
+    Ux
+    Uy
+    UCloudPDFx
+    UCloudPDFy
+    Rxx
+    Ryy
+    Rxy
+    TauCloudPDFxx
+    TauCloudPDFyy
+    TauCloudPDFxy
+    k
+    kCloudPDF
+    rho
+    pndCloudPDF
+    z
+    zzCov
+    T
+    TTCov
+);
+
+ystart 0.0;
+yend   0.078;
+
+x10    7.2e-3;
+x20    14.4e-3;
+x30    21.6e-3;
+x75    54e-3;
+x150   108e-3;
+x300   216e-3;
+x450   324e-3;
+x600   432e-3;
+
+n 100;
+
+type midPoint;
+
+sets
+(
+    pos10
+    {
+        type        $type;
+        axis        y;
+        start       ($x10 $ystart 0.0);
+        end         ($x10 $yend   0.0);
+    }
+    pos20
+    {
+        type        $type;
+        axis        y;
+        start       ($x20 $ystart 0.0);
+        end         ($x20 $yend   0.0);
+    }
+    pos30
+    {
+        type        $type;
+        axis        y;
+        start       ($x30 $ystart 0.0);
+        end         ($x30 $yend   0.0);
+    }
+    pos75
+    {
+        type        $type;
+        axis        y;
+        start       ($x75 $ystart 0.0);
+        end         ($x75 $yend   0.0);
+    }
+    pos150
+    {
+        type        $type;
+        axis        y;
+        start       ($x150 $ystart 0.0);
+        end         ($x150 $yend   0.0);
+    }
+    pos300
+    {
+        type        $type;
+        axis        y;
+        start       ($x300 $ystart 0.0);
+        end         ($x300 $yend   0.0);
+    }
+    pos450
+    {
+        type        $type;
+        axis        y;
+        start       ($x450 $ystart 0.0);
+        end         ($x450 $yend   0.0);
+    }
+    pos600
+    {
+        type        $type;
+        axis        y;
+        start       ($x600 $ystart 0.0);
+        end         ($x600 $yend   0.0);
+    }
+);
+
+surfaces
+(
+);
+
+// *********************** vim: set ft=cpp et sw=4 : *********************** //

@@ -1,0 +1,40 @@
+#!/bin/sh
+
+# run from script directory
+cd ${0%/*}
+
+# Source tutorial run functions
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+. ../tools/RunFunctions
+
+compileApplication ../tools/Rtime
+
+for c in flow scalarsInit scalars
+do
+   cd $c
+   application=`getApplication`
+   rm -rf 0
+   cp -r 0.org 0
+   runApplication blockMesh
+   if [ $c = scalars ]
+   then
+      runApplication decomposePar
+      runParallelFIX $application 4
+   else
+      runApplication $application
+   fi
+   case $c in
+      flow)
+         runApplication Rtime -latestTime
+         foamCalc components U -latestTime > log.foamCalc.1 2>&1
+         foamCalc components R -latestTime > log.foamCalc.2 2>&1
+         runApplication sample -latestTime
+         runApplication ../../tools/createPlots
+         ;;
+      scalars)
+         runParallelFIX sample 4 -latestTime
+         runApplication ../../tools/createPlots
+         runApplication ../../tools/plotConvergence
+   esac
+   cd ..
+done

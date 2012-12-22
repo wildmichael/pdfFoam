@@ -1,0 +1,74 @@
+FoamFile
+{
+    version         2;
+    format          ascii;
+    class           dictionary;
+    location        "constant";
+    object          thermophysicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+cloudProperties
+{
+    velocityModel      SLMFull;
+    localTimeStepping  cell;
+    positionCorrection limitedSimple;
+    OmegaModel         RAS;
+    mixingModel        IEM;
+    reactionModel      cold;
+    scalarFields       ( z );
+    mixedScalars       ( z );
+    conservedScalars   ( z );
+    colReactionModelCoeffs
+    {
+    }
+    boundaryHandlers
+    {
+        jet
+        {
+            type            inletOutlet;
+            randomGenerator
+            {
+                type        inversion;
+            }
+        }
+        coflow
+        {
+            type            inletOutlet;
+            randomGenerator
+            {
+                type        inversion;
+            }
+        }
+        outflow
+        {
+            type            inletOutlet;
+            randomGenerator
+            {
+                type        inversion;
+            }
+        }
+        bluffBody
+        {
+            type            slip;
+        }
+        axis
+        {
+            type            slip;
+        }
+        outerWall
+        {
+            type            slip;
+        }
+        front
+        {
+            type            empty;
+        }
+        back
+        {
+            type            empty;
+        }
+    }
+}
+
+// *********************** vim: set ft=cpp et sw=4 : *********************** //

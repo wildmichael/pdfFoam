@@ -1,0 +1,68 @@
+############
+# Numerics #
+############
+
+InitialGridPoints = 100
+
+DeltaTMax = 1.0e-5
+RelTol = 1.0e-8
+AbsTol = 1.0e-12
+
+TStart = 0.0
+TEnd = 1.0
+
+UseNumericalJac is FALSE
+
+#######
+# I/O #
+#######
+
+NumberOfOutputs = 100
+
+OutputPath is output.test
+CAinFile = ./CA.in
+
+#############
+# Chemistry #
+#############
+
+MechanismFile is ../../GRI211/gri.211.pre
+
+globalReaction is CH4 + 2O2 == CO2 + 2H2O;
+
+fuel is CH4
+oxidizer is O2
+
+#########
+# Flame #
+#########
+
+Flame is Transient Flamelet
+
+Scalar DissRate = 0.1
+ComputeWithRadiation is FALSE
+LewisNumberFile is LewisNumberOne
+Pressure = 1.0e5
+
+#######################
+# Boundary conditions #
+#######################
+
+Fuel Side {
+  dirichlet {
+    t = 290
+      x->CH4 = 0.25
+      x->o2 = 0.1575
+      x->n2 = 0.585
+      x->ar = 0.0075
+  }
+}
+
+Oxidizer Side {
+  dirichlet {
+    t = 290
+      x->o2 = 0.21
+      x->n2 = 0.78
+      x->ar = 0.01
+  }
+}

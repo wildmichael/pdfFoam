@@ -1,0 +1,57 @@
+# Written by ICEM CFD 14.0, user mwild, Wed Nov 21 12:50:55 PM W. Europe Standard Time 2012
+
+begin family FAM1
+    begin solver "Fluent_V6"
+    end solver "Fluent_V6"
+end family FAM1
+
+begin family GEOM
+    begin solver "Fluent_V6"
+        begin bctype color
+            active 1
+            color 16663900 1
+        end bctype color
+    end solver "Fluent_V6"
+end family GEOM
+
+begin family WALLS
+    begin solver "Fluent_V6"
+        begin bctype color
+            active 1
+            color 3384790 1
+        end bctype color
+    end solver "Fluent_V6"
+end family WALLS
+
+begin family INFLOW
+    begin solver "Fluent_V6"
+        begin bctype color
+            active 1
+            color 3384790 1
+        end bctype color
+    end solver "Fluent_V6"
+end family INFLOW
+
+begin family OUTFLOW
+    begin solver "Fluent_V6"
+    end solver "Fluent_V6"
+end family OUTFLOW
+
+begin family FUEL
+    begin solver "Fluent_V6"
+    end solver "Fluent_V6"
+end family FUEL
+
+begin family WALLS.1
+    begin solver "Fluent_V6"
+        begin bctype color
+            active 1
+            color 15283100 1
+        end bctype color
+    end solver "Fluent_V6"
+end family WALLS.1
+
+begin family CREATED_MATERIAL_13
+    begin solver "Fluent_V6"
+    end solver "Fluent_V6"
+end family CREATED_MATERIAL_13

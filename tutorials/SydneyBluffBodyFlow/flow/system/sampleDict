@@ -1,0 +1,653 @@
+FoamFile
+{
+    version         2.0;
+    format          ascii;
+    class           dictionary;
+    location        system;
+    object          sampleDict;
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+setFormat raw;
+surfaceFormat raw;
+interpolationScheme cell;
+
+fields
+(
+    Ux
+    Uy
+    UCloudPDFx
+    UCloudPDFy
+    Rxx
+    Ryy
+    Rxy
+    TauCloudPDFxx
+    TauCloudPDFyy
+    TauCloudPDFxy
+    k
+    kCloudPDF
+    rho
+    pndCloudPDF
+    z
+    zzCov
+);
+
+ystart 0.0;
+yend   0.0375;
+
+x0000 0.0000;
+x0060 0.0030;
+x0200 0.0100;
+x0400 0.0200;
+x0416 0.0208;
+x0430 0.0215;
+x0446 0.0223;
+x0460 0.0230;
+x0476 0.0238;
+x0490 0.0245;
+x0506 0.0253;
+x0520 0.0260;
+x0536 0.0268;
+x0550 0.0275;
+x0566 0.0283;
+x0580 0.0290;
+x0596 0.0298;
+x0600 0.0300;
+x0610 0.0305;
+x0626 0.0313;
+x0640 0.0320;
+x0656 0.0328;
+x0800 0.0400;
+x0816 0.0408;
+x0830 0.0415;
+x0846 0.0423;
+x0860 0.0430;
+x0876 0.0438;
+x0890 0.0445;
+x0906 0.0453;
+x0920 0.0460;
+x0936 0.0468;
+x0950 0.0475;
+x0966 0.0483;
+x0980 0.0490;
+x0996 0.0498;
+x1000 0.0500;
+x1010 0.0505;
+x1026 0.0513;
+x1040 0.0520;
+x1056 0.0528;
+x1100 0.0550;
+x1116 0.0558;
+x1130 0.0565;
+x1146 0.0573;
+x1160 0.0580;
+x1176 0.0588;
+x1190 0.0595;
+x1200 0.0600;
+x1206 0.0603;
+x1220 0.0610;
+x1236 0.0618;
+x1250 0.0625;
+x1266 0.0633;
+x1280 0.0640;
+x1296 0.0648;
+x1300 0.0650;
+x1310 0.0655;
+x1326 0.0663;
+x1340 0.0670;
+x1356 0.0678;
+x1400 0.0700;
+x1800 0.0900;
+x2400 0.1200;
+x3400 0.1700;
+x4400 0.2200;
+x5200 0.2600;
+
+n 100;
+
+sets
+(
+    pos0000
+    {
+        type        midPoint;
+        axis        y;
+        start       ($x0000 $ystart 0.0);
+        end         ($x0000 $yend   0.0);
+        nPoints     $n;
+    }
+    pos0060
+    {
+        type        midPoint;
+        axis        y;
+        start       ($x0060 $ystart 0.0);
+        end         ($x0060 $yend   0.0);
+        nPoints     $n;
+    }
+    pos0200
+    {
+        type        midPoint;
+        axis        y;
+        start       ($x0200 $ystart 0.0);
+        end         ($x0200 $yend   0.0);
+        nPoints     $n;
+    }
+    pos0400
+    {
+        type        midPoint;
+        axis        y;
+        start       ($x0400 $ystart 0.0);
+        end         ($x0400 $yend   0.0);
+        nPoints     $n;
+    }
+    pos0416
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0416 $ystart 0.0);
+        end     ($x0416 $yend   0.0);
+        nPoints $n;
+    }
+    pos0430
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0430 $ystart 0.0);
+        end     ($x0430 $yend   0.0);
+        nPoints $n;
+    }
+    pos0446
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0446 $ystart 0.0);
+        end     ($x0446 $yend   0.0);
+        nPoints $n;
+    }
+    pos0460
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0460 $ystart 0.0);
+        end     ($x0460 $yend   0.0);
+        nPoints $n;
+    }
+    pos0476
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0476 $ystart 0.0);
+        end     ($x0476 $yend   0.0);
+        nPoints $n;
+    }
+    pos0490
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0490 $ystart 0.0);
+        end     ($x0490 $yend   0.0);
+        nPoints $n;
+    }
+    pos0506
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0506 $ystart 0.0);
+        end     ($x0506 $yend   0.0);
+        nPoints $n;
+    }
+    pos0520
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0520 $ystart 0.0);
+        end     ($x0520 $yend   0.0);
+        nPoints $n;
+    }
+    pos0536
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0536 $ystart 0.0);
+        end     ($x0536 $yend   0.0);
+        nPoints $n;
+    }
+    pos0550
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0550 $ystart 0.0);
+        end     ($x0550 $yend   0.0);
+        nPoints $n;
+    }
+    pos0566
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0566 $ystart 0.0);
+        end     ($x0566 $yend   0.0);
+        nPoints $n;
+    }
+    pos0580
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0580 $ystart 0.0);
+        end     ($x0580 $yend   0.0);
+        nPoints $n;
+    }
+    pos0596
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0596 $ystart 0.0);
+        end     ($x0596 $yend   0.0);
+        nPoints $n;
+    }
+    pos0600
+    {
+        type        midPoint;
+        axis        y;
+        start       ($x0600 $ystart 0.0);
+        end         ($x0600 $yend   0.0);
+        nPoints     $n;
+    }
+    pos0610
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0610 $ystart 0.0);
+        end     ($x0610 $yend   0.0);
+        nPoints $n;
+    }
+    pos0626
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0626 $ystart 0.0);
+        end     ($x0626 $yend   0.0);
+        nPoints $n;
+    }
+    pos0640
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0640 $ystart 0.0);
+        end     ($x0640 $yend   0.0);
+        nPoints $n;
+    }
+    pos0656
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0656 $ystart 0.0);
+        end     ($x0656 $yend   0.0);
+        nPoints $n;
+    }
+    pos0800
+    {
+        type        midPoint;
+        axis        y;
+        start       ($x0800 $ystart 0.0);
+        end         ($x0800 $yend   0.0);
+        nPoints     $n;
+    }
+    pos0816
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0816 $ystart 0.0);
+        end     ($x0816 $yend   0.0);
+        nPoints $n;
+    }
+    pos0830
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0830 $ystart 0.0);
+        end     ($x0830 $yend   0.0);
+        nPoints $n;
+    }
+    pos0846
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0846 $ystart 0.0);
+        end     ($x0846 $yend   0.0);
+        nPoints $n;
+    }
+    pos0860
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0860 $ystart 0.0);
+        end     ($x0860 $yend   0.0);
+        nPoints $n;
+    }
+    pos0876
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0876 $ystart 0.0);
+        end     ($x0876 $yend   0.0);
+        nPoints $n;
+    }
+    pos0890
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0890 $ystart 0.0);
+        end     ($x0890 $yend   0.0);
+        nPoints $n;
+    }
+    pos0906
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0906 $ystart 0.0);
+        end     ($x0906 $yend   0.0);
+        nPoints $n;
+    }
+    pos0920
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0920 $ystart 0.0);
+        end     ($x0920 $yend   0.0);
+        nPoints $n;
+    }
+    pos0936
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0936 $ystart 0.0);
+        end     ($x0936 $yend   0.0);
+        nPoints $n;
+    }
+    pos0950
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0950 $ystart 0.0);
+        end     ($x0950 $yend   0.0);
+        nPoints $n;
+    }
+    pos0966
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0966 $ystart 0.0);
+        end     ($x0966 $yend   0.0);
+        nPoints $n;
+    }
+    pos0980
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0980 $ystart 0.0);
+        end     ($x0980 $yend   0.0);
+        nPoints $n;
+    }
+    pos0996
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x0996 $ystart 0.0);
+        end     ($x0996 $yend   0.0);
+        nPoints $n;
+    }
+    pos1000
+    {
+        type        midPoint;
+        axis        y;
+        start       ($x1000 $ystart 0.0);
+        end         ($x1000 $yend   0.0);
+        nPoints     $n;
+    }
+    pos1010
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x1010 $ystart 0.0);
+        end     ($x1010 $yend   0.0);
+        nPoints $n;
+    }
+    pos1026
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x1026 $ystart 0.0);
+        end     ($x1026 $yend   0.0);
+        nPoints $n;
+    }
+    pos1040
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x1040 $ystart 0.0);
+        end     ($x1040 $yend   0.0);
+        nPoints $n;
+    }
+    pos1056
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x1056 $ystart 0.0);
+        end     ($x1056 $yend   0.0);
+        nPoints $n;
+    }
+    pos1100
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x1100 $ystart 0.0);
+        end     ($x1100 $yend   0.0);
+        nPoints $n;
+    }
+    pos1116
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x1116 $ystart 0.0);
+        end     ($x1116 $yend   0.0);
+        nPoints $n;
+    }
+    pos1130
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x1130 $ystart 0.0);
+        end     ($x1130 $yend   0.0);
+        nPoints $n;
+    }
+    pos1146
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x1146 $ystart 0.0);
+        end     ($x1146 $yend   0.0);
+        nPoints $n;
+    }
+    pos1160
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x1160 $ystart 0.0);
+        end     ($x1160 $yend   0.0);
+        nPoints $n;
+    }
+    pos1176
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x1176 $ystart 0.0);
+        end     ($x1176 $yend   0.0);
+        nPoints $n;
+    }
+    pos1190
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x1190 $ystart 0.0);
+        end     ($x1190 $yend   0.0);
+        nPoints $n;
+    }
+    pos1200
+    {
+        type        midPoint;
+        axis        y;
+        start       ($x1200 $ystart 0.0);
+        end         ($x1200 $yend   0.0);
+        nPoints     $n;
+    }
+    pos1206
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x1206 $ystart 0.0);
+        end     ($x1206 $yend   0.0);
+        nPoints $n;
+    }
+    pos1220
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x1220 $ystart 0.0);
+        end     ($x1220 $yend   0.0);
+        nPoints $n;
+    }
+    pos1236
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x1236 $ystart 0.0);
+        end     ($x1236 $yend   0.0);
+        nPoints $n;
+    }
+    pos1250
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x1250 $ystart 0.0);
+        end     ($x1250 $yend   0.0);
+        nPoints $n;
+    }
+    pos1266
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x1266 $ystart 0.0);
+        end     ($x1266 $yend   0.0);
+        nPoints $n;
+    }
+    pos1280
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x1280 $ystart 0.0);
+        end     ($x1280 $yend   0.0);
+        nPoints $n;
+    }
+    pos1296
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x1296 $ystart 0.0);
+        end     ($x1296 $yend   0.0);
+        nPoints $n;
+    }
+    pos1300
+    {
+        type        midPoint;
+        axis        y;
+        start       ($x1300 $ystart 0.0);
+        end         ($x1300 $yend   0.0);
+        nPoints     $n;
+    }
+    pos1310
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x1310 $ystart 0.0);
+        end     ($x1310 $yend   0.0);
+        nPoints $n;
+    }
+    pos1326
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x1326 $ystart 0.0);
+        end     ($x1326 $yend   0.0);
+        nPoints $n;
+    }
+    pos1340
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x1340 $ystart 0.0);
+        end     ($x1340 $yend   0.0);
+        nPoints $n;
+    }
+    pos1356
+    {
+        type    midPoint;
+        axis    y;
+        start   ($x1356 $ystart 0.0);
+        end     ($x1356 $yend   0.0);
+        nPoints $n;
+    }
+    pos1400
+    {
+        type        midPoint;
+        axis        y;
+        start       ($x1400 $ystart 0.0);
+        end         ($x1400 $yend   0.0);
+        nPoints     $n;
+    }
+    pos1800
+    {
+        type        midPoint;
+        axis        y;
+        start       ($x1800 $ystart 0.0);
+        end         ($x1800 $yend   0.0);
+        nPoints     $n;
+    }
+    pos2400
+    {
+        type        midPoint;
+        axis        y;
+        start       ($x2400 $ystart 0.0);
+        end         ($x2400 $yend   0.0);
+        nPoints     $n;
+    }
+    pos3400
+    {
+        type        midPoint;
+        axis        y;
+        start       ($x3400 $ystart 0.0);
+        end         ($x3400 $yend   0.0);
+        nPoints     $n;
+    }
+    pos4400
+    {
+        type        midPoint;
+        axis        y;
+        start       ($x4400 $ystart 0.0);
+        end         ($x4400 $yend   0.0);
+        nPoints     $n;
+    }
+    pos5200
+    {
+        type        midPoint;
+        axis        y;
+        start       ($x5200 $ystart 0.0);
+        end         ($x5200 $yend   0.0);
+        nPoints     $n;
+    }
+);
+
+surfaces
+(
+);
+
+// *********************** vim: set ft=cpp et sw=4 : *********************** //
