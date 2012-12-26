@@ -26,8 +26,8 @@ Class
 
 Description
     A tetrahedron built from two adjacent points, the face centre and the cell
-    centre. In contrast to Foam::tetrahedron, this class stores the face normals
-    and adds additional functions.
+    centre. In contrast to Foam::tetrahedron, this class stores the face
+    normals and adds additional functions.
 
 SourceFiles
     richTetrahedronI.H

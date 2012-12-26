@@ -102,7 +102,10 @@ class tetFacePointCellDecomposition
     // Private Member Functions
 
         //- Disallow default bitwise copy construct
-        tetFacePointCellDecomposition(const tetFacePointCellDecomposition<Tetrahedron>&);
+        tetFacePointCellDecomposition
+        (
+            const tetFacePointCellDecomposition<Tetrahedron>&
+        );
 
         //- Disallow default bitwise assignment
         void operator=(const tetFacePointCellDecomposition<Tetrahedron>&);
