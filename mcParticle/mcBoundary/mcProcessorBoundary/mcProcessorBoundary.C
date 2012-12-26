@@ -53,19 +53,28 @@ Foam::mcProcessorBoundary::mcProcessorBoundary
 
 void Foam::mcProcessorBoundary::hitPatch
 (
-    Foam::mcParticle& p,
-    Foam::mcParticle::trackData& td
+    mcParticle& p,
+#if FOAM_HEX_VERSION < 0x200
+    mcParticle::trackData& td
+#else
+    mcParticle::trackData& td,
+    const label patchI,
+    const scalar trackFraction,
+    const tetIndices& tetIs
+#endif
 )
 {
     td.switchProcessor = true;
 }
 
 
+#if FOAM_HEX_VERSION < 0x200
 void Foam::mcProcessorBoundary::hitPatch
 (
     Foam::mcParticle& p,
     int&
 )
 {}
+#endif
 
 // ************************************************************************* //

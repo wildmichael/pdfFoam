@@ -159,7 +159,14 @@ void Foam::mcOpenBoundary::correct(bool afterMove)
 void Foam::mcOpenBoundary::hitPatch
 (
     mcParticle& p,
+#if FOAM_HEX_VERSION < 0x200
     mcParticle::trackData& td
+#else
+    mcParticle::trackData& td,
+    const label patchI,
+    const scalar trackFraction,
+    const tetIndices& tetIs
+#endif
 )
 {
     const polyPatch& pp = patch().patch();
@@ -198,11 +205,13 @@ void Foam::mcOpenBoundary::hitPatch
 }
 
 
+#if FOAM_HEX_VERSION < 0x200
 void Foam::mcOpenBoundary::hitPatch
 (
     Foam::mcParticle& p,
     int&
 )
 {}
+#endif
 
 // ************************************************************************* //

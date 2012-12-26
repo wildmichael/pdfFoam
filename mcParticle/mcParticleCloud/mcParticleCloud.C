@@ -62,7 +62,10 @@ const Foam::compressible::turbulenceModel* getTurbulenceModel
     }
     else
     {
-        Foam::FatalErrorIn("getTurbulenceModel(const Foam::objectRegistry&)")
+#if FOAM_HEX_VERSION < 0x200
+        Foam::
+#endif
+        FatalErrorIn("getTurbulenceModel(const Foam::objectRegistry&)")
             << "No valid model for TKE calculation."
             << Foam::exit(Foam::FatalError);
         return 0;
@@ -94,6 +97,136 @@ void constrainParticle
         meshTools::constrainDirection(mesh, mesh.geometricD(), destPos);
         // constrained tracking velocity to destPos
         u = (destPos - p.position())/dt;
+    }
+}
+
+void sendToOrigProc(Foam::mcParticleCloud& c)
+{
+    using namespace Foam;
+    if (Pstream::parRun())
+    {
+        List<IDLList<mcParticle> > transferList(Pstream::nProcs());
+        forAllIter(mcParticleCloud, c, pIter)
+        {
+            mcParticle& p = pIter();
+
+            // If this is a parallel run and the particle switch processor in
+            // the first half step, put it in the transfer list
+            if (p.procOld() != Pstream::myProcNo())
+            {
+                transferList[p.procOld()].append(c.remove(&p));
+            }
+        }
+#if FOAM_HEX_VERSION < 0x200
+        // List of the numbers of particles to be transfered across the
+        // processor patches
+        labelList nsTransPs(transferList.size());
+
+        forAll(transferList, i)
+        {
+            nsTransPs[i] = transferList[i].size();
+        }
+
+        // List of the numbers of particles to be transfered across the
+        // processor patches for all the processors
+        labelListList allNTrans(Pstream::nProcs());
+        allNTrans[Pstream::myProcNo()] = nsTransPs;
+        combineReduce(allNTrans, combineNsTransPs());
+
+        forAll(transferList, i)
+        {
+            if (transferList[i].size())
+            {
+                OPstream particleStream(Pstream::blocking, i);
+                particleStream << transferList[i];
+            }
+        }
+
+        forAll(allNTrans, i)
+        {
+            label nRecPs = allNTrans[i][Pstream::myProcNo()];
+
+            if (nRecPs)
+            {
+                IPstream particleStream(Pstream::blocking, i);
+                IDLList<mcParticle> newParticles
+                (
+                    particleStream,
+                    mcParticle::iNew(c)
+                );
+
+                forAllIter(IDLList<mcParticle>, newParticles, newpIter)
+                {
+                    mcParticle& newp = newpIter();
+                    c.addParticle(newParticles.remove(&newp));
+                }
+            }
+        }
+#else
+        // Allocate transfer buffers
+        PstreamBuffers pBufs(Pstream::nonBlocking);
+
+        // Stream into send buffers
+        forAll(transferList, i)
+        {
+            if (transferList[i].size())
+            {
+                UOPstream particleStream(i, pBufs);
+                particleStream << transferList[i];
+            }
+        }
+
+        // Set up transfers when in non-blocking mode. Returns sizes (in bytes)
+        // to be sent/received.
+        labelListList allNTrans(Pstream::nProcs());
+
+        pBufs.finishedSends(allNTrans);
+
+        #if 0
+        bool transfered = false;
+
+        forAll(allNTrans, i)
+        {
+            forAll(allNTrans[i], j)
+            {
+                if (allNTrans[i][j])
+                {
+                    transfered = true;
+                    break;
+                }
+            }
+        }
+
+        if (!transfered)
+        {
+            break;
+        }
+        #endif
+
+        // Retrieve from receive buffers
+        forAll(allNTrans, i)
+        {
+            label nRec = allNTrans[i][Pstream::myProcNo()];
+
+            if (nRec)
+            {
+                UIPstream particleStream(i, pBufs);
+
+                IDLList<mcParticle> newParticles
+                (
+                    particleStream,
+                    mcParticle::iNew(c.pMesh())
+                );
+
+                forAllIter(IDLList<mcParticle>, newParticles, newpIter)
+                {
+                    mcParticle& newp = newpIter();
+
+                    c.addParticle(newParticles.remove(&newp));
+                }
+            }
+        }
+#endif
     }
 }
 
@@ -135,7 +268,9 @@ const Foam::dimensionedScalar SMALL_VOLUME
 namespace Foam
 {
 
+#if FOAM_HEX_VERSION < 0x200
     defineParticleTypeNameAndDebug(mcParticle, 0);
+#endif
     defineTemplateTypeNameAndDebug(Cloud<mcParticle>, 0);
 
 }  // namespace Foam
@@ -985,10 +1120,14 @@ void Foam::mcParticleCloud::cloneParticles(label celli)
         // Half my mass
         p.m() /= 2.0;
         // create a new particle like myself
+#if FOAM_HEX_VERSION < 0x200
         autoPtr<mcParticle> ptrNew = p.clone();
+#else
+        autoPtr<particle> ptrNew = p.clone();
+#endif
         ptrNew().position() = positions[particleI];
 
-        addParticle(ptrNew.ptr());
+        addParticle(static_cast<mcParticle*>(ptrNew.ptr()));
     }
     PaNIC_[celli] += n;
 
@@ -1131,7 +1270,11 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     }
 
     mcParticle::trackData td1(*this, deltaT_.value()/2.);
+#if FOAM_HEX_VERSION < 0x200
     Cloud<mcParticle>::move(td1);
+#else
+    Cloud<mcParticle>::move(td1, deltaT_.value()/2.);
+#endif
 
     // Evaluate models at deltaT/2
     forAllIter(mcParticleCloud, *this, pIter)
@@ -1146,65 +1289,7 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     localTimeStepping_().correct();
 
     // Send back to original processor
-    if (Pstream::parRun())
-    {
-        List<IDLList<mcParticle> > transferList(Pstream::nProcs());
-        forAllIter(mcParticleCloud, *this, pIter)
-        {
-            mcParticle& p = pIter();
-
-            // If this is a parallel run and the particle switch processor in
-            // the first half step, put it in the transfer list
-            if (Pstream::parRun() && p.procOld() != Pstream::myProcNo())
-            {
-                transferList[p.procOld()].append(this->remove(&p));
-            }
-        }
-        // List of the numbers of particles to be transfered across the
-        // processor patches
-        labelList nsTransPs(transferList.size());
-
-        forAll(transferList, i)
-        {
-            nsTransPs[i] = transferList[i].size();
-        }
-
-        // List of the numbers of particles to be transfered across the
-        // processor patches for all the processors
-        labelListList allNTrans(Pstream::nProcs());
-        allNTrans[Pstream::myProcNo()] = nsTransPs;
-        combineReduce(allNTrans, combineNsTransPs());
-
-        forAll(transferList, i)
-        {
-            if (transferList[i].size())
-            {
-                OPstream particleStream(Pstream::blocking, i);
-                particleStream << transferList[i];
-            }
-        }
-
-        forAll(allNTrans, i)
-        {
-            label nRecPs = allNTrans[i][Pstream::myProcNo()];
-
-            if (nRecPs)
-            {
-                IPstream particleStream(Pstream::blocking, i);
-                IDLList<mcParticle> newParticles
-                (
-                    particleStream,
-                    mcParticle::iNew(*this)
-                );
-
-                forAllIter(IDLList<mcParticle>, newParticles, newpIter)
-                {
-                    mcParticle& newp = newpIter();
-                    addParticle(newParticles.remove(&newp));
-                }
-            }
-        }
-    }
+    sendToOrigProc(*this);
 
     // Estimate particle velocity as 0.5*(U^{n}+U^{n+1}) and put particles back
     // to their original position. For particles that have been reflected,
@@ -1249,7 +1334,11 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     //////////////////
 
     mcParticle::trackData td2(*this, deltaT_.value());
+#if FOAM_HEX_VERSION < 0x200
     Cloud<mcParticle>::move(td2);
+#else
+    Cloud<mcParticle>::move(td2, deltaT_.value());
+#endif
 
     // Correct boundary conditions
     scalarField massInInst(massIn_.size(), 0.);
@@ -1421,6 +1510,21 @@ Foam::scalar Foam::mcParticleCloud::evolve()
 
     // Finally, update deltaT for next time step
     deltaT_.value() = solutionDict_.CFL()/CoMax;
+
+#if FOAM_HEX_VERSION >= 0x200
+    lduMatrix::solverPerformance
+    pndSp
+    (
+        name(),
+        pndcPdf_.name(),
+        rhoRes,
+        rhoRes,
+        1,
+        true,
+        false
+    );
+    mesh_.setSolverPerformance(pndSp);
+#endif
 
     return rhoRes;
 }

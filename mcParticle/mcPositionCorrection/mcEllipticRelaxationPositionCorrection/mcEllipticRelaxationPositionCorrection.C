@@ -151,6 +151,11 @@ mcEllipticRelaxationPositionCorrection
 
 void Foam::mcEllipticRelaxationPositionCorrection::readCoeffs()
 {
+#if FOAM_HEX_VERSION < 0x200
+    using mathematicalConstant::pi;
+#else
+    using constant::mathematical::pi;
+#endif
     dimensionedScalar kf
     (
         "kf",
@@ -179,7 +184,7 @@ void Foam::mcEllipticRelaxationPositionCorrection::readCoeffs()
     c_ = solutionDict().lookupOrDefault<scalar>
         (
             "c",
-            1./(mathematicalConstant::pi*CFL*N).value()
+            1./(pi*CFL*N).value()
         );
     f_ = solutionDict().lookupOrDefault<scalar>("f", (kf*c_).value());
     b_ = solutionDict().lookupOrDefault<scalar>("b", (kb*sqr(f_)).value());

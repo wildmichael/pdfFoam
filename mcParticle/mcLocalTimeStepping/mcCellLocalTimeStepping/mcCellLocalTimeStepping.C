@@ -93,7 +93,11 @@ void Foam::mcCellLocalTimeStepping::updateInternals()
     scalar k0 = SMALL;
     if (isA<compressible::RASModel>(tm))
     {
+#if FOAM_HEX_VERSION < 0x200
         k0 = refCast<const compressible::RASModel>(tm).k0().value();
+#else
+        k0 = refCast<const compressible::RASModel>(tm).kMin().value();
+#endif
     }
 
     // Use clipping in case there are negative entries in R due to divergence

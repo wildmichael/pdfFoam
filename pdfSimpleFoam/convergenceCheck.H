@@ -1,5 +1,6 @@
 // check convergence
 
+#if FOAM_HEX_VERSION < 0x200
 Info<< "maxFVResidual = " << maxFVResidual << endl;
 Info<< "maxPDFResidual = " << maxPDFResidual << endl;
 
@@ -11,4 +12,4 @@ if (maxFVResidual < FVConvergenceCriterion
     runTime.writeAndEnd();
     Info<< "latestTime = " << runTime.timeName() << endl;
 }
-
+#endif

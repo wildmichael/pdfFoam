@@ -25,10 +25,12 @@ License
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
+#if FOAM_HEX_VERSION < 0x200
 inline Foam::label& Foam::mcParticle::face()
 {
     return facei_;
 }
+#endif
 
 
 inline const Foam::point& Foam::mcParticle::positionOld() const

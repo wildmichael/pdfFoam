@@ -61,6 +61,9 @@ Author
 
 #include "autoPtr.H"
 #include "scalarIOList.H"
+#if FOAM_HEX_VERSION >= 0x200
+#include "scalarListIOList.H"
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

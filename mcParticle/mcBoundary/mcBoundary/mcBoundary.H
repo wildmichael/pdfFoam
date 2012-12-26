@@ -140,16 +140,25 @@ public:
         void hitPatch
         (
             mcParticle& p,
+#if FOAM_HEX_VERSION < 0x200
             mcParticle::trackData& td
+#else
+            mcParticle::trackData& td,
+            const label patchI,
+            const scalar trackFraction,
+            const tetIndices& tetIs
+#endif
         ) = 0;
 
-        //- Deal with a particle hitting the patch withou trackData
+#if FOAM_HEX_VERSION < 0x200
+        //- Deal with a particle hitting the patch without trackData
         virtual
         void hitPatch
         (
             mcParticle& p,
             int&
         ) = 0;
+#endif
 
         //- The particle cloud
         inline const mcParticleCloud& cloud() const;

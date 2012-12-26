@@ -36,7 +36,11 @@ Foam::mcParticle::mcParticle
     bool readFields
 )
 :
+#if FOAM_HEX_VERSION < 0x200
     Particle<mcParticle>(cloud, is, readFields),
+#else
+    particle(cloud.pMesh(), is, readFields),
+#endif
     reflectionBoundaryVelocity_(vector::zero),
     reflected_(false),
     reflectedAtOpenBoundary_(false)
@@ -94,7 +98,7 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
         return;
     }
     mcParticleCloud& mcpc = refCast<mcParticleCloud>(c);
-    Particle <mcParticle>::readFields(c);
+    base::readFields(c);
 
     IOField<scalar> m(c.fieldIOobject("m", IOobject::MUST_READ));
     c.checkFieldIOobject(c, m);
@@ -163,7 +167,7 @@ void Foam::mcParticle::readFields(Cloud<mcParticle>& c)
 void Foam::mcParticle::writeFields(const Cloud<mcParticle>& c)
 {
     const mcParticleCloud& mcpc = refCast<const mcParticleCloud>(c);
-    Particle<mcParticle>::writeFields(c);
+    base::writeFields(c);
 
     label np = c.size();
 
@@ -236,7 +240,7 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
 {
     if (os.format() == IOstream::ASCII)
     {
-        os  << static_cast<const Particle<mcParticle>&>(p)
+        os  << static_cast<const mcParticle::base&>(p)
             << token::SPACE << p.m_
             << token::SPACE << p.positionOld_
             << token::SPACE << p.celliOld_
@@ -261,7 +265,7 @@ Foam::Ostream& Foam::operator<<(Ostream& os, const mcParticle& p)
     }
     else
     {
-        os  << static_cast<const Particle<mcParticle>&>(p);
+        os  << static_cast<const mcParticle::base&>(p);
         static const size_t offset =
             sizeof(mcParticle::BoundaryOfDataMembers);
         static const ptrdiff_t binaryLength =

@@ -211,12 +211,22 @@ Foam::mcParticleCloud::massPerDepth(const mcParticle& p) const
 template<class TrackData>
 void Foam::mcParticleCloud::hitPatch
 (
-    Foam::mcParticle& p,
-    TrackData& td,
-    Foam::label patchI
+    mcParticle&       p,
+    TrackData&        td,
+#if FOAM_HEX_VERSION < 0x200
+    const label       patchI
+#else
+    const label       patchI,
+    const scalar      trackFraction,
+    const tetIndices& tetIs
+#endif
 )
 {
+#if FOAM_HEX_VERSION < 0x200
     boundaryHandlers_[patchI].hitPatch(p, td);
+#else
+    boundaryHandlers_[patchI].hitPatch(p, td, patchI, trackFraction, tetIs);
+#endif
 }
 
 

@@ -27,6 +27,7 @@ License
 #include "mcParticleCloud.H"
 
 #include "fvCFD.H"
+#include "mathematicalConstants.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -63,8 +64,13 @@ Foam::autoPtr<Foam::mcPositionCorrection> Foam::mcPositionCorrection::New
     word sd = posCorrType + "PositionCorrectionCoeffs";
 
     // If set to "false", "no", "n", "off" or "none", disable
+#if FOAM_HEX_VERSION < 0x200
     Switch::switchType enablePosCorr = Switch::asEnum(posCorrType, true);
     if (enablePosCorr != Switch::INVALID && !Switch::asBool(enablePosCorr))
+#else
+    Switch enablePosCorr = Switch(posCorrType, true);
+    if (enablePosCorr.valid() && !bool(enablePosCorr))
+#endif
     {
         return autoPtr<mcPositionCorrection>
         (
@@ -96,7 +102,11 @@ Foam::autoPtr<Foam::mcPositionCorrection> Foam::mcPositionCorrection::New
 
 void Foam::mcPositionCorrection::makeL()
 {
-
+#if FOAM_HEX_VERSION < 0x200
+    using mathematicalConstant::pi;
+#else
+    using constant::mathematical::pi;
+#endif
     const fvMesh& mesh = cloud().mesh();
     if (L_.valid())
     {
@@ -150,12 +160,12 @@ void Foam::mcPositionCorrection::makeL()
             sumDx += 1./coeff;
             ++n;
         }
-        L_()[cellI] = sumDx/(n*mathematicalConstant::pi);
+        L_()[cellI] = sumDx/(n*pi);
     }
     forAll(L_().boundaryField(), patchI)
     {
         L_().boundaryField()[patchI] =
-            2./(invdx.boundaryField()[patchI]*mathematicalConstant::pi);
+            2./(invdx.boundaryField()[patchI]*pi);
     }
 }
 

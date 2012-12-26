@@ -39,7 +39,11 @@ Author: Heng Xiao with Patrick Jenny, 2010-08-29
 #ifndef mcParticle_H
 #define mcParticle_H
 
+#if FOAM_HEX_VERSION < 0x200
 #include "Particle.H"
+#else
+#include "particle.H"
+#endif
 #include "IOstream.H"
 #include "autoPtr.H"
 #include "contiguous.H"
@@ -57,9 +61,19 @@ class mcParticleCloud;
 
 class mcParticle
 :
+#if FOAM_HEX_VERSION < 0x200
     public Particle<mcParticle>
+#else
+    public particle
+#endif
 {
     // Private types
+
+#if FOAM_HEX_VERSION < 0x200
+        typedef Particle<mcParticle> base;
+#else
+        typedef particle base;
+#endif
 
         struct BoundaryOfDataMembers {} beginOfDataMembers_;
 
@@ -140,20 +154,36 @@ class mcParticle
 
 public:
 
+#if FOAM_HEX_VERSION >= 0x200
+    //- Runtime type information
+    TypeName("mcParticle");
+#endif
+
     friend class Cloud<mcParticle>;
 
     //- Class used to pass tracking data to the trackToFace function
     class trackData:
+#if FOAM_HEX_VERSION < 0x200
         public Particle<mcParticle>::trackData
+#else
+        public particle::TrackingData<mcParticleCloud>
+#endif
     {
+#if FOAM_HEX_VERSION < 0x200
+        typedef Particle<mcParticle>::trackData base;
+#else
+        typedef particle::TrackingData<mcParticleCloud> base;
+#endif
         //- The cloud
         mcParticleCloud& cloud_;
 
+#if FOAM_HEX_VERSION < 0x200
         //- The time span over which to track the particle (deltaT)
         scalar trackTime_;
 
         //- The global deltaT
         scalar deltaT_;
+#endif
 
     public:
 
@@ -166,11 +196,14 @@ public:
             //- Return a reference to the cloud
             mcParticleCloud& cloud() { return cloud_; }
 
+#if FOAM_HEX_VERSION < 0x200
+
             //- The time span over which to track the particle (deltaT)
             scalar trackTime() const { return trackTime_; }
 
             //- The global time step
             scalar deltaT() const { return deltaT_; }
+#endif
     };
 
 
@@ -198,11 +231,42 @@ public:
             bool readFields = true
         );
 
+#if FOAM_HEX_VERSION < 0x200
         //- Construct and return a clone
         autoPtr<mcParticle> clone() const
         {
             return autoPtr<mcParticle>(new mcParticle(*this));
         }
+#else
+        //- Construct and return a clone
+        autoPtr<particle> clone() const
+        {
+            return autoPtr<particle>(new mcParticle(*this));
+        }
+
+
+        //- Factory class to read-construct particles used for
+        //  parallel transfer
+        class iNew
+        {
+            const polyMesh& mesh_;
+
+        public:
+
+            iNew(const polyMesh& mesh)
+            :
+                mesh_(mesh)
+            {}
+
+            autoPtr<mcParticle> operator()(Istream& is) const
+            {
+                return autoPtr<mcParticle>
+                (
+                    new mcParticle(mesh_, is, true)
+                );
+            }
+        };
+#endif
 
 
     // Member Functions
@@ -210,10 +274,12 @@ public:
         // Access
 
             //- Face index if the particle is on a face otherwise -1
-            using Particle<mcParticle>::face;
+            using base::face;
 
+#if FOAM_HEX_VERSION < 0x200
             //- Face index if the particle is on a face otherwise -1
             inline label& face();
+#endif
 
             //- Return the old position
             inline const point& positionOld() const;
@@ -347,7 +413,11 @@ public:
         // Tracking
 
             //- Move
+#if FOAM_HEX_VERSION < 0x200
             bool move(trackData&);
+#else
+            bool move(trackData& td, const scalar trackTime);
+#endif
 
 
         // Patch interactions
@@ -356,11 +426,18 @@ public:
             //  Executed before other patch-hitting functions
             bool hitPatch
             (
-                const polyPatch& patch,
-                trackData&       td,
-                const label      patchI
+                const polyPatch&  patch,
+                trackData&        td,
+#if FOAM_HEX_VERSION < 0x200
+                const label       patchI
+#else
+                const label       patchI,
+                const scalar      trackFraction,
+                const tetIndices& tetIs
+#endif
             );
 
+#if FOAM_HEX_VERSION < 0x200
             //- Overridable function to handle the particle hitting a patch
             //  without trackData.
             //  Executed before other patch-hitting functions
@@ -370,6 +447,7 @@ public:
                 int&             td,
                 const label      patchI
             );
+#endif
 
             //- Overridable function to handle the particle hitting a polyPatch
             void hitPatch
@@ -379,6 +457,7 @@ public:
             )
             {}
 
+#if FOAM_HEX_VERSION < 0x200
             //- Overridable function to handle the particle hitting a polyPatch
             //- without trackData
             void hitPatch
@@ -387,6 +466,7 @@ public:
                 int&
             )
             {}
+#endif
 
 
             //- Transform the physical properties of the particle

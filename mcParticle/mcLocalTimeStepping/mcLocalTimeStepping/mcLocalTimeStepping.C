@@ -65,8 +65,13 @@ Foam::autoPtr<Foam::mcLocalTimeStepping> Foam::mcLocalTimeStepping::New
     autoPtr<mcLocalTimeStepping> result;
 
     // If set to "false", "no", "n", "off" or "none", disable
+#if FOAM_HEX_VERSION < 0x200
     Switch::switchType enable = Switch::asEnum(name, true);
     if (enable != Switch::INVALID && !Switch::asBool(enable))
+#else
+    Switch enable = Switch(name, true);
+    if (enable.valid() && !bool(enable))
+#endif
     {
         result.reset(new mcLocalTimeStepping(cloud, db, sd));
     }

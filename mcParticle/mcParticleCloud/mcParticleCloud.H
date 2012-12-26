@@ -414,9 +414,15 @@ public:
         template<class TrackData>
         inline void hitPatch
         (
-            mcParticle& p,
-            TrackData& td,
-            label patchI
+            mcParticle&       p,
+            TrackData&        td,
+#if FOAM_HEX_VERSION < 0x200
+            const label       patchI
+#else
+            const label       patchI,
+            const scalar      trackFraction,
+            const tetIndices& tetIs
+#endif
         );
 
         //- Report info about name and total number of particles in cloud

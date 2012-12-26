@@ -33,7 +33,11 @@ Description
 #include "fvCFD.H"
 #include "mcThermo.H"
 #include "RASModel.H"
+#if FOAM_HEX_VERSION < 0x200
 #include "sigStopAtWriteNowBackport.H"
+#else
+#include "simpleControl.H"
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -46,6 +50,8 @@ int main(int argc, char *argv[])
     #include "initContinuityErrs.H"
     #if FOAM_HEX_VERSION < 0x200
     sigStopAtWriteNow sigStopAtWriteNow_(true, runTime);
+    #else
+    simpleControl simple(mesh);
     #endif
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -56,21 +62,29 @@ int main(int argc, char *argv[])
     volVectorField gradP = fvc::grad(p);
 
     scalar eqnResidual = 1, maxFVResidual = 0, maxPDFResidual = 0;
+#if FOAM_HEX_VERSION < 0x200
     scalar FVConvergenceCriterion = 0, PDFConvergenceCriterion = 0;
 
     while (runTime.loop())
+#else
+    while (simple.loop())
+#endif
     {
         Info<< "Time = " << runTime.timeName() << nl << endl;
 
         #include "readThermoControls.H"
+#if FOAM_HEX_VERSION < 0x200
         #include "readSIMPLEControls.H"
 
         simple.readIfPresent("convergence", FVConvergenceCriterion);
         thermo.readIfPresent("convergence", PDFConvergenceCriterion);
+#endif
 
         if (FVCycle)
         {
+#if FOAM_HEX_VERSION < 0x200
             maxFVResidual = 0.;
+#endif
 
             p.storePrevIter();
             rho.storePrevIter();
@@ -95,8 +109,12 @@ int main(int argc, char *argv[])
             {
                 gradP = fvc::grad(p);
             }
+#if FOAM_HEX_VERSION < 0x200
             eqnResidual = thermo.evolve();
             maxPDFResidual = max(eqnResidual, maxPDFResidual);
+#else
+            maxPDFResidual = thermo.evolve();
+#endif
             prevCycleWasFV = false;
         }
 

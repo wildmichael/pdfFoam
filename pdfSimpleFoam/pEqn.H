@@ -4,6 +4,9 @@ UEqn.clear();
 
 phi = fvc::interpolate(rho)*(fvc::interpolate(U) & mesh.Sf());
 
+#if FOAM_HEX_VERSION >= 0x200
+label nNonOrthCorr = simple.nNonOrthCorr();
+#endif
 for (int nonOrth=0; nonOrth<=nNonOrthCorr; nonOrth++)
 {
     fvScalarMatrix pEqn

@@ -126,7 +126,11 @@ const Foam::symmTensorField& Foam::mcInletOutletBoundary::getR()
         scalar k0;
         if (isA<compressible::RASModel>(tm))
         {
-            k0 = refCast<const Foam::compressible::RASModel>(tm).k0().value();
+#if FOAM_HEX_VERSION < 0x200
+            k0 = refCast<const compressible::RASModel>(tm).k0().value();
+#else
+            k0 = refCast<const compressible::RASModel>(tm).kMin().value();
+#endif
         }
         else
         {
