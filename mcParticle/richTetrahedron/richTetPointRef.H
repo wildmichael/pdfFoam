@@ -26,6 +26,9 @@ Typedef
 
 Description
 
+Author
+    Michael Wild
+
 \*---------------------------------------------------------------------------*/
 
 #ifndef richTetPointRef_H

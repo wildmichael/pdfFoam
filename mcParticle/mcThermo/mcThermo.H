@@ -30,6 +30,9 @@ Description
 SourceFiles
     mcThermo.C
 
+Author
+    Michael Wild
+
 \*---------------------------------------------------------------------------*/
 
 #ifndef mcThermo_H

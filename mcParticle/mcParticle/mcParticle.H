@@ -32,7 +32,10 @@ SourceFiles
     mcParticle.C
     mcParticleIO.C
 
-Author: Heng Xiao with Patrick Jenny, 2010-08-29
+Author
+  Michael Wild
+  Heng Xiao
+  Patrick Jenny
 
 \*---------------------------------------------------------------------------*/
 

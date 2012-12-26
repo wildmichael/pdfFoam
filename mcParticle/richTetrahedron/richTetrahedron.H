@@ -33,6 +33,9 @@ SourceFiles
     richTetrahedronI.H
     richTetrahedron.C
 
+Author
+    Michael Wild
+
 \*---------------------------------------------------------------------------*/
 
 #ifndef richTetrahedron_H

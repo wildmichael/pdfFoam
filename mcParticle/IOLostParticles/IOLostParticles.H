@@ -30,6 +30,9 @@ Description
 SourceFiles
     IOLostParticlesI.H
 
+Author
+    Michael Wild
+
 \*---------------------------------------------------------------------------*/
 
 #ifndef IOLostParticles_H

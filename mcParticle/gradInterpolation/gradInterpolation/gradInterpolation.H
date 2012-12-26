@@ -34,6 +34,9 @@ SourceFiles
     gradInterpolationNew.C
     gradInterpolations.C
 
+Author
+    Michael Wild
+
 \*---------------------------------------------------------------------------*/
 
 #ifndef gradInterpolation_H

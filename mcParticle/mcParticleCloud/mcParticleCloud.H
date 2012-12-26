@@ -58,6 +58,10 @@ SourceFiles
     mcParticleCloud.C
     mcParticleCloudIO.C
 
+Author
+    Michael Wild
+    Heng Xiao
+
 \*---------------------------------------------------------------------------*/
 
 #ifndef mcParticleCloud_H

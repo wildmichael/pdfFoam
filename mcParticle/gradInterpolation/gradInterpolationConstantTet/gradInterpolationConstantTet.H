@@ -33,6 +33,9 @@ SourceFiles
     gradInterpolationConstantTet.C
     makeGradInterpolationConstantTet.C
 
+Author
+    Michael Wild
+
 \*---------------------------------------------------------------------------*/
 
 #ifndef gradInterpolationConstantTet_H

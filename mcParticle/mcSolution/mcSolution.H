@@ -30,6 +30,9 @@ Description
 SourceFiles
     mcSolution.C
 
+Author
+    Michael Wild
+
 \*---------------------------------------------------------------------------*/
 
 #ifndef mcSolution_H

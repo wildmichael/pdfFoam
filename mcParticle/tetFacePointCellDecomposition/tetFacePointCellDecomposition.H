@@ -33,6 +33,9 @@ SourceFiles
     tetFacePointCellDecomposition.C
     tetFacePointCellDecompositionIO.C
 
+Author
+    Michael Wild
+
 \*---------------------------------------------------------------------------*/
 
 #ifndef tetFacePointCellDecomposition_H
