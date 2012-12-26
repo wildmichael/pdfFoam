@@ -1,4 +1,45 @@
 #!/usr/bin/env python
+#------------------------------------------------------------------------------
+#                pdfFoam: General Purpose PDF Solution Algorithm
+#                   for Reactive Flow Simulations in OpenFOAM
+#
+# Copyright (C) 2012 Michael Wild, Heng Xiao, Patrick Jenny,
+#                    Institute of Fluid Dynamics, ETH Zurich
+#------------------------------------------------------------------------------
+# License
+#    This file is part of pdfFoam.
+#
+#    pdfFoam is free software: you can redistribute it and/or modify it
+#    under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 2 of the License, or
+#    (at your option) version 3 of the same License.
+#
+#    pdfFoam is distributed in the hope that it will be useful, but WITHOUT
+#    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+#    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+#    for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with pdfFoam.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Script
+#    plotConvergence
+#
+# Description
+#    Create convergence history plots. The plotting is controlled by
+#    configuration files. The script reads the following files, in the order
+#    specified:
+#     - `defaults.ini` located next to this script
+#     - Searches upwards in the directory tree, reading all defaults.ini files
+#       that are found. The files are read in reverse order, i.e. files more
+#       "distant" from the case directory are read before the ones "close" to
+#       it.
+#     - If present, the file `<case>/system/case.ini` is read.
+#
+#    Refer to defaults.ini located next to this script for a description of
+#    the configuration options.
+#
+#------------------------------------------------------------------------------
 
 import numpy as np
 import sys, glob, subprocess, shutil, os, re, collections
