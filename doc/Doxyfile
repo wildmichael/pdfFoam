@@ -5,6 +5,8 @@
 
 PROJECT_NAME           = pdfFoam
 
+PREDEFINED             = NoRepository WM_DP $(WM_ARCH) FOAM_HEX_VERSION=0x171
+
 STRIP_FROM_PATH        = ..
 
 INPUT                  = ../mcParticle \
@@ -13,6 +15,20 @@ INPUT                  = ../mcParticle \
                          .
 
 FILE_PATTERNS         += *.dox
+
+SEARCH_INCLUDES        = YES
+
+INCLUDE_PATH           = $(FOAM_SRC)/finiteVolume/lnInclude \
+                         $(FOAM_SRC)/finiteVolume/cfdTools \
+                         $(FOAM_SRC)/lagrangian/basic/lnInclude \
+                         $(FOAM_SRC)/meshTools/lnInclude \
+                         $(FOAM_SRC)/thermophysicalModels/basic/lnInclude \
+                         $(FOAM_SRC)/transportModels \
+                         $(FOAM_SRC)/triSurface/lnInclude \
+                         $(FOAM_SRC)/turbulenceModels \
+                         $(FOAM_SRC)/turbulenceModels/compressible/RAS/lnInclude \
+                         $(FOAM_SRC)/turbulenceModels/compressible/RAS/RASModel \
+                         $(FOAM_SRC)/turbulenceModels/LES/LESdeltas/lnInclude
 
 EXTRA_PACKAGES        += amsmath cmbright
 
