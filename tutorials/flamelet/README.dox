@@ -24,7 +24,7 @@
  @endcode
 
  This creates the files @c z, @c chi, @c rho and @c T which should be oved to
- @c <case>/constant/flamelet/
+ @c &lt;case&gt;/constant/flamelet/
  */
 
 // *********************** vim: set ft=cpp et sw=4 : *********************** //
