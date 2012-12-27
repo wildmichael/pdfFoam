@@ -27,6 +27,13 @@ Class
 Description
     Thermo class based on MC particles
 
+Note
+    The constructor does @b not create the particle cloud, because
+    mcParticleCloud requires a turbulence model, but the compressible
+    turbulence models also required mcThermo to be passed in their constructor.
+    To break this dependency loop, it is the users responsibility to call
+    mcThermo::createCloud() after creating the turbulence model.
+
 SourceFiles
     mcThermo.C
 
@@ -94,6 +101,9 @@ public:
 
 
     // Member functions
+
+        //- Create the particle cloud
+        void createCloud();
 
         //- Evolve the cloud
         // @returns The maximum residual

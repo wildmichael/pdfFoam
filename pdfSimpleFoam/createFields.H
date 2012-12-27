@@ -36,4 +36,6 @@
         )
     );
 
+    thermo.createCloud();
+
     dimensionedScalar initialMass = fvc::domainIntegrate(rho);

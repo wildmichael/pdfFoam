@@ -89,6 +89,36 @@ Foam::mcThermo::~mcThermo()
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
+void Foam::mcThermo::createCloud()
+{
+    // Instantiate the cloud on first call
+    if (!cloudP_.valid())
+    {
+        word cloudName = lookupOrDefault<word>("cloudName", "mcThermoCloud");
+        if (debug)
+        {
+            Info<< "\nCreating mcParticleCloud " << cloudName << nl << endl;
+        }
+        cloudP_.reset
+        (
+            new mcParticleCloud
+            (
+                mesh_,
+                subDict(cloudName+"Properties"),
+                cloudName,
+                0, 0, 0, &rho_
+            )
+        );
+    }
+    else
+    {
+        FatalErrorIn("mcThermo::createCloud()")
+            << "Cloud already created!\n"
+            << abort(FatalError);
+    }
+}
+
+
 void Foam::mcThermo::correct()
 {
     if (debug)
@@ -107,33 +137,6 @@ void Foam::mcThermo::correct()
 
 Foam::scalar Foam::mcThermo::evolve()
 {
-    // Instantiate the cloud on first call
-    if (!cloudP_.valid())
-    {
-        // Fiddle with the time object (instantiate at startTime)
-        Time& runTime = const_cast<Time&>(mesh_.time());
-        scalar currTime = runTime.value();
-        label currIdx = runTime.timeIndex();
-        runTime.setTime(runTime.startTime().value(), runTime.startTimeIndex());
-        if (debug)
-        {
-            Info<< "\nCreate mcThermo for time = " << runTime.timeName()
-                << nl << endl;
-        }
-        word cloudName = lookupOrDefault<word>("cloudName", "mcThermoCloud");
-        cloudP_.reset
-        (
-            new mcParticleCloud
-            (
-                mesh_,
-                subDict(cloudName+"Properties"),
-                cloudName
-                0, 0, 0, &rho_
-            )
-        );
-        // Reset the time object to the correct time
-        runTime.setTime(currTime, currIdx);
-    }
     Info<< "Evolving Monte Carlo particle cloud " << cloudP_().name() << nl
         << endl;
     return cloudP_().evolve();
