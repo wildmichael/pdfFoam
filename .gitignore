@@ -6,3 +6,10 @@ linux64*
 linux*
 lnInclude*
 doc/html
+faces*
+neighbour*
+owner*
+points*
+probes/
+0/
+log
