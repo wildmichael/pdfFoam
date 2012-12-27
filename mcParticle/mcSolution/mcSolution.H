@@ -99,8 +99,8 @@ public:
 
     // Constructors
 
-        //- Construct for given objectRegistry and dictionary
-        mcSolution(const objectRegistry& obr);
+        //- Construct for given objectRegistry and dictionary name
+        mcSolution(const objectRegistry& obr, const word& name);
 
 
     // Member Functions

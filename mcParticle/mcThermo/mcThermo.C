@@ -120,13 +120,14 @@ Foam::scalar Foam::mcThermo::evolve()
             Info<< "\nCreate mcThermo for time = " << runTime.timeName()
                 << nl << endl;
         }
+        word cloudName = lookupOrDefault<word>("cloudName", "mcThermoCloud");
         cloudP_.reset
         (
             new mcParticleCloud
             (
                 mesh_,
-                subDict("cloudProperties"),
-                lookupOrDefault<word>("cloudName", "mcThermoCloud"),
+                subDict(cloudName+"Properties"),
+                cloudName
                 0, 0, 0, &rho_
             )
         );

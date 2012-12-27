@@ -3,13 +3,13 @@ FoamFile
     version     2.0;
     format      ascii;
     class       dictionary;
-    location    "system/lagrangian/mcThermoCloud";
+    location    "system/mcThermoCloudSolution";
     object      mcSolution;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-CFL                     0.3;
-averagingCoeff          2e4;
+CFL                     0.1;
+averagingCoeff          1e3;
 particlesPerCell        40;
 particleNumberControl   on;
 cloneAt                 0.8;
@@ -19,12 +19,12 @@ DNum                    0.05;
 
 RASOmegaModelCoeffs
 {
-    Omega0              1e5;
+    Omega0              1e4;
 }
 
 cellLocalTimeSteppingCoeffs
 {
-    upperBound        50;
+    upperBound        10;
 }
 
 limitedSimplePositionCorrectionCoeffs
@@ -34,9 +34,9 @@ limitedSimplePositionCorrectionCoeffs
 
 relaxationTimes
 {
-    default         1e11;
-    k               1e-5;
-    U               1e-5;
+    default         1e-4;
+    //k               1e-5;
+    //U               1e-5;
 }
 
 interpolationSchemes

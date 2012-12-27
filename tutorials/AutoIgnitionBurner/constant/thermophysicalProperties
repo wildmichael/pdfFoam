@@ -8,7 +8,7 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-cloudProperties
+mcThermoCloudProperties
 {
     velocityModel   SLMFull;
     positionCorrection limitedSimple;

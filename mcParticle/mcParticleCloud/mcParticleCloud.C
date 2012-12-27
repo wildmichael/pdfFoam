@@ -312,7 +312,7 @@ Foam::mcParticleCloud::mcParticleCloud
     Cloud<mcParticle>(mesh, cloudName, false),
     mesh_(mesh),
     thermoDict_(dict),
-    solutionDict_(mesh),
+    solutionDict_(mesh, cloudName+"Solution"),
     runTime_(mesh.time()),
     deltaT_("particleDeltaT", dimTime, 100*SMALL),
     turbModel_

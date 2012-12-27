@@ -28,13 +28,13 @@ License
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::mcSolution::mcSolution(const objectRegistry& obr)
+Foam::mcSolution::mcSolution(const objectRegistry& obr, const word& name)
 :
     IOdictionary
     (
         IOobject
         (
-            "mcSolution",
+            name,
             obr.time().system(),
             obr,
             IOobject::MUST_READ,
