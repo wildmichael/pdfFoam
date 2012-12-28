@@ -5,7 +5,10 @@
 
 PROJECT_NAME           = pdfFoam
 
-PREDEFINED             = NoRepository WM_DP $(WM_ARCH) FOAM_HEX_VERSION=0x171
+PREDEFINED             = NoRepository WM_DP $(WM_ARCH)
+# Select based on the OpenFOAM version
+PREDEFINED            += FOAM_HEX_VERSION=0x171
+#PREDEFINED            += FOAM_HEX_VERSION=0x211
 
 STRIP_FROM_PATH        = ..
 
@@ -18,7 +21,8 @@ FILE_PATTERNS         += *.dox
 
 SEARCH_INCLUDES        = YES
 
-INCLUDE_PATH           = $(FOAM_SRC)/finiteVolume/lnInclude \
+INCLUDE_PATH           = $(FOAM_SRC)/OpenFOAM/lnInclude \
+                         $(FOAM_SRC)/finiteVolume/lnInclude \
                          $(FOAM_SRC)/finiteVolume/cfdTools \
                          $(FOAM_SRC)/lagrangian/basic/lnInclude \
                          $(FOAM_SRC)/meshTools/lnInclude \
@@ -34,6 +38,24 @@ EXTRA_PACKAGES        += amsmath cmbright
 
 CITE_BIB_FILES         = references.bib
 
-USE_MATHJAX            = yes
+USE_MATHJAX            = YES
 
 MATHJAX_EXTENSIONS     = TeX/AMSmath TeX/AMSsymbols
+
+SHORT_NAMES            = NO
+
+HTML_HEADER            =
+
+HTML_FOOTER            =
+
+HTML_TIMESTAMP         = YES
+
+HTML_DYNAMIC_SECTIONS  = YES
+
+USE_INLINE_TREES       = YES
+
+DOT_FONTNAME           = FreeSans
+
+DOT_IMAGE_FORMAT       = svg
+
+INTERACTIVE_SVG        = YES
