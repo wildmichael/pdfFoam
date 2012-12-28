@@ -27,14 +27,18 @@ Class
 Description
     Cell-based local time-stepping
 
-    As described in Hegetschweiler, 2010 (doi:10.3929/ethz-a-006409982).
-    Note that there are various error in mentioned document.
+    As described by Muradoglu and Pope @cite muradoglu:2002 and Hegetschweiler
+    @cite hegetschweiler:2010phd. Note that there are various errors in the
+    latter document related to the mean estimation.
 
 SourceFiles
     mcCellLocalTimeStepping.C
 
 Author
     Michael Wild
+
+SeeAlso
+    http://dx.doi.org/10.3929/ethz-a-006409982
 
 \*---------------------------------------------------------------------------*/
 

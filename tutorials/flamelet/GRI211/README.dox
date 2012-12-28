@@ -1,5 +1,7 @@
 /**
  @page GRI211 GRI 2.11
+ @author Michael Wild
+
  For the Methane flames in the tutorials the GRI 2.11 mechanism was used. This
  is not the current versions, which is 3.0, however for the purpose of these
  flames, the impact should be minimal. The reason this older version was used

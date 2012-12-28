@@ -1,5 +1,6 @@
 /**
  @page particleMotion Particle Motion
+ @author Michael Wild
 
  The particle motion is modelled after @cite Jenny2001. The algorithm goes
  like follows:

@@ -1,6 +1,7 @@
 /**
  @page TutorialAutoIgnBurner Auto-Ignition Burner
  @ingroup Tutorials
+ @author Michael Wild
 
  @section TutorialAutoIgnBurnerCase Case Description
  This is a pure demonstration show-case. The combustion model is very simple,

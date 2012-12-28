@@ -1,6 +1,7 @@
 /**
  @page TutorialSandiaD Sandia Flame D
  @ingroup Tutorials
+ @author Michael Wild
 
  @section TutorialSandiaDExpData Experimental Data
  The experimental data for the scalars is available from the website of the TNF

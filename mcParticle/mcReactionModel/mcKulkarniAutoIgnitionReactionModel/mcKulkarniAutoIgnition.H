@@ -26,26 +26,27 @@ Class
 
 Description
     Auto-iginition model using tabulated chemistry as proposed by Kulkarni and
-    Polifke [1]
+    Polifke.
 
-    Reads constant/autoIgnition/{z,pv,cEq,cdot,rho} (mixture fraction,
-    normalised progress variable, equilibrium progress variable values,
-    progress variable source term and density) and
-    additional fields specified in the "scalars" list. z and pv must be
-    monothonically increasing. cEq must be list the (non-normalised)
-    equilibrium progress variable value for every entry in z. If Nz is the
-    number of entries in z and Npv the number of entries in pv, then cdot, rho
-    and all the fields specified in "scalars" must be lists of lists, the outer
-    list of size Nz, the inner of size Npv.
-
-    [1] R. Kulkarni and W. Polifke, Journal of Combustion (2012),
-        doi:10.1155/2012/780370
+    This auto-ignition model follows the description given by Kulkarni and
+    Polifke @cite kulkarni:2012. Reads
+    constant/autoIgnition/{z,pv,cEq,cdot,rho} (mixture fraction, normalised
+    progress variable, equilibrium progress variable values, progress variable
+    source term and density) and additional fields specified in the "scalars"
+    list. z and pv must be monothonically increasing. cEq must be list the
+    (non-normalised) equilibrium progress variable value for every entry in z.
+    If Nz is the number of entries in z and Npv the number of entries in pv,
+    then cdot, rho and all the fields specified in "scalars" must be lists of
+    lists, the outer list of size Nz, the inner of size Npv.
 
 SourceFiles
     mcKulkarniAutoIgnitionReactionModel.C
 
 Author
     Michael Wild
+
+SeeAlso
+    http://dx.doi.org/10.1155/2012/780370
 
 \*---------------------------------------------------------------------------*/
 

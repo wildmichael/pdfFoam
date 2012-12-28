@@ -1,5 +1,6 @@
 /**
  @page extraction Particle Property Extraction
+ @author Michael Wild
 
  The vector of the extracted, time-averaged quantities is given by
  @f{align*}
@@ -21,6 +22,11 @@
    \tilde k        &= \frac{K}{M}-\frac{1}{2}\tilde U_i\tilde U_i \\
    \tilde z        &= \frac{Z}{M}
  @f}
+
+ Above described mean estimation procedure is implemented in
+ Foam::mcParticleCloud::updateCloudPDF(). The statistical, instantaneous
+ moments are represented by the @c *MomInstant variables and the time-averaged
+ moments by the @c Foam::mcParticleCloud::*Mom_ member variables.
 
  */
 

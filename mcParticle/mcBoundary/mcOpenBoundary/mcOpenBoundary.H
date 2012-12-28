@@ -28,8 +28,7 @@ Description
     Base-class for open Monte Carlo particle boundaries.
 
     If the @c reflecting switch is enabled (the default), consistent reflecting
-    is enabled (see D.W. Meyer and P. Jenny, JCP 226 1859-1873,
-    http://dx.doi.org/10.1016/j.jcp.2007.06.014).
+    is enabled as developed by Meyer and Jenny @cite meyer:2007.
 
     The reflection at the inflow boundary is insofar inaccurate as the
     wall-parallel motion outside the domain is neglected.
@@ -39,6 +38,9 @@ SourceFiles
 
 Author
     Michael Wild
+
+SeeAlso
+    http://dx.doi.org/10.1016/j.jcp.2007.06.014
 
 \*---------------------------------------------------------------------------*/
 

@@ -1,6 +1,7 @@
 /**
  @page TutorialPropaneJet Sandia Propane Jet
  @ingroup Tutorials
+ @author Michael Wild
 
  @section TutorialPropaneJetExpData Experimental Data
  The experimental data is available from the website of the TNF workshop:

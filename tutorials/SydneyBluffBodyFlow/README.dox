@@ -1,6 +1,7 @@
 /**
  @page TutorialColdBB Sydney Bluff Body Flow
  @ingroup Tutorials
+ @author Michael Wild
 
  @section TutorialColdBBExptData Experimental Data
  The experimental data is available from the university of Sydney:

@@ -26,23 +26,24 @@ Class
 
 Description
     Velocity model based on the simplified Langevin equation for the full
-    velocity vector.
+    velocity vector as described by Jenny et al.
 
-    See P. Jenny et al., "A Hybrid Algorithm for the Joint PDF Equation of
-    Turbulent Reactive Flows", JCP 166 218-252,
-    http://dx.doi.org/10.1006/jcph.2000.6646.
-
-    This model adds correction drift terms for the mean velocity
-    (@c system/mcSolution::relaxationTimes::U) and the turbulent kinetic energy
-    (@c system/mcSolution::relaxationTimes::k). The SLM constant is controlled
-    by the @c C0 dictionary entry (defaults to 2.1). Do not set @c C1; it is
-    here for testing purposes only, switching off dissipation if set to 0.
+    The stochastic equation and its integration is described by Jenny et al.
+    @cite jenny:2001. This model adds correction drift terms for the mean
+    velocity (@c system/mcSolution::relaxationTimes::U) and the turbulent
+    kinetic energy (@c system/mcSolution::relaxationTimes::k). The SLM constant
+    is controlled by the @c C0 dictionary entry (defaults to 2.1). Do not set
+    @c C1; it is here for testing purposes only, switching off dissipation if
+    set to 0.
 
 SourceFiles
     mcSLMFullVelocityModel.C
 
 Author
     Michael Wild
+
+SeeAlso
+    http://dx.doi.org/10.1006/jcph.2000.6646
 
 \*---------------------------------------------------------------------------*/
 

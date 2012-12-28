@@ -1,5 +1,7 @@
 /**
  @page flamelets Flamelet Libraries
+ @author Michael Wild
+
  The steady laminar flamelet libraries for the tutorial cases were generated
  with the FlameMaster software by H. Pitsch @cite FlameMaster. First, a
  transient flamelet solution is obtained, which is then used as a initial guess

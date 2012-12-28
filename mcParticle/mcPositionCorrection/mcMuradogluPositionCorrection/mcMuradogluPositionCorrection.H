@@ -27,18 +27,22 @@ Class
 Description
     Position correction as described by Muradoglu et al.
 
-    See http://dx.doi.org/10.1006/jcph.2001.6861
+    This implements an elaborate position/density correction scheme developed
+    by Muradoglu et al. @cite muradoglu:2001.
 
 Note
     The algorithm described in section 4.2, p. 854 contains typos in the
-    coefficients. The coefficients derived in the appendix appear to be
-    correct.
+    coefficients and a corrigendum has been published. The coefficients derived
+    in the appendix appear to be correct.
 
 SourceFiles
     mcMuradogluPositionCorrection.C
 
 Author
     Michael Wild
+
+SeeAlso
+    http://dx.doi.org/10.1006/jcph.2001.6861
 
 \*---------------------------------------------------------------------------*/
 

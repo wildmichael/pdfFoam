@@ -28,14 +28,16 @@ Description
     Position correction using an elliptic relaxation model
 
     This is a simplified version of the algorithm described by Muradoglu et al.
-
-    See http://dx.doi.org/10.1006/jcph.2001.6861
+    @cite muradoglu:2001.
 
 SourceFiles
     mcEllipticRelaxationPositionCorrection.C
 
 Author
     Michael Wild
+
+SeeAlso
+    http://dx.doi.org/10.1006/jcph.2001.6861
 
 \*---------------------------------------------------------------------------*/
 

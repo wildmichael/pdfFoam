@@ -1,8 +1,16 @@
 /**
  @mainpage pdfFoam
+ @author Michael Wild
+
+ pdfFoam is a general purpose JPDF algorithm for the simulation of turbulent
+ reactive flows in OpenFOAM.
 
  <b>Table of Contents</b>
+ - @ref installation
+   - @ref requirements
+   - @ref building
  - @b Background
+   - @ref exploring
    - @ref particleMotion
    - @ref extraction
  - @b Tutorials
