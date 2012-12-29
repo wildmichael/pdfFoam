@@ -171,32 +171,32 @@ void Foam::mcOpenBoundary::hitPatch
 {
     const polyPatch& pp = patch().patch();
     label faceI = pp.whichFace(p.face());
-    //const labelList& conservedScalars = cloud().conservedScalars();
-    //
+    const labelList& conservedScalars = cloud().conservedScalars();
+
     // If this boundary is not reflecting or if it is an inflow boundary,
     // delete particle.
-    //if (Un_[faceI] < 0)
-    //{
-    //    scalar mpd = cloud().massPerDepth(p);
-    //    massIn()[0] -= mpd;
-    //    forAll(conservedScalars, csI)
-    //    {
-    //        massIn()[csI+1] -= mpd*p.Phi()[conservedScalars[csI]];
-    //    }
-    //    td.keepParticle = false;
-    //    return;
-    //}
-    //if (!reflecting_)
-    //{
-    //    scalar mpd = cloud().massPerDepth(p);
-    //    massOut()[0] -= mpd;
-    //    forAll(conservedScalars, csI)
-    //    {
-    //        massOut()[csI+1] -= mpd*p.Phi()[conservedScalars[csI]];
-    //    }
-    //    td.keepParticle = false;
-    //    return;
-    //}
+    if (Un_[faceI] < 0)
+    {
+        scalar mpd = cloud().massPerDepth(p);
+        massIn()[0] -= mpd;
+        forAll(conservedScalars, csI)
+        {
+            massIn()[csI+1] -= mpd*p.Phi()[conservedScalars[csI]];
+        }
+        td.keepParticle = false;
+        return;
+    }
+    if (!reflecting_)
+    {
+        scalar mpd = cloud().massPerDepth(p);
+        massOut()[0] -= mpd;
+        forAll(conservedScalars, csI)
+        {
+            massOut()[csI+1] -= mpd*p.Phi()[conservedScalars[csI]];
+        }
+        td.keepParticle = false;
+        return;
+    }
 
     p.transformProperties(I - 2.0*n_[faceI]*n_[faceI]);
     p.reflected() = true;
