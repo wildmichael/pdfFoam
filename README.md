@@ -1,7 +1,9 @@
 # Transported JPDF Library and Solver for Reactive Flow Simulation
 
 pdfFoam is a general purpose JPDF algorithm for the simulation of turbulent
-reactive flows in OpenFOAM.
+reactive flows in OpenFOAM. The algorithms, its implementation and the
+validation test cases are described in detail in the authors PhD thesis
+[[Wild2013]](doc/references.md#Wild2013).
 
 ## Installation
 

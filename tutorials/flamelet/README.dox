@@ -25,7 +25,7 @@
  $ ../../tools/genFlameletTables output/CH4*chi*[0-9]
  @endcode
 
- This creates the files @c z, @c chi, @c rho and @c T which should be oved to
+ This creates the files @c z, @c chi, @c rho and @c T which should be moved to
  @c &lt;case&gt;/constant/flamelet/
  */
 
