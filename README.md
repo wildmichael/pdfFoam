@@ -7,6 +7,11 @@ validation test cases are described in detail in the authors PhD thesis
 
 ## Installation
 
+### Documentation
+Some documentation is directly available as Markdown:
+[doc/README.md](doc/README.md). The code, however, is documented extensively
+with Doxygen. Refer to below instructions for details on how to build it.
+
 ### Requirements
 
 In the following the prerequisite software packages are listed:
@@ -82,3 +87,7 @@ To build the documentation, use instead
 ```sh
 ./Allwmake doc
 ```
+
+## Acknowledgements
+The math renderings in the Markdown files are generously provided by
+[QuickLaTeX](http://quicklatex.com/).
