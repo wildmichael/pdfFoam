@@ -26,7 +26,7 @@
 #    createPlots
 #
 # Description
-#    Create radial plots, comparin simulation results against experimental
+#    Create radial plots, comparing simulation results against experimental
 #    data. The plotting is controlled by configuration files. The script reads
 #    the following files, in the order specified:
 #     - `defaults.ini` located next to this script
