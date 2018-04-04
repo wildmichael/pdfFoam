@@ -32,12 +32,12 @@ _3.144%_ in the co-flow. A jet bulk velocity of _61m/s_ was found to
 underpredict the jet velocity rather grossly, and it appears that _63m/s_
 are more appropriate. The TKE was computed as
 
-![Turbulent kinetic energy](http://quicklatex.com/cache3/69/ql_d5094350f9f1a25cce621a31b0409669_l3.png)
+![Turbulent kinetic energy](https://latex.codecogs.com/svg.latex?k=\frac{3}{2}{u'}^2)
 
 In the jet, the turbulent dissipation was computed making a turbulence in
 equilibrium assumption, resulting in
 
-![Turbulent dissipation](http://quicklatex.com/cache3/e5/ql_8a51ac652a13e828a0b58846677919e5_l3.png)
+![Turbulent dissipation](https://latex.codecogs.com/svg.latex?\varepsilon=\sqrt{C_\mu}k\left\|\frac{\partial\tilde{U}}{\partial&space;x}\right\|\quad.)
 
 In the co-flow, the turbulent dissipation was chosen rather arbitrarily as
 _&epsilon;=137m<sup>2</sup>/s<sup>3</sup>_.

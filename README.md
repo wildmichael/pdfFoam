@@ -89,5 +89,6 @@ To build the documentation, use instead
 ```
 
 ## Acknowledgements
-The math renderings in the Markdown files are generously provided by
-[QuickLaTeX](http://quicklatex.com/).
+The math renderings in the Markdown files are generously provided by CodeCogs:
+
+[![CodeCogs - An Open Source Scientific Library](http://www.codecogs.com/images/logo.gif)](http://www.codecogs.com)
