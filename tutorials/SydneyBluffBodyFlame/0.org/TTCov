@@ -1,0 +1,53 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    location    "0";
+    object      TTCov;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 0 0 2 0 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{
+    jet
+    {
+        type            fixedValue;
+        value           uniform 0;
+    }
+    bluffBody
+    {
+        type            zeroGradient;
+    }
+    coflow
+    {
+        type            fixedValue;
+        value           uniform 0;
+    }
+    outflow
+    {
+        type            zeroGradient;
+    }
+    axis
+    {
+        type            slip;
+    }
+    outerWall
+    {
+        type            zeroGradient;
+    }
+    back
+    {
+        type            wedge;
+    }
+    front
+    {
+        type            wedge;
+    }
+}
+
+// *********************** vim: set ft=cpp et sw=4 : *********************** //

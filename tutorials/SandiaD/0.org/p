@@ -1,0 +1,52 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    location    "0";
+    object      p;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [1 -1 -2 0 0 0 0];
+
+internalField   uniform 101325;
+
+boundaryField
+{
+    front
+    {
+        type            wedge;
+    }
+    back
+    {
+        type            wedge;
+    }
+    jet
+    {
+        type            zeroGradient;
+    }
+    pilot
+    {
+        type            zeroGradient;
+    }
+    coflow
+    {
+        type            zeroGradient;
+    }
+    outerWall
+    {
+        type            zeroGradient;
+    }
+    outflow
+    {
+        type            fixedValue;
+        value           uniform 101325;
+    }
+    axis
+    {
+        type            zeroGradient;
+    }
+}
+
+// *********************** vim: set ft=cpp et sw=4 : *********************** //

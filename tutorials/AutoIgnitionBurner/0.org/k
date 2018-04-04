@@ -1,0 +1,38 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    location    "0";
+    object      k;
+    note        "Computed from k=3/2*(0.1*U)^2";
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 2 -2 0 0 0 0];
+
+internalField   uniform 54;
+
+boundaryField
+{
+    inlet
+    {
+        type            fixedValue;
+        value           uniform 54;
+    }
+    fuel
+    {
+        type            fixedValue;
+        value           uniform 486;
+    }
+    outlet
+    {
+        type            zeroGradient;
+    }
+    walls
+    {
+        type            zeroGradient;
+    }
+}
+
+// *********************** vim: set ft=cpp et sw=4 : *********************** //
