@@ -23,7 +23,7 @@ In the following the prerequisite software packages are listed:
   Linux distributions, such as Ubuntu, OpenSUSE and Fedora. Mac OS X works
   with a lot of hackery. Simply forget about MS Windows. Refer to the OpenFOAM
   installation instructions on version requirements. The requirements can
-- usually be relaxed when compiling OpenFOAM from source, but that is not for
+  usually be relaxed when compiling OpenFOAM from source, but that is not for
   the inexperienced.
 - A C++ compiler that is compatible with OpenFOAM. For OpenFOAM 1.7.x these
   are g++ versions 4.2 to 4.6. For OpenFOAM 2.1.x this should be g++ 4.3
@@ -39,7 +39,7 @@ sudo apt-get update
 sudo apt-get install openfoam171 paraviewopenfoam381
 ```
 
-In case you are using OpenFOAM 10.04 LTS, replace `maverick` with `lucid` in
+In case you are using Ubuntu 10.04 LTS, replace `maverick` with `lucid` in
 above commands.
 
 If you want to genereate the Doxygen documentation, you also will need:
