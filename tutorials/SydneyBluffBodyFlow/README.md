@@ -2,7 +2,7 @@
 
 ## Experimental Data
 The experimental data is available from the [University of
-Sydney](http://sydney.edu.au/engineering/aeromech/thermofluids/bluff.htm).
+Sydney](https://web.aeromech.usyd.edu.au/thermofluids/bluff.php).
 
 The flow field has been measured at _61m/s_ bulk jet velocity. The data files
 for the three available measurement sets are:
