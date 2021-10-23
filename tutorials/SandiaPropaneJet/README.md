@@ -2,7 +2,7 @@
 
 ## Experimental Data
 The experimental data is available from the website of the
-[TNF workshop](http://www.sandia.gov/TNF/DataArch/ProJet.html).
+[TNF workshop](https://tnfworkshop.org/data-archives/simplejet/propanejet/).
 
 ## Case Description
 The inflow profiles of the co-flow have been computed from the experimental
