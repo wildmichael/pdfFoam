@@ -31,16 +31,12 @@ License
 
 Foam::mcParticle::mcParticle
 (
-    const Cloud<mcParticle>& cloud,
+    const polyMesh& mesh,
     Istream& is,
     bool readFields
 )
 :
-#if FOAM_HEX_VERSION < 0x200
-    Particle<mcParticle>(cloud, is, readFields),
-#else
-    particle(cloud.pMesh(), is, readFields),
-#endif
+    particle(mesh, is, readFields),
     reflectionBoundaryVelocity_(vector::zero),
     reflected_(false),
     reflectedAtOpenBoundary_(false)

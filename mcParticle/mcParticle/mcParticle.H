@@ -42,15 +42,12 @@ Author
 #ifndef mcParticle_H
 #define mcParticle_H
 
-#if FOAM_HEX_VERSION < 0x200
-#include "Particle.H"
-#else
 #include "particle.H"
-#endif
 #include "IOstream.H"
 #include "autoPtr.H"
 #include "contiguous.H"
 #include "meshTools.H"
+#include "Cloud.H"
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -64,19 +61,11 @@ class mcParticleCloud;
 
 class mcParticle
 :
-#if FOAM_HEX_VERSION < 0x200
-    public Particle<mcParticle>
-#else
     public particle
-#endif
 {
     // Private types
 
-#if FOAM_HEX_VERSION < 0x200
-        typedef Particle<mcParticle> base;
-#else
         typedef particle base;
-#endif
 
         struct BoundaryOfDataMembers {} beginOfDataMembers_;
 
@@ -157,57 +146,32 @@ class mcParticle
 
 public:
 
-#if FOAM_HEX_VERSION >= 0x200
     //- Runtime type information
     TypeName("mcParticle");
-#endif
 
     friend class Cloud<mcParticle>;
 
     //- Class used to pass tracking data to the trackToFace function
     class trackData:
-#if FOAM_HEX_VERSION < 0x200
-        public Particle<mcParticle>::trackData
-#else
-        public particle::TrackingData<mcParticleCloud>
-#endif
+        public base::trackingData
     {
-#if FOAM_HEX_VERSION < 0x200
-        typedef Particle<mcParticle>::trackData base;
-#else
-        typedef particle::TrackingData<mcParticleCloud> base;
-#endif
+        typedef particle::trackingData base;
+
         //- The cloud
         mcParticleCloud& cloud_;
-
-#if FOAM_HEX_VERSION < 0x200
-        //- The time span over which to track the particle (deltaT)
-        scalar trackTime_;
-
-        //- The global deltaT
-        scalar deltaT_;
-#endif
 
     public:
 
         // Constructors
 
-        trackData(mcParticleCloud& mcpc, scalar trackTime);
+        trackData(mcParticleCloud& mcpc);
 
         // Access
 
             //- Return a reference to the cloud
             mcParticleCloud& cloud() { return cloud_; }
 
-#if FOAM_HEX_VERSION < 0x200
-
-            //- The time span over which to track the particle (deltaT)
-            scalar trackTime() const { return trackTime_; }
-
-            //- The global time step
-            scalar deltaT() const { return deltaT_; }
-#endif
-    };
+    }; // class trackData
 
 
     // Constructors
@@ -229,18 +193,11 @@ public:
         //- Construct from Istream
         mcParticle
         (
-            const Cloud<mcParticle>& c,
+            const polyMesh& c,
             Istream& is,
             bool readFields = true
         );
 
-#if FOAM_HEX_VERSION < 0x200
-        //- Construct and return a clone
-        autoPtr<mcParticle> clone() const
-        {
-            return autoPtr<mcParticle>(new mcParticle(*this));
-        }
-#else
         //- Construct and return a clone
         autoPtr<particle> clone() const
         {
@@ -269,7 +226,6 @@ public:
                 );
             }
         };
-#endif
 
 
     // Member Functions
@@ -278,11 +234,6 @@ public:
 
             //- Face index if the particle is on a face otherwise -1
             using base::face;
-
-#if FOAM_HEX_VERSION < 0x200
-            //- Face index if the particle is on a face otherwise -1
-            inline label& face();
-#endif
 
             //- Return the old position
             inline const point& positionOld() const;
@@ -416,11 +367,7 @@ public:
         // Tracking
 
             //- Move
-#if FOAM_HEX_VERSION < 0x200
-            bool move(trackData&);
-#else
             bool move(trackData& td, const scalar trackTime);
-#endif
 
 
         // Patch interactions
@@ -431,26 +378,10 @@ public:
             (
                 const polyPatch&  patch,
                 trackData&        td,
-#if FOAM_HEX_VERSION < 0x200
-                const label       patchI
-#else
                 const label       patchI,
                 const scalar      trackFraction,
                 const tetIndices& tetIs
-#endif
             );
-
-#if FOAM_HEX_VERSION < 0x200
-            //- Overridable function to handle the particle hitting a patch
-            //  without trackData.
-            //  Executed before other patch-hitting functions
-            bool hitPatch
-            (
-                const polyPatch& patch,
-                int&             td,
-                const label      patchI
-            );
-#endif
 
             //- Overridable function to handle the particle hitting a polyPatch
             void hitPatch
@@ -460,31 +391,9 @@ public:
             )
             {}
 
-#if FOAM_HEX_VERSION < 0x200
-            //- Overridable function to handle the particle hitting a polyPatch
-            //- without trackData
-            void hitPatch
-            (
-                const polyPatch&,
-                int&
-            )
-            {}
-#endif
-
-
             //- Transform the physical properties of the particle
             //  according to the given transformation tensor
-            void transformProperties
-            (
-                const tensor& T
-            );
-
-            //- Transform the physical properties of the particle
-            //  according to the given separation vector
-            void transformProperties
-            (
-                const vector& separation
-            );
+            void transformProperties(const transformer&) override;
 
             //- Info string about this particle and its properties
             string info() const;

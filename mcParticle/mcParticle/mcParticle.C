@@ -32,28 +32,16 @@ License
 
 namespace Foam
 {
-#if FOAM_HEX_VERSION >= 0x200
     defineTypeNameAndDebug(mcParticle, 0);
-#endif
 }
 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-#if FOAM_HEX_VERSION >= 0x200
-#pragma message "WARNING: " __FILE__ ":" __LINE__ \
-    ": trackData::trackData(): trackTime argument ignored"
-#endif
-Foam::mcParticle::trackData::trackData(mcParticleCloud& mcpc, scalar trackTime)
+Foam::mcParticle::trackData::trackData(mcParticleCloud& mcpc)
 :
     base(mcpc),
-#if FOAM_HEX_VERSION < 0x200
-    cloud_(mcpc),
-    trackTime_(trackTime),
-    deltaT_(mcpc.deltaT().value())
-#else
     cloud_(mcpc)
-#endif
 {}
 
 
@@ -69,11 +57,7 @@ Foam::mcParticle::mcParticle
     const label   ghost
 )
 :
-#if FOAM_HEX_VERSION < 0x200
-    base(c, position, celli),
-#else
     base(c.pMesh(), position, celli),
-#endif
     m_(m),
     UParticle_(UParticle),
     Ucorrection_(vector::zero),
@@ -97,11 +81,7 @@ Foam::mcParticle::mcParticle
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-#if FOAM_HEX_VERSION < 0x200
-bool Foam::mcParticle::move(mcParticle::trackData& td)
-#else
 bool Foam::mcParticle::move(mcParticle::trackData& td, const scalar trackTime)
-#endif
 {
 
     td.switchProcessor = false;
@@ -117,9 +97,6 @@ bool Foam::mcParticle::move(mcParticle::trackData& td, const scalar trackTime)
     const polyMesh& mesh = mcpc.pMesh();
     const polyBoundaryMesh& pbMesh = mesh.boundaryMesh();
 
-#if FOAM_HEX_VERSION < 0x200
-    scalar trackTime = eta_*td.trackTime();
-#endif
     scalar tEnd = (1.0 - stepFraction())*trackTime;
     scalar dtMax = tEnd;
 
@@ -141,7 +118,7 @@ bool Foam::mcParticle::move(mcParticle::trackData& td, const scalar trackTime)
         scalar dt = min(dtMax, tEnd);
         point destPos = position() + dt * Utracking_;
         meshTools::constrainDirection(mesh, mesh.geometricD(), destPos);
-        scalar tf = trackToFace(destPos, td);
+        scalar tf = trackToFace(destPos, 1.0);
         ++nSteps_;
 
         // if we made too many very small steps, drop the particle
@@ -167,9 +144,9 @@ bool Foam::mcParticle::move(mcParticle::trackData& td, const scalar trackTime)
         tEnd -= dt;
         stepFraction() = 1.0 - tEnd/trackTime;
 
-        if (onBoundary() && td.keepParticle)
+        if (onBoundaryFace() && td.keepParticle)
         {
-            if (isA<processorPolyPatch>(pbMesh[patch(face())]))
+            if (isA<processorPolyPatch>(pbMesh[patch()]))
             {
                 td.switchProcessor = true;
             }
@@ -180,34 +157,6 @@ bool Foam::mcParticle::move(mcParticle::trackData& td, const scalar trackTime)
 
 
 // Pre-action before hitting patches
-#if FOAM_HEX_VERSION < 0x200
-#define DEFINE_HITPATCH(TRACKDATA)                                            \
-bool Foam::mcParticle::hitPatch                                               \
-(                                                                             \
-    const polyPatch& patch,                                                   \
-    TRACKDATA&       td,                                                      \
-    const label      patchI                                                   \
-)                                                                             \
-{                                                                             \
-    if (isA<wedgePolyPatch>(patch))                                           \
-    {                                                                         \
-        const polyMesh& mesh = cloud().pMesh();                               \
-        meshTools::constrainDirection(mesh, mesh.geometricD(), position());   \
-    }                                                                         \
-    else                                                                      \
-    {                                                                         \
-        mcParticleCloud& c = const_cast<mcParticleCloud&>                     \
-        (                                                                     \
-            refCast<const mcParticleCloud>(cloud())                           \
-        );                                                                    \
-        c.hitPatch(*this, td, patchI);                                        \
-    }                                                                         \
-    return true;                                                              \
-}
-
-DEFINE_HITPATCH(mcParticle::trackData)
-DEFINE_HITPATCH(int)
-#else
 bool Foam::mcParticle::hitPatch
 (
     const polyPatch&           patch,
@@ -220,7 +169,10 @@ bool Foam::mcParticle::hitPatch
     if (isA<wedgePolyPatch>(patch))
     {
         const polyMesh& mesh = td.cloud().pMesh();
-        meshTools::constrainDirection(mesh, mesh.geometricD(), position());
+        vector pos = position();
+        meshTools::constrainDirection(mesh, mesh.geometricD(), pos);
+        // TODO update particle position after constraining it.
+        // TODO need to call locate()?
     }
     else
     {
@@ -232,22 +184,15 @@ bool Foam::mcParticle::hitPatch
     }
     return true;
 }
-#endif
 
 
-void Foam::mcParticle::transformProperties (const tensor& T)
+void Foam::mcParticle::transformProperties(const transformer& T)
 {
     base::transformProperties(T);
     // Only transform fluctuating velocity
-    UParticle_ = transform(T, UParticle_);
-    Ucorrection_ = transform(T, Ucorrection_);
-    Utracking_ = transform(T, Utracking_);
-}
-
-
-void Foam::mcParticle::transformProperties(const vector& separation)
-{
-    base::transformProperties(separation);
+    UParticle_ = T.transform(UParticle_);
+    Ucorrection_ = T.transform(Ucorrection_);
+    Utracking_ = T.transform(Utracking_);
 }
 
 
