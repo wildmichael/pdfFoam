@@ -63,7 +63,7 @@ inline bool Foam::mcParticleCloud::readIfModified()
 }
 
 
-inline const Foam::compressible::turbulenceModel&
+inline const Foam::momentumTransportModel&
 Foam::mcParticleCloud::turbulenceModel() const
 {
     return turbModel_;

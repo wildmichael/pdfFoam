@@ -29,11 +29,12 @@ License
 #include "fixedValueFvPatchField.H"
 #include "boundBox.H"
 #include "fvc.H"
-#include "compressible/RAS/RASModel/RASModel.H"
-#include "compressible/LES/LESModel/LESModel.H"
+#include "RASModel.H"
+#include "LESModel.H"
 #include "mcProcessorBoundary.H"
 #include "gradInterpolationConstantTet.H"
 #include "timeVaryingMappedFixedValueFvPatchField.H"
+#include "bound.H"
 #include "uniqueOrder_FIX.H"
 
 // * * * * * * * * * * * * * Local Helper Functions  * * * * * * * * * * * * //
@@ -41,30 +42,20 @@ License
 namespace // anonymous
 {
 
-const Foam::compressible::turbulenceModel* getTurbulenceModel
+const Foam::momentumTransportModel* getTurbulenceModel
 (
     const Foam::objectRegistry& obr
 )
 {
-    if (obr.foundObject<Foam::compressible::turbulenceModel>("RASProperties"))
+    if (obr.foundObject<Foam::momentumTransportModel>("turbulenceProperties"))
     {
-        return &obr.lookupObject<Foam::compressible::RASModel>
+        return &obr.lookupObject<Foam::momentumTransportModel>
         (
-            "RASProperties"
-        );
-    }
-    else if (obr.foundObject<Foam::compressible::LESModel>("LESProperties"))
-    {
-        return &obr.lookupObject<Foam::compressible::LESModel>
-        (
-            "LESProperties"
+            "turbulenceProperties"
         );
     }
     else
     {
-#if FOAM_HEX_VERSION < 0x200
-        Foam::
-#endif
         FatalErrorIn("getTurbulenceModel(const Foam::objectRegistry&)")
             << "No valid model for TKE calculation."
             << Foam::exit(Foam::FatalError);
@@ -90,9 +81,9 @@ void constrainParticle
         point destPos = p.position() + dt*u;
         vector n = cloud.axis() ^ destPos;
         n /= mag(n);
-        tensor T = rotationTensor(n, cloud.centrePlaneNormal());
+        transformer T = transformer::rotation(rotationTensor(n, cloud.centrePlaneNormal()));
         p.transformProperties(T);
-        destPos = transform(T, destPos);
+        destPos = T.transform(destPos);
         // constrain to kill numerical artifacts
         meshTools::constrainDirection(mesh, mesh.geometricD(), destPos);
         // constrained tracking velocity to destPos
@@ -117,54 +108,8 @@ void sendToOrigProc(Foam::mcParticleCloud& c)
                 transferList[p.procOld()].append(c.remove(&p));
             }
         }
-#if FOAM_HEX_VERSION < 0x200
-        // List of the numbers of particles to be transfered across the
-        // processor patches
-        labelList nsTransPs(transferList.size());
-
-        forAll(transferList, i)
-        {
-            nsTransPs[i] = transferList[i].size();
-        }
-
-        // List of the numbers of particles to be transfered across the
-        // processor patches for all the processors
-        labelListList allNTrans(Pstream::nProcs());
-        allNTrans[Pstream::myProcNo()] = nsTransPs;
-        combineReduce(allNTrans, combineNsTransPs());
-
-        forAll(transferList, i)
-        {
-            if (transferList[i].size())
-            {
-                OPstream particleStream(Pstream::blocking, i);
-                particleStream << transferList[i];
-            }
-        }
-
-        forAll(allNTrans, i)
-        {
-            label nRecPs = allNTrans[i][Pstream::myProcNo()];
-
-            if (nRecPs)
-            {
-                IPstream particleStream(Pstream::blocking, i);
-                IDLList<mcParticle> newParticles
-                (
-                    particleStream,
-                    mcParticle::iNew(c)
-                );
-
-                forAllIter(IDLList<mcParticle>, newParticles, newpIter)
-                {
-                    mcParticle& newp = newpIter();
-                    c.addParticle(newParticles.remove(&newp));
-                }
-            }
-        }
-#else
         // Allocate transfer buffers
-        PstreamBuffers pBufs(Pstream::nonBlocking);
+        PstreamBuffers pBufs(Pstream::defaultCommsType);
 
         // Stream into send buffers
         forAll(transferList, i)
@@ -178,7 +123,7 @@ void sendToOrigProc(Foam::mcParticleCloud& c)
 
         // Set up transfers when in non-blocking mode. Returns sizes (in bytes)
         // to be sent/received.
-        labelListList allNTrans(Pstream::nProcs());
+        labelList allNTrans(Pstream::nProcs());
 
         pBufs.finishedSends(allNTrans);
 
@@ -206,7 +151,7 @@ void sendToOrigProc(Foam::mcParticleCloud& c)
         // Retrieve from receive buffers
         forAll(allNTrans, i)
         {
-            label nRec = allNTrans[i][Pstream::myProcNo()];
+            label nRec = allNTrans[i];
 
             if (nRec)
             {
@@ -226,7 +171,6 @@ void sendToOrigProc(Foam::mcParticleCloud& c)
                 }
             }
         }
-#endif
     }
 }
 
@@ -268,10 +212,7 @@ const Foam::dimensionedScalar SMALL_VOLUME
 namespace Foam
 {
 
-#if FOAM_HEX_VERSION < 0x200
-    defineParticleTypeNameAndDebug(mcParticle, 0);
-#endif
-    defineTemplateTypeNameAndDebug(Cloud<mcParticle>, 0);
+    defineTypeNameAndDebug(mcParticleCloud, 0);
 
 }  // namespace Foam
 
@@ -303,7 +244,7 @@ Foam::mcParticleCloud::mcParticleCloud
     const fvMesh& mesh,
     const dictionary& dict,
     const word& cloudName,
-    const compressible::turbulenceModel* turbModel,
+    const momentumTransportModel* turbModel,
     const volVectorField* U,
     const volScalarField* p,
     volScalarField* rho
@@ -496,7 +437,7 @@ Foam::mcParticleCloud::mcParticleCloud
             IOobject::READ_IF_PRESENT,
             IOobject::AUTO_WRITE
         ),
-        turbModel_.R()
+        turbModel_.sigma()
     ),
 
     kcPdf_
@@ -511,7 +452,7 @@ Foam::mcParticleCloud::mcParticleCloud
         ),
         mesh_,
         dimVelocity*dimVelocity,
-        0.5*tr(TaucPdf_.dimensionedInternalField()),
+        0.5*tr(TaucPdf_.internalField()),
         // Use the boundary conditions for k (FV)
         kfv()().boundaryField()
     ),
@@ -633,12 +574,13 @@ Foam::mcParticleCloud::mcParticleCloud
                 TaucPdf_.boundaryField()[i];
             if (isA<tvmpf>(patch))
             {
-                TaucPdf_.boundaryField().set
+                TaucPdf_.boundaryFieldRef().set
                 (
                     i,
                     new fixedValueFvPatchField<symmTensor>
                     (
-                        refCast<const tvmpf>(patch)
+                        refCast<const tvmpf>(patch),
+                        TaucPdf_.internalField()
                     )
                 );
             }
@@ -646,7 +588,7 @@ Foam::mcParticleCloud::mcParticleCloud
     }
 
     // Correct the Courant coefficients in the boundary field
-    CourantCoeffs_.boundaryField() /= 2.;
+    CourantCoeffs_.boundaryFieldRef() /= 2.;
 
     initScalarFields();
 
@@ -675,7 +617,7 @@ Foam::mcParticleCloud::mcParticleCloud
                     axis_ = wpp.axis();
                     centrePlaneNormal_ = wpp.centreNormal();
                     openingAngle_ =
-                        2.*acos(wpp.patchNormal()&centrePlaneNormal_);
+                        2.*acos(wpp.n()&centrePlaneNormal_);
                     area_.reset(new DimensionedField<scalar, volMesh>
                         (
                             IOobject
@@ -707,7 +649,7 @@ Foam::mcParticleCloud::mcParticleCloud
                 "    const fvMesh&,"
                 "    const dictionary&,"
                 "    const word&,"
-                "    const compressible::turbulenceModel*,"
+                "    const momentumTransportModel*,"
                 "    const volVectorField*,"
                 "    volScalarField*"
                 ")"
@@ -808,8 +750,8 @@ void Foam::mcParticleCloud::checkMoments()
         Info<< "Moments read correctly." << endl;
         if (isAxiSymmetric_)
         {
-            pndcPdf_.internalField() *= mesh_.V()/volumeOrArea();
-            pndcPdfInst_.internalField() *= mesh_.V()/volumeOrArea();
+            pndcPdf_.ref() *= mesh_.V()/volumeOrArea();
+            pndcPdfInst_.ref() *= mesh_.V()/volumeOrArea();
         }
     }
     else
@@ -959,51 +901,51 @@ void Foam::mcParticleCloud::updateCloudPDF(scalar existWt)
     // Do time-averaging of moments and compute mean fields
     mMom_  = existWt * mMom_  + newWt * mMomInstant;
     DimensionedField<scalar, volMesh> mMomBounded = max(mMom_, SMALL_MASS);
-    pndcPdfInst_.internalField() = mMomInstant/volumeOrArea();
+    pndcPdfInst_.ref() = mMomInstant/volumeOrArea();
     pndcPdfInst_.correctBoundaryConditions();
-    pndcPdf_.internalField() = mMom_/volumeOrArea();
+    pndcPdf_.ref() = mMom_/volumeOrArea();
     pndcPdf_.correctBoundaryConditions();
 
     VMom_  = existWt * VMom_  + newWt * VMomInstant;
     DimensionedField<scalar, volMesh> VMomBounded = max(VMom_, SMALL_VOLUME);
-    rhocPdfInst_.internalField() = mMomInstant/max(VMomInstant, SMALL_VOLUME);
+    rhocPdfInst_.ref() = mMomInstant/max(VMomInstant, SMALL_VOLUME);
     rhocPdfInst_.correctBoundaryConditions();
-    rhocPdf_.internalField()   = mMom_ / VMomBounded;
+    rhocPdf_.ref()   = mMom_ / VMomBounded;
     rhocPdf_.correctBoundaryConditions();
 
     UMom_  = existWt * UMom_  + newWt * UMomInstant;
-    UcPdf_.internalField()   = UMom_ / mMomBounded;
+    UcPdf_.ref()   = UMom_ / mMomBounded;
     UcPdf_.correctBoundaryConditions();
 
     PhiPhiI = 0;
     forAll(PhicPdf_, PhiI)
     {
         PhiMom_[PhiI] = existWt * PhiMom_[PhiI] + newWt * PhiMomInstant[PhiI];
-        PhicPdf_[PhiI]->internalField() = PhiMom_[PhiI] / mMomBounded;
+        PhicPdf_[PhiI]->ref() = PhiMom_[PhiI] / mMomBounded;
         PhicPdf_[PhiI]->correctBoundaryConditions();
         for (label PhiJ = PhiI; PhiJ != PhicPdf_.size(); ++PhiJ, ++PhiPhiI)
         {
             PhiPhiMom_[PhiPhiI] =
                 existWt*PhiPhiMom_[PhiPhiI] + newWt*PhiPhiMomInstant[PhiPhiI];
-            PhiPhicPdf_[PhiPhiI]->internalField() =
+            PhiPhicPdf_[PhiPhiI]->ref() =
                 PhiPhiMom_[PhiPhiI]/mMomBounded
               - (
-                    PhicPdf_[PhiI]->dimensionedInternalField()
-                   *PhicPdf_[PhiJ]->dimensionedInternalField()
+                    PhicPdf_[PhiI]->internalField()
+                   *PhicPdf_[PhiJ]->internalField()
                 );
             PhiPhicPdf_[PhiPhiI]->correctBoundaryConditions();
         }
     }
 
     UUMom_ = existWt*UUMom_ + newWt*UUMomInstant;
-    TaucPdf_.internalField() =
+    TaucPdf_.ref() =
         (
             UUMom_/mMomBounded
-          - symm(UcPdf_*UcPdf_)().dimensionedInternalField()
+          - symm(UcPdf_*UcPdf_)().internalField()
         );
     TaucPdf_.correctBoundaryConditions();
 
-    kcPdf_.internalField()   = 0.5 * tr(TaucPdf_.internalField());
+    kcPdf_.ref()   = 0.5 * tr(TaucPdf_.internalField());
     kcPdf_.correctBoundaryConditions();
     bound(kcPdf_, solutionDict_.kMin());
 }
@@ -1120,11 +1062,7 @@ void Foam::mcParticleCloud::cloneParticles(label celli)
         // Half my mass
         p.m() /= 2.0;
         // create a new particle like myself
-#if FOAM_HEX_VERSION < 0x200
-        autoPtr<mcParticle> ptrNew = p.clone();
-#else
         autoPtr<particle> ptrNew = p.clone();
-#endif
         ptrNew().position() = positions[particleI];
 
         addParticle(static_cast<mcParticle*>(ptrNew.ptr()));
@@ -1265,16 +1203,11 @@ Foam::scalar Foam::mcParticleCloud::evolve()
         p.UParticleOld() = p.UParticle();
         p.positionOld() = p.position();
         p.cellOld() = p.cell();
-        p.faceOld() = p.face();
         p.procOld() = Pstream::myProcNo();
     }
 
-    mcParticle::trackData td1(*this, deltaT_.value()/2.);
-#if FOAM_HEX_VERSION < 0x200
-    Cloud<mcParticle>::move(td1);
-#else
-    Cloud<mcParticle>::move(td1, deltaT_.value()/2.);
-#endif
+    mcParticle::trackData td1(*this);
+    Cloud<mcParticle>::move(*this, td1, deltaT_.value()/2.);
 
     // Evaluate models at deltaT/2
     forAllIter(mcParticleCloud, *this, pIter)
@@ -1333,12 +1266,8 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     // Second half-step
     //////////////////
 
-    mcParticle::trackData td2(*this, deltaT_.value());
-#if FOAM_HEX_VERSION < 0x200
-    Cloud<mcParticle>::move(td2);
-#else
-    Cloud<mcParticle>::move(td2, deltaT_.value());
-#endif
+    mcParticle::trackData td2(*this);
+    Cloud<mcParticle>::move(*this, td2, deltaT_.value());
 
     // Correct boundary conditions
     scalarField massInInst(massIn_.size(), 0.);
@@ -1511,7 +1440,6 @@ Foam::scalar Foam::mcParticleCloud::evolve()
     // Finally, update deltaT for next time step
     deltaT_.value() = solutionDict_.CFL()/CoMax;
 
-#if FOAM_HEX_VERSION >= 0x200
     lduMatrix::solverPerformance
     pndSp
     (
@@ -1524,7 +1452,6 @@ Foam::scalar Foam::mcParticleCloud::evolve()
         false
     );
     mesh_.setSolverPerformance(pndSp);
-#endif
 
     return rhoRes;
 }
@@ -1633,14 +1560,14 @@ void Foam::mcParticleCloud::particleGenInCell
 void Foam::mcParticleCloud::initMoments()
 {
     mMom_  = rhocPdf_*volumeOrArea();
-    rhocPdfInst_.internalField() = rhocPdf_.internalField();
-    pndcPdf_.internalField() = rhocPdf_.internalField();
-    pndcPdfInst_.internalField() = rhocPdf_.internalField();
+    rhocPdfInst_.ref() = rhocPdf_.internalField();
+    pndcPdf_.ref() = rhocPdf_.internalField();
+    pndcPdfInst_.ref() = rhocPdf_.internalField();
 
     VMom_  = mMom_ / rhocPdf_;
 
     UMom_  = mMom_ * Ufv_;
-    UcPdf_.internalField()   = Ufv_.internalField();
+    UcPdf_.ref()   = Ufv_.internalField();
     UcPdf_.correctBoundaryConditions();
 
     label PhiPhiI = 0;
@@ -1652,10 +1579,10 @@ void Foam::mcParticleCloud::initMoments()
             PhiPhiMom_[PhiPhiI] =
                 mMom_
                *(
-                   PhiPhicPdf_[PhiPhiI]->dimensionedInternalField()
+                   PhiPhicPdf_[PhiPhiI]->internalField()
                  + (
-                       PhicPdf_[PhiI]->dimensionedInternalField()
-                      *PhicPdf_[PhiJ]->dimensionedInternalField()
+                       PhicPdf_[PhiI]->internalField()
+                      *PhicPdf_[PhiJ]->internalField()
                    )
                 );
         }
@@ -1664,11 +1591,11 @@ void Foam::mcParticleCloud::initMoments()
     UUMom_ =
         mMom_
        *(
-           turbulenceModel().R()()
-         + symm(UcPdf_*UcPdf_)().dimensionedInternalField()
+           turbulenceModel().sigma()()
+         + symm(UcPdf_*UcPdf_)().internalField()
         );
 
-    kcPdf_.internalField()   = turbulenceModel().k()().internalField();
+    kcPdf_.ref() = turbulenceModel().k()().internalField();
     kcPdf_.correctBoundaryConditions();
     const surfaceScalarField& phi =
         mesh().lookupObject<surfaceScalarField>

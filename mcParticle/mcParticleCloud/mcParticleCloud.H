@@ -82,7 +82,7 @@ Author
 #include "Random.H"
 #include "labelIOField.H"
 #include "SortableList.H"
-#include "compressible/turbulenceModel/turbulenceModel.H"
+#include "momentumTransportModel.H"
 #include "surfaceMesh.H"
 #include "fvsPatchField.H"
 #include "IOLostParticles.H"
@@ -153,7 +153,7 @@ class mcParticleCloud:
         //- The global particle time step
         dimensionedScalar deltaT_;
         //- The RAS model object
-        const compressible::turbulenceModel& turbModel_;
+        const momentumTransportModel& turbModel_;
 
         //- The FV velocity field
         const volVectorField& Ufv_;
@@ -304,6 +304,9 @@ class mcParticleCloud:
 
 public:
 
+    //- Runtime type information
+    TypeName("mcParticleCloud");
+
     // Constructors
 
         //- Construct from components
@@ -315,7 +318,7 @@ public:
             const fvMesh& mesh,
             const dictionary& dict,
             const word& cloudName = "defaultCloud",
-            const compressible::turbulenceModel* turbModel = 0,
+            const momentumTransportModel* turbModel = 0,
             const volVectorField* U = 0,
             const volScalarField* p = 0,
             volScalarField* rho = 0
@@ -343,7 +346,7 @@ public:
         inline virtual bool readIfModified();
 
         //- Access the turbulence model
-        inline const compressible::turbulenceModel& turbulenceModel() const;
+        inline const momentumTransportModel& turbulenceModel() const;
 
         //- The FV velocity field
         inline const volVectorField& Ufv() const;
