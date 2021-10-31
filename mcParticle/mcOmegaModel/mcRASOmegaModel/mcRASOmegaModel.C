@@ -26,8 +26,8 @@ License
 #include "mcRASOmegaModel.H"
 
 #include "addToRunTimeSelectionTable.H"
-#include "compressible/turbulenceModel/turbulenceModel.H"
-#include "compressible/RAS/kOmegaSST/kOmegaSST.H"
+#include "dynamicMomentumTransportModel.H"
+#include "kOmegaSST.H"
 #include "interpolation.H"
 #include "mcParticleCloud.H"
 
@@ -89,7 +89,7 @@ Foam::mcRASOmegaModel::mcRASOmegaModel
 
 void Foam::mcRASOmegaModel::updateInternals()
 {
-    const compressible::turbulenceModel& turbModel = cloud().turbulenceModel();
+    const compressible::momentumTransportModel& turbModel = cloud().turbulenceModel();
     if (isA<compressible::RASModels::kOmegaSST>(turbModel))
     {
         // If we have a kOmegaSST (or derived) object, use omega directly
