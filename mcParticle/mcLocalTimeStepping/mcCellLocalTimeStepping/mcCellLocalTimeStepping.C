@@ -86,7 +86,7 @@ void Foam::mcCellLocalTimeStepping::updateInternals()
     const fvMesh& mesh = eta_.mesh();
     scalar deltaT = cloud().deltaT().value();
     const volVectorField& U = cloud().Ufv();
-    const compressible::turbulenceModel& tm = cloud().turbulenceModel();
+    const compressible::momentumTransportModel& tm = cloud().turbulenceModel();
     tmp<volSymmTensorField> tR = tm.R();
     const symmTensorField& RInt = tR().internalField();
     const surfaceVectorField& CourantCoeffs = cloud().CourantCoeffs();
