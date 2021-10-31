@@ -122,7 +122,7 @@ const Foam::symmTensorField& Foam::mcInletOutletBoundary::getR()
         const symmTensorField& tau =
             cloud().TaucPdf().boundaryField()[patchID()];
         // clipping to compensate for bad divergence errors
-        const compressible::turbulenceModel& tm = cloud().turbulenceModel();
+        const compressible::momentumTransportModel& tm = cloud().turbulenceModel();
         scalar k0;
         if (isA<compressible::RASModel>(tm))
         {
